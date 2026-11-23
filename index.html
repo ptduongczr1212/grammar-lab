@@ -28,6 +28,10 @@
       --sp-blue: #3d91f4;
     }
     * { box-sizing: border-box; }
+    html, body {
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
     body {
       margin: 0;
       padding: 0;
@@ -49,7 +53,7 @@
     /* Top Navigation Bar */
     .sp-topbar {
       position: sticky; top: 0; z-index: 100;
-      background: rgba(18, 18, 18, 0.95); backdrop-filter: blur(12px);
+      background: #121212;
       display: flex; align-items: center; justify-content: space-between;
       padding: 12px 24px; border-bottom: 1px solid var(--sp-border);
     }
@@ -65,15 +69,19 @@
     .sp-pill {
       background: rgba(255, 255, 255, 0.07); border: none; color: var(--sp-subtext);
       padding: 7px 14px; border-radius: 500px; font-size: 13px; font-weight: 700;
-      cursor: pointer; transition: all .15s ease; display: inline-flex; align-items: center; gap: 6px;
+      cursor: pointer; transition: transform .1s ease, background-color .12s ease, color .12s ease;
+      display: inline-flex; align-items: center; gap: 6px;
       text-decoration: none; user-select: none;
     }
-    .sp-pill:hover { background: rgba(255, 255, 255, 0.15); color: #fff; transform: scale(1.03); }
+    .sp-pill:hover { background-color: rgba(255, 255, 255, 0.15); color: #fff; transform: scale(1.03); }
+    .sp-pill:active { transform: scale(0.96); }
     .sp-pill.active { background: #fff; color: #000; }
     .sp-pill.green { background: rgba(29, 185, 84, 0.15); color: var(--sp-green); border: 1px solid rgba(29, 185, 84, 0.3); }
     .sp-pill.green:hover { background: var(--sp-green); color: #000; }
+    .sp-pill.green:active { transform: scale(0.96); background: var(--sp-green-press); }
     .sp-pill.red-badge { background: rgba(241, 94, 108, 0.15); color: var(--sp-red); border: 1px solid rgba(241, 94, 108, 0.3); }
     .sp-pill.red-badge:hover { background: var(--sp-red); color: #fff; }
+    .sp-pill.red-badge:active { transform: scale(0.96); }
 
     .sp-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
     .sp-dot-on { background: var(--sp-green); box-shadow: 0 0 8px var(--sp-green); }
@@ -304,7 +312,7 @@
 
     /* Modals & Drawers */
     .sp-modal-overlay {
-      position: fixed; inset: 0; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(6px);
+      position: fixed; inset: 0; background: rgba(0, 0, 0, 0.78);
       display: none; align-items: center; justify-content: center; z-index: 3000; padding: 16px;
     }
     .sp-modal-overlay.open { display: flex; }
@@ -327,7 +335,7 @@
 
     /* Drawer System */
     .sp-drawer-overlay {
-      position: fixed; inset: 0; background: rgba(0, 0, 0, 0.65); backdrop-filter: blur(2px);
+      position: fixed; inset: 0; background: rgba(0, 0, 0, 0.7);
       display: none; z-index: 2500;
     }
     .sp-drawer-overlay.open { display: block; }
@@ -933,13 +941,30 @@ try {
   currentMistakesLog = JSON.parse(localStorage.getItem('gl_mistakes_log') || '[]');
 } catch {}
 
-function saveState() {
-  localStorage.setItem('gl_albums_v2', JSON.stringify(albums));
+let saveStateTimer = null;
+function saveState(immediate = false) {
+  // Save lightweight pointers immediately without delay
   localStorage.setItem('gl_cur_album_id', currentAlbumId);
   localStorage.setItem('gl_cur_track_idx', currentTrackIndex);
-  localStorage.setItem('gl_generated_exercises_v2', JSON.stringify(generatedExercises));
-  localStorage.setItem('gl_saved_vocab_srs', JSON.stringify(currentVocabNotebook));
-  localStorage.setItem('gl_mistakes_log', JSON.stringify(currentMistakesLog));
+
+  const doHeavySync = () => {
+    try {
+      localStorage.setItem('gl_albums_v2', JSON.stringify(albums));
+      localStorage.setItem('gl_generated_exercises_v2', JSON.stringify(generatedExercises));
+      localStorage.setItem('gl_saved_vocab_srs', JSON.stringify(currentVocabNotebook));
+      localStorage.setItem('gl_mistakes_log', JSON.stringify(currentMistakesLog));
+    } catch (e) {
+      console.warn('Storage sync error:', e);
+    }
+  };
+
+  if (immediate) {
+    if (saveStateTimer) clearTimeout(saveStateTimer);
+    doHeavySync();
+  } else {
+    if (saveStateTimer) clearTimeout(saveStateTimer);
+    saveStateTimer = setTimeout(doHeavySync, 200);
+  }
 }
 
 function getCurrentAlbum() {
@@ -1271,9 +1296,10 @@ function renderCategoryChips() {
 
   container.querySelectorAll('.sp-chip').forEach(chip => {
     chip.onclick = () => {
-      currentFilter = chip.dataset.filter;
-      container.querySelectorAll('.sp-chip').forEach(c => c.classList.remove('active'));
-      chip.classList.add('active');
+      const targetFilter = chip.dataset.filter;
+      if (currentFilter === targetFilter) return;
+      currentFilter = targetFilter;
+      container.querySelectorAll('.sp-chip').forEach(c => c.classList.toggle('active', c === chip));
       renderTrackList();
     };
   });
@@ -1302,16 +1328,42 @@ function renderTrackList() {
     return `
       <div class="sp-track-item ${isActive ? 'active' : ''}" data-idx="${it.idx}">
         <span class="sp-track-num">${String(it.idx + 1).padStart(2, '0')}</span>
-        <div class="sp-track-info" onclick="selectStructure(${it.idx})">
+        <div class="sp-track-info" data-action="select" data-idx="${it.idx}">
           <div class="sp-track-name">${escapeHtml(it.name)}</div>
           <div class="sp-track-group">${escapeHtml(it.group || 'Cấu trúc')}</div>
         </div>
         <div class="sp-track-actions">
-          <button class="sp-track-del-btn" title="Xóa cấu trúc khỏi album" onclick="deleteStructure(${it.idx})">&times;</button>
+          <button class="sp-track-del-btn" title="Xóa cấu trúc khỏi album" data-action="delete" data-idx="${it.idx}">&times;</button>
         </div>
       </div>
     `;
   }).join('');
+}
+
+// Delegated click handler on trackList for 60fps instant interaction
+$('trackList').onclick = (e) => {
+  const delBtn = e.target.closest('[data-action="delete"]');
+  if (delBtn) {
+    e.stopPropagation();
+    const idx = parseInt(delBtn.dataset.idx, 10);
+    if (!isNaN(idx)) deleteStructure(idx);
+    return;
+  }
+  const item = e.target.closest('.sp-track-item');
+  if (item) {
+    const idx = parseInt(item.dataset.idx, 10);
+    if (!isNaN(idx)) selectStructure(idx);
+  }
+};
+
+function updateActiveTrackUi(idx) {
+  const container = $('trackList');
+  const items = container.querySelectorAll('.sp-track-item');
+  items.forEach(el => {
+    const itemIdx = parseInt(el.dataset.idx, 10);
+    const isActive = itemIdx === idx;
+    el.classList.toggle('active', isActive);
+  });
 }
 
 function selectStructure(idx) {
@@ -1320,12 +1372,14 @@ function selectStructure(idx) {
   currentTrackIndex = idx;
   saveState();
   renderCurrentStructure();
-  renderTrackList();
+  updateActiveTrackUi(idx);
   $('response').value = '';
   $('aiFeedbackCard').style.display = 'none';
   $('sampleAnswerCard').style.display = 'none';
   $('toggleSampleBtn').textContent = '💡 Xem đáp án mẫu';
-  $('response').focus();
+  if (document.activeElement !== $('response')) {
+    $('response').focus();
+  }
 }
 
 function deleteStructure(idx) {
@@ -2433,7 +2487,14 @@ function setupUniversalSelection() {
   const tooltip = $('floatingLookupBtn');
 
   const checkSelection = (e) => {
-    if (tooltip.contains(e.target)) return;
+    if (!tooltip) return;
+    if (e?.target && tooltip.contains(e.target)) return;
+
+    // Fast bail-out when clicking UI controls to prevent layout thrashing
+    if (e?.target && e.target.closest('button, select, option, .sp-pill, .sp-chip, .sp-track-item, .sp-drawer-tab, .sp-btn-secondary, a, .sp-btn-sm')) {
+      tooltip.style.display = 'none';
+      return;
+    }
 
     let text = '';
     let clientRect = null;
@@ -2444,8 +2505,10 @@ function setupUniversalSelection() {
       const end = activeEl.selectionEnd;
       if (typeof start === 'number' && typeof end === 'number' && end > start) {
         text = activeEl.value.substring(start, end).trim();
-        const rect = activeEl.getBoundingClientRect();
-        clientRect = { left: rect.left + 20, top: rect.top - 36 };
+        if (text) {
+          const rect = activeEl.getBoundingClientRect();
+          clientRect = { left: rect.left + 20, top: rect.top - 36 };
+        }
       }
     }
 
@@ -2477,14 +2540,23 @@ function setupUniversalSelection() {
     }
   };
 
-  document.addEventListener('mouseup', e => setTimeout(() => checkSelection(e), 60));
-  document.addEventListener('keyup', e => setTimeout(() => checkSelection(e), 60));
+  let selDebounce = null;
+  document.addEventListener('mouseup', e => {
+    if (selDebounce) clearTimeout(selDebounce);
+    selDebounce = setTimeout(() => checkSelection(e), 40);
+  }, { passive: true });
+
+  document.addEventListener('keyup', e => {
+    if (selDebounce) clearTimeout(selDebounce);
+    selDebounce = setTimeout(() => checkSelection(e), 40);
+  }, { passive: true });
+
   document.addEventListener('selectionchange', () => {
     const sel = window.getSelection();
     if (sel && sel.isCollapsed && document.activeElement?.selectionStart === document.activeElement?.selectionEnd) {
       tooltip.style.display = 'none';
     }
-  });
+  }, { passive: true });
 
   tooltip.onclick = e => {
     e.stopPropagation();
