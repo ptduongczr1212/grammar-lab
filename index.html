@@ -699,11 +699,18 @@
     <div id="vocabListBody"></div>
   </div>
 
-  <!-- View 3: Mistake Log Tracker -->
+  <!-- View 3: Mistake Log Tracker & AI Deep Diagnostic -->
   <div id="viewMistakes" class="sp-drawer-body" style="display:none;">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-      <div style="font-size:14px; font-weight:800; color:#fff;">Tổng hợp lỗi ngữ pháp hay gặp:</div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+      <div style="font-size:14px; font-weight:800; color:#fff;">Phân tích lỗi sai & Chẩn đoán AI:</div>
       <button class="sp-btn-secondary" id="clearAllMistakesBtn" style="padding:4px 10px; font-size:11.5px; border-color:var(--sp-red); color:var(--sp-red);">Xóa tất cả</button>
+    </div>
+    
+    <!-- Hero Spotlight: Lỗi mắc phải nhiều nhất -->
+    <div id="topMistakeHeroContainer"></div>
+
+    <div style="font-size:12px; font-weight:700; color:var(--sp-subtext); text-transform:uppercase; letter-spacing:0.06em; margin:14px 0 8px;">
+      Nhật ký chi tiết các lỗi:
     </div>
     <div class="sp-mistake-stats" id="mistakeCategoryFilters"></div>
     <div id="mistakesListBody"></div>
@@ -1113,8 +1120,8 @@ async function executeSingleGeminiRequest(apiKey, model, prompt, systemInstructi
   const fullPrompt = (systemInstruction ? systemInstruction + '\n\n' : '') + prompt;
   
   const generationConfig = {
-    temperature: 0.2,
-    maxOutputTokens: 800
+    temperature: 0.1,
+    maxOutputTokens: 600
   };
 
   // Disable thinking reasoning tokens on thinking models to return instant 2-3s responses
@@ -1128,8 +1135,8 @@ async function executeSingleGeminiRequest(apiKey, model, prompt, systemInstructi
   };
 
   const controller = new AbortController();
-  // Fast 8.5s timeout: immediately fallback if server node is stalled
-  const timeoutId = setTimeout(() => controller.abort(), 8500);
+  // Ultra-fast 7s timeout: immediately fallback if server node is stalled
+  const timeoutId = setTimeout(() => controller.abort(), 7000);
 
   let res;
   try {
@@ -1681,49 +1688,30 @@ async function submitExercise(forceRetryAi = false) {
     return;
   }
 
-  const prompt = `Chấm bài dịch IELTS tiếng Việt sang tiếng Anh:
-Cấu trúc mục tiêu: "${cur.name}" (Công thức: ${cur.formula})
-Đề bài tiếng Việt: "${promptVi}"
-Câu của học viên: "${resp}"
-
-LƯU Ý ĐẶC BIỆT KHI CHẤM:
-1. BỎ QUA các lỗi nhỏ hình thức như: không viết hoa chữ cái đầu câu hoặc thiếu dấu chấm câu. KHÔNG coi không viết hoa là lỗi.
-2. Với các lỗi ngữ pháp/từ vựng thực chất (như chia sai thì, thiếu/dùng sai mạo từ a/an/the, sai giới từ, sai hòa hợp chủ vị, sai cấu trúc, dùng từ gượng gạo):
-   Hãy thêm trường "error_type" vào mỗi lỗi trong mảng "fixes":
-   Các loại lỗi hợp lệ cho "error_type":
-   - "Mạo từ"
-   - "Cách dùng thì"
-   - "Giới từ"
-   - "Hòa hợp chủ vị"
-   - "Cấu trúc mục tiêu"
-   - "Từ vựng & Diễn đạt"
-   - "Ngữ pháp khác"
-
-Trả về DUY NHẤT một đối tượng JSON hợp lệ (không kèm Markdown block):
+  const prompt = `Chấm bài dịch IELTS:
+Cấu trúc: "${cur.name}" (${cur.formula})
+Đề: "${promptVi}"
+Bài làm: "${resp}"
+Lưu ý: Bỏ qua hoa/thường hoặc thiếu dấu câu. Bắt lỗi thực chất (thì, mạo từ a/an/the, giới từ, hòa hợp S-V, cấu trúc).
+Gán error_type trong fixes: "Mạo từ" | "Cách dùng thì" | "Giới từ" | "Hòa hợp chủ vị" | "Cấu trúc mục tiêu" | "Từ vựng & Diễn đạt".
+Chỉ trả về JSON thuần:
 {
-  "correct": true hoặc false,
-  "score_title": "Nhận xét ngắn gọn (VD: Xuất sắc / Áp dụng đúng cấu trúc / Cần sửa ngữ pháp)",
-  "structure": { "ok": true hoặc false, "comment": "Nhận xét học viên đã dùng đúng công thức chưa" },
-  "grammar": { "ok": true hoặc false, "comment": "Nhận xét thì, mạo từ, giới từ, hòa hợp chủ vị" },
-  "expression": { "ok": true hoặc false, "comment": "Nhận xét collocations và độ tự nhiên" },
-  "meaning": { "ok": true hoặc false, "comment": "Nhận xét độ sát nghĩa với đề bài" },
-  "fixes": [
-    {
-      "original": "chỗ viết chưa chuẩn",
-      "replacement": "từ/cụm từ chuẩn",
-      "error_type": "Mạo từ | Cách dùng thì | Giới từ | Hòa hợp chủ vị | Cấu trúc mục tiêu | Từ vựng & Diễn đạt",
-      "why": "giải thích ngắn"
-    }
-  ],
-  "corrected": "Câu hoàn chỉnh chuẩn mực nhất",
-  "better_alternatives": ["1-2 câu nâng cao band 8.0+ diễn đạt học thuật hơn"]
+  "correct": true,
+  "score_title": "Nhận xét ngắn",
+  "structure": { "ok": true, "comment": "Ngắn" },
+  "grammar": { "ok": true, "comment": "Ngắn" },
+  "expression": { "ok": true, "comment": "Ngắn" },
+  "meaning": { "ok": true, "comment": "Ngắn" },
+  "fixes": [{"original": "...", "replacement": "...", "error_type": "...", "why": "..."}],
+  "corrected": "Câu tiếng Anh chuẩn",
+  "better_alternatives": ["1 câu band cao"]
 }`;
 
   let finalResult = null;
   try {
     finalResult = await callGeminiApiWithFallback(
       prompt,
-      'Bạn là giám khảo tiếng Anh IELTS chấm bài công tâm và sâu sắc. Bỏ qua lỗi không viết hoa đầu câu. Chỉ trả về một đối tượng JSON hợp lệ.'
+      'Giám khảo IELTS chấm bài công tâm, ngắn gọn, phản hồi JSON thuần.'
     );
   } catch (err) {
     console.warn('AI evaluation hit demand/network spike, seamlessly falling back to offline evaluator:', err);
@@ -1895,6 +1883,8 @@ function updateMistakesCountUi() {
 let activeMistakeFilter = 'all';
 
 function renderMistakesNotebook() {
+  renderTopMistakeHero();
+
   const container = $('mistakesListBody');
   const filtersContainer = $('mistakeCategoryFilters');
 
@@ -1923,10 +1913,8 @@ function renderMistakesNotebook() {
 
   if (filtered.length === 0) {
     container.innerHTML = `
-      <div style="text-align:center; padding:40px 10px; color:var(--sp-subtext);">
-        <div style="font-size:36px; margin-bottom:8px;">🎉</div>
-        <strong style="color:#fff; font-size:15px;">Chưa có lỗi nào được ghi nhận</strong>
-        <p style="font-size:13px; margin-top:6px;">Khi bạn làm bài, AI sẽ tự động phân loại những lỗi hay sai (thì, mạo từ, giới từ...) để bạn ôn lại tại đây!</p>
+      <div style="text-align:center; padding:30px 10px; color:var(--sp-subtext);">
+        <p style="font-size:13px; margin:0;">Chưa có lỗi nào trong danh mục này.</p>
       </div>
     `;
     return;
@@ -1960,6 +1948,203 @@ function renderMistakesNotebook() {
       renderMistakesNotebook();
     };
   });
+}
+
+function renderTopMistakeHero() {
+  const container = $('topMistakeHeroContainer');
+  if (!container) return;
+
+  if (currentMistakesLog.length === 0) {
+    container.innerHTML = `
+      <div style="background:#1a1a1a; border:1px solid var(--sp-border); border-radius:10px; padding:18px; text-align:center; color:var(--sp-subtext);">
+        <div style="font-size:24px; margin-bottom:6px;">🎯</div>
+        <strong style="color:#fff; font-size:13.5px;">Chưa có đủ dữ liệu lỗi sai</strong>
+        <p style="font-size:12px; margin:5px 0 0;">Hãy luyện dịch vài câu, AI sẽ tự động phân tích xem bạn hay mắc lỗi nào nhất và lên phác đồ sửa lỗi!</p>
+      </div>
+    `;
+    return;
+  }
+
+  const counts = {};
+  currentMistakesLog.forEach(m => {
+    const t = m.errorType || 'Ngữ pháp khác';
+    counts[t] = (counts[t] || 0) + 1;
+  });
+
+  let topErrorType = null;
+  let maxCount = 0;
+  for (const [t, cnt] of Object.entries(counts)) {
+    if (cnt > maxCount) {
+      maxCount = cnt;
+      topErrorType = t;
+    }
+  }
+
+  const percent = Math.round((maxCount / currentMistakesLog.length) * 100);
+  const cacheKey = `gl_ai_diag_${encodeURIComponent(topErrorType)}_${maxCount}`;
+  let cachedData = null;
+  try {
+    const raw = localStorage.getItem(cacheKey);
+    if (raw) cachedData = JSON.parse(raw);
+  } catch {}
+
+  container.innerHTML = `
+    <div style="background:linear-gradient(135deg, #2b1705 0%, #17120a 100%); border:1px solid rgba(255, 164, 43, 0.45); border-radius:12px; padding:16px; margin-bottom:14px;">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px; flex-wrap:wrap;">
+        <div>
+          <div style="display:inline-flex; align-items:center; gap:5px; background:rgba(255, 164, 43, 0.22); color:var(--sp-orange); font-size:10.5px; font-weight:800; padding:3px 9px; border-radius:500px; text-transform:uppercase; margin-bottom:6px;">
+            🔥 LỖI BẠN MẮC PHẢI NHIỀU NHẤT
+          </div>
+          <div style="font-size:18px; font-weight:800; color:#fff;">${escapeHtml(topErrorType)}</div>
+          <div style="font-size:12px; color:var(--sp-subtext); margin-top:2px;">
+            Chiếm <strong style="color:var(--sp-orange);">${percent}%</strong> tổng lỗi của bạn (<strong style="color:#fff;">${maxCount}/${currentMistakesLog.length} lần</strong> mắc).
+          </div>
+        </div>
+        <button id="analyzeTopMistakeBtn" class="sp-pill green" style="padding:7px 14px; font-size:12px; white-space:nowrap;">
+          ${cachedData ? '🔄 Phân Tích Lại' : '🧠 AI Phân Tích Chuyên Sâu'}
+        </button>
+      </div>
+
+      <div id="aiTopMistakeResult" style="${cachedData ? 'display:block;' : 'display:none;'} margin-top:12px; border-top:1px dashed rgba(255,255,255,0.15); padding-top:12px;">
+        ${cachedData ? renderAiDiagnosticContent(cachedData, topErrorType) : ''}
+      </div>
+    </div>
+  `;
+
+  $('analyzeTopMistakeBtn').onclick = () => runAiTopMistakeAnalysis(topErrorType, maxCount);
+  if (cachedData) {
+    bindQuickDrillEvents(cachedData.drill);
+  }
+}
+
+async function runAiTopMistakeAnalysis(topErrorType, count) {
+  const resultEl = $('aiTopMistakeResult');
+  const btn = $('analyzeTopMistakeBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Đang phân tích...';
+  resultEl.style.display = 'block';
+  resultEl.innerHTML = `
+    <div style="text-align:center; padding:22px; color:var(--sp-subtext);">
+      <div class="sp-dot sp-dot-busy" style="width:14px; height:14px; margin-bottom:8px;"></div>
+      <div style="font-size:13px; color:#fff; font-weight:600;">AI đang giải phẫu thói quen và lập phác đồ khắc phục lỗi "${escapeHtml(topErrorType)}"...</div>
+    </div>
+  `;
+
+  const samples = currentMistakesLog
+    .filter(m => (m.errorType || 'Ngữ pháp khác') === topErrorType)
+    .slice(0, 4);
+
+  const prompt = `Phân tích chuyên sâu lỗi tiếng Anh người Việt hay mắc:
+Loại lỗi mắc nhiều nhất: "${topErrorType}" (${count} lần).
+Các câu học viên từng làm sai:
+${samples.map(s => `- Viết: "${s.sentence}" -> Sai: "${s.original}" nên là "${s.replacement}" (${s.why})`).join('\n')}
+
+Hãy trả về JSON thuần:
+{
+  "root_cause": "Giải thích ngắn gọn thói quen tư duy tiếng Việt nào dẫn đến lỗi này (1-2 câu sắc sảo)",
+  "golden_rule": "Quy tắc vàng ngắn gọn, dễ nhớ để không bao giờ sai lại",
+  "key_patterns": ["2 bẫy hoặc lưu ý quan trọng nhất"],
+  "drill": {
+    "vi": "Câu tiếng Việt ngắn để học viên dịch ngay kiểm tra phản xạ",
+    "hint": "Gợi ý ngữ pháp",
+    "answer": "Câu tiếng Anh chuẩn mực"
+  }
+}`;
+
+  try {
+    const data = await callGeminiApiWithFallback(prompt, 'Chuyên gia ngữ pháp IELTS, phản hồi JSON thuần.');
+    const cacheKey = `gl_ai_diag_${encodeURIComponent(topErrorType)}_${count}`;
+    localStorage.setItem(cacheKey, JSON.stringify(data));
+    resultEl.innerHTML = renderAiDiagnosticContent(data, topErrorType);
+    bindQuickDrillEvents(data.drill);
+  } catch (err) {
+    resultEl.innerHTML = `
+      <div style="color:var(--sp-red); font-size:12.5px; padding:10px 0;">
+        ✗ Không thể phân tích: ${escapeHtml(err.message)}
+        <button class="sp-btn-secondary" style="margin-top:6px; font-size:11px;" onclick="runAiTopMistakeAnalysis('${escapeHtml(topErrorType)}', ${count})">Thử lại</button>
+      </div>
+    `;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🔄 Phân Tích Lại';
+  }
+}
+
+function renderAiDiagnosticContent(data, topErrorType) {
+  const patternsHtml = (data.key_patterns || []).map(p => `
+    <li style="margin-bottom:4px; color:var(--sp-subtext);">${escapeHtml(p)}</li>
+  `).join('');
+
+  const drill = data.drill || {};
+
+  return `
+    <div style="font-size:13px; line-height:1.5;">
+      <div style="margin-bottom:10px;">
+        <span style="color:var(--sp-orange); font-weight:700;">🎯 Nguyên nhân cốt lõi:</span>
+        <div style="color:#fff; margin-top:2px;">${escapeHtml(data.root_cause || '')}</div>
+      </div>
+
+      <div style="background:rgba(29, 185, 84, 0.1); border-left:3px solid var(--sp-green); padding:8px 12px; border-radius:0 6px 6px 0; margin-bottom:10px;">
+        <span style="color:var(--sp-green); font-weight:800; font-size:11.5px; text-transform:uppercase;">⭐ Quy tắc vàng ghi nhớ:</span>
+        <div style="color:#fff; font-weight:600; margin-top:2px;">${escapeHtml(data.golden_rule || '')}</div>
+      </div>
+
+      ${patternsHtml ? `
+        <div style="margin-bottom:10px;">
+          <span style="color:#fff; font-weight:700;">⚠️ Điểm cần cảnh giác:</span>
+          <ul style="margin:4px 0 0 16px; padding:0; font-size:12.5px;">${patternsHtml}</ul>
+        </div>
+      ` : ''}
+
+      ${drill.vi ? `
+        <div style="background:#202020; border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:12px; margin-top:12px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+            <span style="font-size:11.5px; font-weight:800; color:var(--sp-blue); text-transform:uppercase;">📝 Thử thách sửa sai tức thì:</span>
+            ${drill.hint ? `<span style="font-size:11px; color:var(--sp-muted);">💡 ${escapeHtml(drill.hint)}</span>` : ''}
+          </div>
+          <div style="font-size:13.5px; font-weight:700; color:#fff; margin-bottom:8px;">"${escapeHtml(drill.vi)}"</div>
+          <div style="display:flex; gap:6px;">
+            <input type="text" id="drillInput" placeholder="Dịch câu sang tiếng Anh áp dụng đúng quy tắc..." style="flex:1; padding:7px 10px; border-radius:6px; border:1px solid var(--sp-border); background:#121212; color:#fff; font-size:13px; outline:none;">
+            <button id="checkDrillBtn" class="sp-pill green" style="padding:6px 12px; font-size:12px; white-space:nowrap;">Kiểm tra</button>
+          </div>
+          <div id="drillFeedback" style="display:none; font-size:12.5px; margin-top:8px;"></div>
+        </div>
+      ` : ''}
+    </div>
+  `;
+}
+
+function bindQuickDrillEvents(drill) {
+  if (!drill) return;
+  const input = $('drillInput');
+  const btn = $('checkDrillBtn');
+  const fb = $('drillFeedback');
+  if (!btn || !input || !fb) return;
+
+  const runCheck = () => {
+    const val = input.value.trim();
+    if (!val) return;
+    fb.style.display = 'block';
+    const normVal = val.toLowerCase().replace(/[.,!?'"]/g, '').trim();
+    const normAns = (drill.answer || '').toLowerCase().replace(/[.,!?'"]/g, '').trim();
+
+    if (normVal === normAns || (normVal.length >= normAns.length * 0.7 && normVal.includes(normAns.slice(0, 8)))) {
+      fb.innerHTML = `
+        <div style="color:var(--sp-green); font-weight:700;">✓ Rất tốt! Bạn đã áp dụng đúng quy tắc.</div>
+        <div style="color:var(--sp-subtext); margin-top:2px;">Đáp án chuẩn: <em>"${escapeHtml(drill.answer)}"</em></div>
+      `;
+    } else {
+      fb.innerHTML = `
+        <div style="color:var(--sp-orange); font-weight:700;">↳ Hãy đối chiếu với đáp án chuẩn:</div>
+        <div style="color:#fff; font-weight:600; margin-top:2px;">"${escapeHtml(drill.answer)}"</div>
+      `;
+    }
+  };
+
+  btn.onclick = runCheck;
+  input.onkeydown = (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); runCheck(); }
+  };
 }
 
 $('clearAllMistakesBtn').onclick = () => {
