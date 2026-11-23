@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Grammar Lab — Luyện Dịch Việt → Anh (Spotify Style & Gemini AI)</title>
+  <title>Grammar Lab — Luyện Dịch Việt → Anh (Spotify Style, Album & AI Vocab)</title>
   <style>
     /* =========================================================
        SPOTIFY WEB PLAYER DESIGN SYSTEM
@@ -37,16 +37,16 @@
       font-size: 14px;
       line-height: 1.5;
       overflow-x: hidden;
-      padding-bottom: 85px; /* space for bottom player dock */
+      padding-bottom: 85px;
     }
 
-    /* Scrollbar */
+    /* Scrollbars */
     ::-webkit-scrollbar { width: 8px; height: 8px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
     ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.4); }
 
-    /* Top App Navigation Bar */
+    /* Top Navigation Bar */
     .sp-topbar {
       position: sticky; top: 0; z-index: 100;
       background: rgba(18, 18, 18, 0.95); backdrop-filter: blur(12px);
@@ -54,7 +54,7 @@
       padding: 12px 24px; border-bottom: 1px solid var(--sp-border);
     }
     .sp-brand {
-      display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 800; letter-spacing: -0.02em; color: #fff;
+      display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 800; color: #fff;
     }
     .sp-logo-badge {
       width: 32px; height: 32px; border-radius: 50%; background: var(--sp-green);
@@ -81,85 +81,104 @@
     .sp-dot-busy { background: var(--sp-orange); animation: spPulse 1s infinite alternate; }
     @keyframes spPulse { from { opacity: .4; } to { opacity: 1; } }
 
-    /* Layout: Sidebar + Main Canvas */
+    /* Layout */
     .sp-layout {
-      display: grid; grid-template-columns: 310px minmax(0, 1fr); gap: 12px; padding: 12px 16px;
+      display: grid; grid-template-columns: 330px minmax(0, 1fr); gap: 12px; padding: 12px 16px;
       max-width: 1540px; margin: auto;
     }
 
-    /* Spotify Left Sidebar: "Your Library" */
+    /* Spotify Left Sidebar */
     .sp-sidebar {
       background: var(--sp-card); border-radius: 12px; padding: 16px; height: calc(100vh - 170px);
       position: sticky; top: 72px; display: flex; flex-direction: column; overflow: hidden;
     }
     .sp-sidebar-header {
-      display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding: 0 4px;
+      display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;
     }
     .sp-sidebar-title {
-      font-size: 14px; font-weight: 700; color: var(--sp-subtext); text-transform: uppercase; letter-spacing: 0.05em;
-      display: flex; align-items: center; gap: 8px;
+      font-size: 13.5px; font-weight: 800; color: var(--sp-subtext); text-transform: uppercase; letter-spacing: 0.05em;
+      display: flex; align-items: center; gap: 6px;
     }
-    .sp-sidebar-title:hover { color: #fff; }
+    .sp-album-selector-wrap { margin-bottom: 10px; }
+    .sp-album-select {
+      width: 100%; background: #222222; border: 1px solid var(--sp-border); color: #fff;
+      padding: 8px 12px; border-radius: 8px; font-weight: 700; font-size: 13.5px; outline: none; cursor: pointer;
+    }
+    .sp-album-select:focus { border-color: var(--sp-green); }
 
-    /* Spotify filter chips */
+    .sp-sidebar-actions-row {
+      display: flex; gap: 6px; margin-bottom: 12px;
+    }
+    .sp-btn-sm {
+      flex: 1; background: #282828; border: none; color: #fff; padding: 6px 10px; border-radius: 6px;
+      font-size: 11.5px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;
+      transition: background .15s;
+    }
+    .sp-btn-sm:hover { background: #383838; }
+    .sp-btn-sm.green { background: rgba(29, 185, 84, 0.18); color: var(--sp-green); border: 1px solid rgba(29, 185, 84, 0.3); }
+    .sp-btn-sm.green:hover { background: var(--sp-green); color: #000; }
+
+    /* Category filter chips */
     .sp-filter-row {
-      display: flex; gap: 6px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 8px; scrollbar-width: none;
+      display: flex; gap: 6px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 6px; scrollbar-width: none;
     }
     .sp-filter-row::-webkit-scrollbar { display: none; }
     .sp-chip {
-      background: #242424; border: none; color: #fff; padding: 5px 12px; border-radius: 500px;
-      font-size: 12px; font-weight: 600; white-space: nowrap; cursor: pointer; transition: background .15s;
+      background: #242424; border: none; color: #fff; padding: 4px 10px; border-radius: 500px;
+      font-size: 11.5px; font-weight: 600; white-space: nowrap; cursor: pointer; transition: background .15s;
     }
     .sp-chip:hover { background: #2f2f2f; }
     .sp-chip.active { background: #fff; color: #000; }
 
-    /* Track-style playlist */
+    /* Track List */
     .sp-track-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; }
     .sp-track-item {
-      display: flex; align-items: center; gap: 12px; padding: 8px 10px; border-radius: 6px;
+      display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 6px;
       cursor: pointer; transition: background .15s; user-select: none; text-align: left; background: transparent; border: none; width: 100%;
     }
     .sp-track-item:hover { background: rgba(255, 255, 255, 0.08); }
     .sp-track-item.active { background: rgba(255, 255, 255, 0.15); }
     .sp-track-item.active .sp-track-name { color: var(--sp-green); font-weight: 700; }
-    .sp-track-num { font-size: 13px; color: var(--sp-muted); width: 20px; font-variant-numeric: tabular-nums; }
+    .sp-track-num { font-size: 12.5px; color: var(--sp-muted); width: 22px; font-variant-numeric: tabular-nums; }
     .sp-track-item.active .sp-track-num { color: var(--sp-green); }
     .sp-track-info { flex: 1; min-width: 0; }
-    .sp-track-name { font-size: 13.5px; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .sp-track-group { font-size: 11.5px; color: var(--sp-subtext); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .sp-track-play { opacity: 0; color: var(--sp-green); font-size: 12px; transition: opacity .15s; }
-    .sp-track-item:hover .sp-track-play, .sp-track-item.active .sp-track-play { opacity: 1; }
+    .sp-track-name { font-size: 13px; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sp-track-group { font-size: 11px; color: var(--sp-subtext); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sp-track-actions { display: flex; gap: 4px; opacity: 0; transition: opacity .15s; }
+    .sp-track-item:hover .sp-track-actions, .sp-track-item.active .sp-track-actions { opacity: 1; }
+    .sp-track-del-btn { background: transparent; border: none; color: var(--sp-subtext); cursor: pointer; font-size: 14px; padding: 2px 4px; }
+    .sp-track-del-btn:hover { color: var(--sp-red); }
 
     /* Main Stage */
     .sp-main {
       background: var(--sp-base); border-radius: 12px; overflow: hidden; position: relative;
     }
     
-    /* Spotify Hero Header (Album / Artist Page style) */
+    /* Spotify Hero Header */
     .sp-hero {
       background: linear-gradient(180deg, #1f372a 0%, #16241c 45%, var(--sp-base) 100%);
-      padding: 32px 28px 24px; display: flex; gap: 24px; align-items: flex-end; flex-wrap: wrap;
+      padding: 30px 28px 22px; display: flex; gap: 24px; align-items: flex-end; flex-wrap: wrap;
     }
     .sp-cover-art {
-      width: 150px; height: 150px; border-radius: 8px; background: linear-gradient(135deg, #1db954 0%, #0d5225 100%);
+      width: 140px; height: 140px; border-radius: 8px; background: linear-gradient(135deg, #1db954 0%, #0d5225 100%);
       box-shadow: 0 12px 30px rgba(0,0,0,0.6); display: flex; flex-direction: column; align-items: center; justify-content: center;
       color: #000; flex-shrink: 0;
     }
-    .sp-cover-icon { font-size: 42px; font-weight: 900; line-height: 1; margin-bottom: 4px; }
+    .sp-cover-icon { font-size: 40px; font-weight: 900; line-height: 1; margin-bottom: 4px; }
     .sp-cover-text { font-size: 11px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; }
     
     .sp-hero-info { flex: 1; min-width: 260px; }
     .sp-hero-tag { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; color: var(--sp-subtext); margin-bottom: 6px; }
-    .sp-hero-title { font-size: clamp(28px, 4.5vw, 44px); font-weight: 900; line-height: 1.15; margin: 0 0 10px; color: #fff; letter-spacing: -0.02em; }
+    .sp-hero-title { font-size: clamp(26px, 4vw, 42px); font-weight: 900; line-height: 1.15; margin: 0 0 10px; color: #fff; letter-spacing: -0.02em; }
     .sp-hero-meta { font-size: 13px; color: var(--sp-subtext); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
     .sp-hero-meta strong { color: #fff; }
 
-    /* Action bar with big Spotify Green play button */
+    /* Action bar */
     .sp-action-bar {
-      padding: 16px 28px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+      padding: 14px 28px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
     }
     .sp-play-btn {
-      width: 54px; height: 54px; border-radius: 50%; background: var(--sp-green); border: none;
+      width: 52px; height: 52px; border-radius: 50%; background: var(--sp-green); border: none;
       color: #000; font-size: 20px; font-weight: 900; cursor: pointer; display: flex; align-items: center;
       justify-content: center; box-shadow: 0 8px 18px rgba(0,0,0,0.4); transition: transform .15s, background .15s;
     }
@@ -169,58 +188,55 @@
 
     .sp-btn-secondary {
       background: transparent; border: 1px solid rgba(255,255,255,0.2); color: #fff;
-      padding: 9px 18px; border-radius: 500px; font-size: 13px; font-weight: 700; cursor: pointer;
+      padding: 8px 16px; border-radius: 500px; font-size: 13px; font-weight: 700; cursor: pointer;
       display: inline-flex; align-items: center; gap: 6px; transition: all .15s; user-select: none;
     }
     .sp-btn-secondary:hover { border-color: #fff; transform: scale(1.03); background: rgba(255,255,255,0.05); }
 
-    /* Practice Content Canvas */
+    /* Canvas Content */
     .sp-canvas { padding: 0 28px 36px; }
 
-    /* Formula & Guidance Card */
     .sp-formula-card {
-      background: var(--sp-card); border-radius: 10px; padding: 18px 20px; margin-bottom: 20px;
-      border: 1px solid var(--sp-border); transition: background .15s;
+      background: var(--sp-card); border-radius: 10px; padding: 16px 20px; margin-bottom: 18px;
+      border: 1px solid var(--sp-border);
     }
     .sp-formula-head { font-size: 11.5px; font-weight: 800; text-transform: uppercase; color: var(--sp-green); letter-spacing: 0.08em; margin-bottom: 4px; }
-    .sp-formula-code { font-family: ui-monospace, 'Cascadia Code', monospace; font-size: 15px; font-weight: 700; color: #fff; margin-bottom: 6px; }
+    .sp-formula-code { font-family: ui-monospace, 'Cascadia Code', monospace; font-size: 14.5px; font-weight: 700; color: #fff; margin-bottom: 6px; }
     .sp-formula-note { font-size: 13.5px; color: var(--sp-subtext); margin-bottom: 6px; }
     .sp-formula-ex { font-size: 13px; color: var(--sp-blue); }
 
-    /* Challenge Box (Lyrics Card Style) */
     .sp-challenge-box {
-      background: #1e1e1e; border-radius: 12px; padding: 22px; margin-bottom: 20px; border: 1px solid var(--sp-border);
+      background: #1e1e1e; border-radius: 12px; padding: 20px; margin-bottom: 18px; border: 1px solid var(--sp-border);
     }
     .sp-challenge-top {
-      display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;
+      display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;
     }
     .sp-challenge-tag { font-size: 11.5px; font-weight: 800; text-transform: uppercase; color: var(--sp-subtext); letter-spacing: 0.08em; }
-    .sp-challenge-vi { font-size: clamp(18px, 2.3vw, 22px); font-weight: 700; color: #fff; line-height: 1.45; }
+    .sp-challenge-vi { font-size: clamp(17px, 2.2vw, 21px); font-weight: 700; color: #fff; line-height: 1.45; }
     .sp-vocab-hint {
       margin-top: 10px; font-size: 13px; color: var(--sp-orange); background: rgba(255, 164, 43, 0.08);
       padding: 7px 12px; border-radius: 8px; border: 1px dashed rgba(255, 164, 43, 0.3);
     }
 
-    /* Input Area */
     .sp-input-label { display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: 700; margin-bottom: 8px; color: #fff; }
     .sp-textarea {
-      width: 100%; min-height: 110px; border-radius: 10px; border: 1px solid var(--sp-border); background: #242424;
+      width: 100%; min-height: 105px; border-radius: 10px; border: 1px solid var(--sp-border); background: #242424;
       color: #fff; padding: 14px 16px; font: inherit; font-size: 15px; resize: vertical; outline: none; transition: border-color .2s;
     }
     .sp-textarea:focus { border-color: var(--sp-green); box-shadow: 0 0 0 2px rgba(29, 185, 84, 0.2); }
     .sp-shortcut-hint {
-      font-size: 12.5px; color: var(--sp-subtext); margin-top: 8px; display: flex; align-items: center; gap: 6px;
+      font-size: 12px; color: var(--sp-subtext); margin-top: 8px; display: flex; align-items: center; gap: 6px;
     }
     .sp-kbd { background: #333; padding: 2px 7px; border-radius: 4px; font-family: monospace; font-size: 11px; color: #fff; }
 
-    /* AI Feedback Section (Queue / Insights Card) */
+    /* AI Feedback */
     .sp-feedback-card {
       background: #1e1e1e; border: 1px solid rgba(255,255,255,0.12); border-radius: 14px; padding: 22px;
-      margin-top: 24px; animation: spFadeIn .2s ease-out;
+      margin-top: 22px; animation: spFadeIn .2s ease-out;
     }
     @keyframes spFadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
     .sp-feedback-header {
-      display: flex; justify-content: space-between; align-items: center; padding-bottom: 14px;
+      display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px;
       border-bottom: 1px solid var(--sp-border); margin-bottom: 16px;
     }
     .sp-feedback-title { font-size: 16px; font-weight: 800; color: #fff; }
@@ -236,7 +252,6 @@
     .sp-crit-fail { color: var(--sp-orange); }
     .sp-crit-desc { font-size: 13px; color: #fff; margin: 0; line-height: 1.45; }
 
-    /* Corrections Table */
     .sp-fixes-table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13.5px; }
     .sp-fixes-table th { text-align: left; padding: 9px 12px; background: #141414; color: var(--sp-subtext); font-size: 12px; font-weight: 700; text-transform: uppercase; }
     .sp-fixes-table td { padding: 9px 12px; border-bottom: 1px solid var(--sp-border); }
@@ -254,13 +269,9 @@
       background: #141414; border-radius: 6px; padding: 9px 14px; margin-top: 6px; font-size: 13.5px; color: #fff;
       border-left: 3px solid var(--sp-green);
     }
-
-    /* Model Answer Card */
     .sp-sample-card { background: #1c1c1c; border-radius: 10px; padding: 16px 20px; margin-top: 18px; border: 1px solid var(--sp-border); }
 
-    /* =========================================================
-       SPOTIFY BOTTOM NOW-PLAYING BAR DOCK
-       ========================================================= */
+    /* Bottom Player Bar */
     .sp-player-dock {
       position: fixed; bottom: 0; left: 0; right: 0; height: 74px;
       background: #000000; border-top: 1px solid rgba(255,255,255,0.1);
@@ -288,7 +299,6 @@
       align-items: center; justify-content: center; transition: transform .15s;
     }
     .sp-dock-play:hover { transform: scale(1.08); background: var(--sp-green); }
-    .sp-dock-play:disabled { opacity: 0.5; cursor: not-allowed; }
 
     .sp-dock-right { display: flex; align-items: center; gap: 8px; width: 30%; justify-content: flex-end; }
 
@@ -299,7 +309,7 @@
     }
     .sp-modal-overlay.open { display: flex; }
     .sp-modal-card {
-      background: #282828; border-radius: 12px; padding: 24px; width: 100%; max-width: 520px;
+      background: #282828; border-radius: 12px; padding: 24px; width: 100%; max-width: 580px;
       box-shadow: 0 16px 40px rgba(0,0,0,0.6); max-height: 88vh; overflow-y: auto; color: #fff;
     }
     .sp-modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
@@ -307,23 +317,22 @@
     .sp-close-btn { background: transparent; border: none; color: var(--sp-subtext); font-size: 22px; cursor: pointer; }
     .sp-close-btn:hover { color: #fff; }
 
-    /* Input Fields */
     .sp-field { margin-bottom: 16px; }
     .sp-field label { display: block; font-size: 12.5px; font-weight: 700; margin-bottom: 6px; color: #fff; }
-    .sp-field input[type="text"], .sp-field input[type="password"], .sp-field select {
+    .sp-field input[type="text"], .sp-field input[type="password"], .sp-field select, .sp-field textarea {
       width: 100%; padding: 10px 14px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.15); background: #121212;
       color: #fff; font: inherit; font-size: 14px; outline: none;
     }
-    .sp-field input:focus, .sp-field select:focus { border-color: var(--sp-green); }
+    .sp-field input:focus, .sp-field select:focus, .sp-field textarea:focus { border-color: var(--sp-green); }
 
-    /* Drawer System (Dictionary & Sổ Lỗi & Sổ Từ) */
+    /* Drawer System */
     .sp-drawer-overlay {
       position: fixed; inset: 0; background: rgba(0, 0, 0, 0.65); backdrop-filter: blur(2px);
       display: none; z-index: 2500;
     }
     .sp-drawer-overlay.open { display: block; }
     .sp-drawer {
-      position: fixed; top: 0; right: 0; bottom: 0; width: 460px; max-width: 94vw;
+      position: fixed; top: 0; right: 0; bottom: 0; width: 480px; max-width: 95vw;
       background: #181818; border-left: 1px solid var(--sp-border); z-index: 2501;
       box-shadow: -12px 0 40px rgba(0,0,0,0.7); display: flex; flex-direction: column;
       transform: translateX(100%); transition: transform .22s cubic-bezier(0.16, 1, 0.3, 1);
@@ -334,47 +343,33 @@
       display: flex; border-bottom: 1px solid var(--sp-border); background: #121212;
     }
     .sp-drawer-tab {
-      flex: 1; padding: 13px 8px; text-align: center; font-size: 13px; font-weight: 700; color: var(--sp-subtext);
+      flex: 1; padding: 13px 6px; text-align: center; font-size: 12.5px; font-weight: 700; color: var(--sp-subtext);
       cursor: pointer; border-bottom: 2px solid transparent; transition: all .15s; user-select: none;
     }
     .sp-drawer-tab:hover { color: #fff; }
     .sp-drawer-tab.active { color: var(--sp-green); border-bottom-color: var(--sp-green); background: rgba(29, 185, 84, 0.05); }
-
     .sp-drawer-body { flex: 1; overflow-y: auto; padding: 18px; }
 
-    /* Mistake Log Tracker Card Styles */
+    /* Mistake & Vocab Cards */
     .sp-mistake-stats {
-      display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--sp-border);
+      display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid var(--sp-border);
     }
     .sp-mistake-stat-pill {
-      font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 500px;
+      font-size: 11.5px; font-weight: 700; padding: 3px 9px; border-radius: 500px;
       background: #242424; color: #fff; cursor: pointer; transition: background .15s;
     }
     .sp-mistake-stat-pill:hover, .sp-mistake-stat-pill.active { background: var(--sp-orange); color: #000; }
     
-    .sp-mistake-item {
+    .sp-mistake-item, .sp-vocab-item {
       background: #222222; border-radius: 8px; padding: 12px 14px; margin-bottom: 10px; border: 1px solid var(--sp-border);
     }
-    .sp-mistake-item-head {
-      display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;
+    .sp-srs-badge {
+      font-size: 10.5px; font-weight: 800; padding: 2px 6px; border-radius: 4px;
     }
-    .sp-mistake-struct { font-size: 12px; font-weight: 700; color: var(--sp-green); }
-    .sp-mistake-type { font-size: 11px; font-weight: 800; padding: 2px 7px; border-radius: 4px; background: rgba(255, 164, 43, 0.2); color: var(--sp-orange); text-transform: uppercase; }
-    .sp-mistake-sentence { font-size: 13px; color: #fff; margin-bottom: 6px; font-style: italic; }
-    .sp-mistake-change { font-size: 13.5px; margin-bottom: 4px; }
-    .sp-mistake-why { font-size: 12px; color: var(--sp-subtext); }
+    .srs-due { background: rgba(241, 94, 108, 0.2); color: var(--sp-red); border: 1px solid var(--sp-red); }
+    .srs-ok { background: rgba(29, 185, 84, 0.15); color: var(--sp-green); }
+    .srs-mastered { background: rgba(255, 164, 43, 0.2); color: var(--sp-orange); border: 1px solid var(--sp-orange); }
 
-    /* Saved Vocab Card */
-    .sp-vocab-item {
-      background: #222222; border-radius: 8px; padding: 12px 14px; margin-bottom: 10px; border: 1px solid var(--sp-border);
-    }
-    .sp-vocab-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
-    .sp-vocab-word { font-size: 16px; font-weight: 800; color: #fff; }
-    .sp-vocab-ipa { font-size: 12.5px; color: var(--sp-blue); font-family: monospace; margin-left: 6px; }
-    .sp-vocab-pos { font-size: 10.5px; font-weight: 800; padding: 2px 6px; border-radius: 4px; background: rgba(29, 185, 84, 0.15); color: var(--sp-green); text-transform: uppercase; }
-    .sp-vocab-def { font-size: 13px; color: #dbe4f8; margin: 4px 0; }
-
-    /* Universal Selection Lookup Tooltip */
     .sp-selection-tooltip {
       position: absolute; display: none; z-index: 3500;
       background: #282828; border: 1px solid var(--sp-green); color: #fff;
@@ -385,22 +380,25 @@
     .sp-selection-tooltip:hover { background: #333333; transform: scale(1.04); }
     @keyframes spPop { from { transform: scale(0.85); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
-    /* Watermark / Banner Killers */
-    a[href*="tiiny.host"],
-    a[href*="drophtml"],
-    div[class*="drophtml"],
-    div:has(> a[href*="drophtml"]),
-    [id*="drophtml"],
-    .sidebar-container,
-    div[style*="z-index:9999"],
-    div[style*="z-index: 9999"],
-    body > div[style*="height: 55px"] {
+    /* Vocab Deep Practice Modal Styling */
+    .sp-deep-card {
+      background: #1e1e1e; border-radius: 10px; padding: 16px; margin-bottom: 14px; border: 1px solid var(--sp-border);
+    }
+    .sp-wf-table { width: 100%; border-collapse: collapse; margin-top: 6px; font-size: 13px; }
+    .sp-wf-table td { padding: 6px 8px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .sp-colloc-tag {
+      display: inline-block; background: rgba(61, 145, 244, 0.15); color: var(--sp-blue); padding: 4px 10px;
+      border-radius: 500px; font-size: 12.5px; font-weight: 600; margin: 3px 4px 3px 0;
+    }
+
+    /* Watermark Killers */
+    a[href*="tiiny.host"], a[href*="drophtml"], div[class*="drophtml"], div:has(> a[href*="drophtml"]), [id*="drophtml"], .sidebar-container, div[style*="z-index:9999"], body > div[style*="height: 55px"] {
       display: none !important; visibility: hidden !important; height: 0 !important; width: 0 !important; opacity: 0 !important; pointer-events: none !important;
     }
 
-    @media(max-width: 860px) {
+    @media(max-width: 880px) {
       .sp-layout { grid-template-columns: 1fr; }
-      .sp-sidebar { height: auto; position: static; max-height: 260px; }
+      .sp-sidebar { height: auto; position: static; max-height: 280px; }
       .sp-hero { padding: 20px 16px; }
       .sp-cover-art { width: 90px; height: 90px; }
       .sp-cover-icon { font-size: 28px; }
@@ -413,7 +411,7 @@
 </head>
 <body>
 
-<!-- Spotify Top Navigation Bar -->
+<!-- Top Navigation Bar -->
 <header class="sp-topbar">
   <div class="sp-brand">
     <div class="sp-logo-badge">GL</div>
@@ -424,8 +422,9 @@
     <button class="sp-pill red-badge" id="topMistakeBtn" title="Xem sổ tay các lỗi hay mắc phải">
       ⚠️ Sổ lỗi sai (<span id="topMistakeCount">0</span>)
     </button>
-    <button class="sp-pill green" id="topVocabBtn" title="Xem sổ tay từ vựng đã lưu">
+    <button class="sp-pill green" id="topVocabBtn" title="Xem sổ tay từ vựng & luyện tập SRS">
       ⭐ Sổ từ vựng (<span id="topVocabCount">0</span>)
+      <span id="topSrsDueBadge" style="display:none; background:var(--sp-red); color:#fff; font-size:10px; padding:1px 5px; border-radius:10px; margin-left:4px;">0</span>
     </button>
     <button class="sp-pill" id="topDictBtn" title="Mở từ điển Anh - Việt">
       📖 Từ điển
@@ -438,49 +437,60 @@
 </header>
 
 <div class="sp-layout">
-  <!-- Spotify Left Sidebar: "Your Library" -->
+  <!-- Spotify Left Sidebar: "Your Library" & Albums -->
   <aside class="sp-sidebar">
     <div class="sp-sidebar-header">
       <div class="sp-sidebar-title">
-        <span>📚 25 Cấu trúc IELTS</span>
+        <span>💿 Thư Viện Album</span>
       </div>
-      <button class="sp-pill" id="randomStructBtn" style="padding:4px 10px; font-size:11px;" title="Chọn cấu trúc ngẫu nhiên">↝ Ngẫu nhiên</button>
+      <button class="sp-pill" id="randomStructBtn" style="padding:3px 9px; font-size:11px;" title="Chọn cấu trúc ngẫu nhiên">↝ Ngẫu nhiên</button>
+    </div>
+
+    <!-- Album Selector -->
+    <div class="sp-album-selector-wrap">
+      <select id="albumSelect" class="sp-album-select"></select>
+    </div>
+
+    <!-- Album Action Buttons -->
+    <div class="sp-sidebar-actions-row">
+      <button class="sp-btn-sm green" id="addStructModalBtn" title="Dùng AI thêm cấu trúc mới vào album">
+        ➕ Thêm cấu trúc (AI)
+      </button>
+      <button class="sp-btn-sm" id="createAlbumModalBtn" title="Tạo album cấu trúc mới">
+        📁 Tạo album
+      </button>
+      <button class="sp-btn-sm" id="editAlbumBtn" title="Đổi tên / Xóa album">
+        ⚙️
+      </button>
     </div>
 
     <!-- Category Filter Chips -->
-    <div class="sp-filter-row" id="categoryChips">
-      <button class="sp-chip active" data-filter="all">Tất cả</button>
-      <button class="sp-chip" data-filter="Mệnh đề phân từ">Phân từ</button>
-      <button class="sp-chip" data-filter="Câu chẻ & nhấn mạnh">Câu chẻ</button>
-      <button class="sp-chip" data-filter="Đảo ngữ">Đảo ngữ</button>
-      <button class="sp-chip" data-filter="Mệnh đề quan hệ & danh ngữ">Quan hệ</button>
-      <button class="sp-chip" data-filter="Điều kiện & giả định">Điều kiện</button>
-    </div>
+    <div class="sp-filter-row" id="categoryChips"></div>
 
-    <!-- Track List -->
+    <!-- Track List (Cấu trúc trong Album) -->
     <div class="sp-track-list" id="trackList"></div>
   </aside>
 
   <!-- Spotify Main Canvas -->
   <main class="sp-main">
-    <!-- Hero Section (Album / Playlist Header) -->
+    <!-- Hero Section -->
     <div class="sp-hero">
-      <div class="sp-cover-art">
-        <div class="sp-cover-icon">⚡</div>
-        <div class="sp-cover-text">IELTS 8.0+</div>
+      <div class="sp-cover-art" id="heroCoverArt">
+        <div class="sp-cover-icon" id="heroCoverIcon">⚡</div>
+        <div class="sp-cover-text" id="heroCoverText">ALBUM</div>
       </div>
       <div class="sp-hero-info">
         <div class="sp-hero-tag" id="heroCategoryTag">MỆNH ĐỀ PHÂN TỪ</div>
         <h1 class="sp-hero-title" id="heroStructName">Having + V3</h1>
         <div class="sp-hero-meta">
-          <strong id="heroIndexMeta">Cấu trúc 1 / 25</strong> • 
-          <span>Google Gemini AI</span> • 
+          <strong id="heroAlbumTitleMeta">Album</strong> • 
+          <span id="heroIndexMeta">Cấu trúc 1 / 25</span> • 
           <span>Nhấn <strong>Enter</strong> để chấm bài</span>
         </div>
       </div>
     </div>
 
-    <!-- Spotify Action Bar -->
+    <!-- Action Bar -->
     <div class="sp-action-bar">
       <button class="sp-play-btn" id="mainSubmitBtn" title="Chấm bài ngay (Hoặc nhấn phím Enter)">
         ✓
@@ -509,7 +519,7 @@
       <div class="sp-challenge-box">
         <div class="sp-challenge-top">
           <span class="sp-challenge-tag">Đề bài dịch sang tiếng Anh</span>
-          <span id="aiGenBadge" style="display:none; font-size:11px; color:var(--sp-green); font-weight:700;">● Đề bài tạo bởi AI</span>
+          <span id="aiGenBadge" style="display:none; font-size:11px; color:var(--sp-green); font-weight:700;">● Đề bài AI</span>
         </div>
         <div class="sp-challenge-vi" id="promptVi">Đang tải đề bài...</div>
         <div id="promptVocabHint" class="sp-vocab-hint" style="display:none"></div>
@@ -519,7 +529,7 @@
       <form id="exerciseForm">
         <div class="sp-input-label">
           <span>Câu trả lời của bạn:</span>
-          <span style="font-size:11.5px; color:var(--sp-subtext); font-weight:normal;">Bôi đen từ bất kỳ để tra cứu nghĩa</span>
+          <span style="font-size:11.5px; color:var(--sp-subtext); font-weight:normal;">Bôi đen từ bất kỳ để tra nghĩa & lưu từ</span>
         </div>
         <textarea id="response" class="sp-textarea" lang="en" placeholder="Nhập câu tiếng Anh của bạn áp dụng cấu trúc trên... (Nhấn Enter để chấm)"></textarea>
         
@@ -598,12 +608,10 @@
   </main>
 </div>
 
-<!-- =========================================================
-     SPOTIFY PERSISTENT PLAYER DOCK (BOTTOM)
-     ========================================================= -->
+<!-- Bottom Player Bar -->
 <footer class="sp-player-dock">
   <div class="sp-dock-left">
-    <div class="sp-dock-thumb">GL</div>
+    <div class="sp-dock-thumb" id="dockCoverThumb">GL</div>
     <div class="sp-dock-meta">
       <div class="sp-dock-name" id="dockStructName">Having + V3</div>
       <div class="sp-dock-sub" id="dockGroupName">Mệnh đề phân từ</div>
@@ -638,7 +646,7 @@
   <div class="sp-drawer-tabs">
     <div class="sp-drawer-tab active" id="tabDict">🔍 Tra Từ</div>
     <div class="sp-drawer-tab" id="tabVocab">⭐ Sổ Từ (<span id="drawerVocabCount">0</span>)</div>
-    <div class="sp-drawer-tab" id="tabMistakes">⚠️ Sổ Lỗi Sai (<span id="drawerMistakesCount">0</span>)</div>
+    <div class="sp-drawer-tab" id="tabMistakes">⚠️ Sổ Lỗi (<span id="drawerMistakesCount">0</span>)</div>
     <button class="sp-close-btn" id="closeDrawerBtn" style="padding:0 14px;">&times;</button>
   </div>
 
@@ -660,28 +668,158 @@
     </div>
   </div>
 
-  <!-- View 2: Saved Vocabulary Notebook -->
+  <!-- View 2: Saved Vocabulary Notebook with Spaced Repetition (SRS) -->
   <div id="viewVocab" class="sp-drawer-body" style="display:none;">
-    <div style="display:flex; gap:8px; align-items:center; margin-bottom:14px;">
-      <input type="text" id="vocabFilterInput" style="flex:1; padding:8px 12px; border-radius:6px; border:1px solid var(--sp-border); background:#121212; color:#fff; font-size:13px; outline:none;" placeholder="Tìm trong sổ từ...">
-      <button class="sp-btn-secondary" id="copyVocabBtn" style="padding:6px 12px; font-size:12px;" title="Sao chép toàn bộ từ vựng">📋 Sao chép</button>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+      <div style="display:flex; align-items:center; gap:6px;">
+        <button class="sp-btn-secondary" id="notifToggleBtn" style="padding:4px 10px; font-size:11.5px;" title="Cài đặt thông báo ôn tập">
+          🔔 Nhắc nhở: <span id="notifStatusText">Tắt</span>
+        </button>
+      </div>
+      <button class="sp-btn-secondary" id="copyVocabBtn" style="padding:4px 10px; font-size:11.5px;">📋 Sao chép</button>
     </div>
+
+    <!-- SRS Filter Chips -->
+    <div style="display:flex; gap:6px; margin-bottom:12px; overflow-x:auto;">
+      <button class="sp-chip active" id="srsFilterAll">Tất cả (<span id="srsCountAll">0</span>)</button>
+      <button class="sp-chip" id="srsFilterDue" style="color:var(--sp-red);">🔔 Cần ôn tập (<span id="srsCountDue">0</span>)</button>
+      <button class="sp-chip" id="srsFilterMastered" style="color:var(--sp-orange);">⭐ Đã thuộc (<span id="srsCountMastered">0</span>)</button>
+    </div>
+
+    <input type="text" id="vocabFilterInput" style="width:100%; padding:8px 12px; border-radius:6px; border:1px solid var(--sp-border); background:#121212; color:#fff; font-size:13px; outline:none; margin-bottom:12px;" placeholder="Tìm trong sổ từ...">
+
     <div id="vocabListBody"></div>
   </div>
 
-  <!-- View 3: Mistake Log Tracker (Sổ Lỗi Sai) -->
+  <!-- View 3: Mistake Log Tracker -->
   <div id="viewMistakes" class="sp-drawer-body" style="display:none;">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-      <div style="font-size:14px; font-weight:800; color:#fff;">Tổng hợp điểm yếu ngữ pháp:</div>
+      <div style="font-size:14px; font-weight:800; color:#fff;">Tổng hợp lỗi ngữ pháp hay gặp:</div>
       <button class="sp-btn-secondary" id="clearAllMistakesBtn" style="padding:4px 10px; font-size:11.5px; border-color:var(--sp-red); color:var(--sp-red);">Xóa tất cả</button>
     </div>
-    <!-- Mistake Type Filter Chips -->
     <div class="sp-mistake-stats" id="mistakeCategoryFilters"></div>
     <div id="mistakesListBody"></div>
   </div>
 </div>
 
-<!-- Gemini API Settings Modal -->
+<!-- Modal 1: Add New Structure with AI -->
+<div class="sp-modal-overlay" id="addStructModal">
+  <div class="sp-modal-card">
+    <div class="sp-modal-header">
+      <h3 class="sp-modal-title">➕ Thêm Cấu Trúc Ngữ Pháp Mới</h3>
+      <button class="sp-close-btn" id="closeAddStructBtn">&times;</button>
+    </div>
+    <div class="sp-field">
+      <label>Nhập tên cấu trúc bạn muốn thêm (Ví dụ: "more and more", "no sooner... than..."):</label>
+      <div style="display:flex; gap:8px;">
+        <input type="text" id="aiStructPromptInput" placeholder="VD: The more... the more... hoặc As if/As though">
+        <button type="button" id="aiGenerateStructBtn" class="sp-pill green" style="white-space:nowrap;">✨ AI Tự Soạn</button>
+      </div>
+      <div style="font-size:11.5px; color:var(--sp-subtext); margin-top:4px;">Bấm "AI Tự Soạn" để Gemini tự động điền đầy đủ công thức, lưu ý và ví dụ mẫu chuẩn IELTS!</div>
+    </div>
+    <div class="sp-field">
+      <label>Tên cấu trúc:</label>
+      <input type="text" id="newStructName" placeholder="VD: The more... the more...">
+    </div>
+    <div class="sp-field">
+      <label>Nhóm / Thể loại:</label>
+      <input type="text" id="newStructGroup" placeholder="VD: So sánh & Nhấn mạnh">
+    </div>
+    <div class="sp-field">
+      <label>Công thức chi tiết:</label>
+      <input type="text" id="newStructFormula" placeholder="VD: The + comparative + S + V, the + comparative + S + V">
+    </div>
+    <div class="sp-field">
+      <label>Cách dùng & Lưu ý:</label>
+      <textarea id="newStructNote" style="height:60px;" placeholder="VD: Dùng để diễn tả hai sự việc thay đổi tương quan tỉ lệ thuận/nghịch..."></textarea>
+    </div>
+    <div class="sp-field">
+      <label>Câu ví dụ tiếng Anh mẫu:</label>
+      <input type="text" id="newStructExample" placeholder="VD: The more you practice, the more confident you become.">
+    </div>
+    <div class="sp-field">
+      <label>Đề bài tiếng Việt mẫu (để luyện dịch):</label>
+      <input type="text" id="newStructDefaultVi" placeholder="VD: Càng luyện tập chăm chỉ, bạn càng tiến bộ nhanh.">
+    </div>
+    <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:18px;">
+      <button class="sp-btn-secondary" id="cancelAddStructBtn" type="button">Hủy</button>
+      <button class="sp-pill green" id="saveNewStructBtn" type="button" style="padding:9px 20px;">Lưu vào Album</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal 2: Create Album -->
+<div class="sp-modal-overlay" id="createAlbumModal">
+  <div class="sp-modal-card">
+    <div class="sp-modal-header">
+      <h3 class="sp-modal-title">📁 Tạo Album Cấu Trúc Mới</h3>
+      <button class="sp-close-btn" id="closeCreateAlbumBtn">&times;</button>
+    </div>
+    <div class="sp-field">
+      <label>Tên Album / Thư mục:</label>
+      <input type="text" id="newAlbumTitle" placeholder="VD: Cấu trúc IELTS Speaking Band 7+">
+    </div>
+    <div class="sp-field">
+      <label>Biểu tượng (Icon):</label>
+      <input type="text" id="newAlbumIcon" value="📖" style="width:70px; text-align:center; font-size:20px;">
+    </div>
+    <div class="sp-field">
+      <label>Mô tả ngắn:</label>
+      <input type="text" id="newAlbumDesc" placeholder="VD: Các mẫu câu đắt giá dùng khi thi nói và viết">
+    </div>
+    <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:18px;">
+      <button class="sp-btn-secondary" id="cancelCreateAlbumBtn" type="button">Hủy</button>
+      <button class="sp-pill green" id="saveNewAlbumBtn" type="button" style="padding:9px 20px;">Tạo Album</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal 3: Edit / Delete Album -->
+<div class="sp-modal-overlay" id="editAlbumModal">
+  <div class="sp-modal-card">
+    <div class="sp-modal-header">
+      <h3 class="sp-modal-title">⚙️ Quản Lý Album Hiện Tại</h3>
+      <button class="sp-close-btn" id="closeEditAlbumBtn">&times;</button>
+    </div>
+    <div class="sp-field">
+      <label>Tên Album:</label>
+      <input type="text" id="editAlbumTitle">
+    </div>
+    <div class="sp-field">
+      <label>Biểu tượng (Icon):</label>
+      <input type="text" id="editAlbumIcon" style="width:70px; text-align:center; font-size:20px;">
+    </div>
+    <div style="display:flex; justify-content:space-between; margin-top:22px;">
+      <button class="sp-btn-secondary" id="deleteAlbumBtn" type="button" style="color:var(--sp-red); border-color:var(--sp-red);">Xóa Album</button>
+      <div style="display:flex; gap:8px;">
+        <button class="sp-btn-secondary" id="cancelEditAlbumBtn" type="button">Hủy</button>
+        <button class="sp-pill green" id="saveEditAlbumBtn" type="button">Lưu thay đổi</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal 4: AI Deep Vocab Practice (Luyện tập từ vựng chuyên sâu & SRS) -->
+<div class="sp-modal-overlay" id="vocabPracticeModal">
+  <div class="sp-modal-card" style="max-width:680px;">
+    <div class="sp-modal-header">
+      <div>
+        <h3 class="sp-modal-title" id="practiceWordTitle">Luyện tập từ vựng</h3>
+        <div id="practiceWordIpa" style="color:var(--sp-blue); font-family:monospace; font-size:13.5px; margin-top:2px;"></div>
+      </div>
+      <button class="sp-close-btn" id="closeVocabPracticeBtn">&times;</button>
+    </div>
+
+    <div id="practiceModalBody">
+      <div style="text-align:center; padding:30px; color:var(--sp-subtext);">
+        <div class="sp-dot sp-dot-busy" style="width:16px; height:16px; margin-bottom:12px;"></div>
+        <div>Gemini AI đang biên soạn Word Family, Collocations và bài tập cho từ này...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal 5: Gemini API Settings -->
 <div class="sp-modal-overlay" id="apiModal">
   <div class="sp-modal-card">
     <div class="sp-modal-header">
@@ -692,7 +830,7 @@
       <label for="geminiApiKey">Gemini API Key</label>
       <input type="password" id="geminiApiKey" placeholder="AIzaSy..." autocomplete="off">
       <div style="font-size:12px; color:var(--sp-subtext); margin-top:5px;">
-        Khóa được lưu trực tiếp trên trình duyệt của bạn (LocalStorage). 
+        Khóa được lưu cục bộ trên trình duyệt (LocalStorage). 
         <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener" style="color:var(--sp-green); text-decoration:none;">Lấy key miễn phí tại Google AI Studio ↗</a>
       </div>
     </div>
@@ -716,74 +854,111 @@
 </div>
 
 <script>
-// 25 Core Grammar Structures
-const STRUCTURES = [
-  // Group 1: Participial clauses
-  { group: "Mệnh đề phân từ", name: "Having + V3", formula: "Having + past participle (V3), S + V", note: "Hai hành động cùng chủ ngữ; hành động ở mệnh đề phân từ hoàn thành trước hành động ở mệnh đề chính.", example: "Having finished my homework, I decided to play video games.", defaultVi: "Sau khi hoàn thành nghiên cứu, họ đã công bố kết quả trên tạp chí quốc tế." },
-  { group: "Mệnh đề phân từ", name: "Having been + V3", formula: "Having been + past participle (V3), S + V", note: "Dạng hoàn thành bị động của phân từ, nhấn mạnh hành động bị động xảy ra trước.", example: "Having been rejected several times, he lost confidence.", defaultVi: "Sau khi được đào tạo bài bản, các nhân viên mới đã làm việc rất hiệu quả." },
-  { group: "Mệnh đề phân từ", name: "V-ing mở đầu câu", formula: "V-ing ..., S + V", note: "Rút gọn mệnh đề trạng ngữ chỉ nguyên nhân hoặc hai hành động đồng thời cùng chủ ngữ.", example: "Realizing how important English was, I started practising every day.", defaultVi: "Nhận thức được tác hại của ô nhiễm không khí, chính phủ đã ban hành luật mới." },
-  { group: "Mệnh đề phân từ", name: "V3/ed mở đầu câu", formula: "V3/ed ..., S + V", note: "Mệnh đề phân từ mang nghĩa bị động, đóng vai trò giải thích bối cảnh hoặc nguyên nhân.", example: "Surrounded by negative posts, she felt stressed.", defaultVi: "Bị thu hút bởi mức lương hấp dẫn, nhiều bạn trẻ đã nộp đơn vào công ty công nghệ này." },
-  { group: "Mệnh đề phân từ", name: "Not + V-ing", formula: "Not + V-ing ..., S + V", note: "Phủ định trực tiếp của phân từ, diễn tả lý do không làm hoặc không biết điều gì.", example: "Not knowing what to do, I asked AI for help.", defaultVi: "Không hiểu rõ các quy định giao thông, anh ấy đã vô tình vi phạm luật." },
-  { group: "Mệnh đề phân từ", name: "By + V-ing", formula: "By + V-ing, S + V", note: "Diễn tả phương pháp, phương tiện hoặc cách thức để đạt được mục tiêu.", example: "By practising speaking every day, students can improve their confidence.", defaultVi: "Bằng cách đầu tư vào năng lượng tái tạo, quốc gia này đã giảm đáng kể lượng khí thải." },
-  { group: "Mệnh đề phân từ", name: "With + N + V-ing/V3", formula: "With + N + V-ing/V3, S + V", note: "Cấu trúc tuyệt đối (Absolute phrase) diễn tả tình huống đi kèm, nguyên nhân hoặc điều kiện.", example: "With technology developing rapidly, many traditional jobs are changing.", defaultVi: "Với dân số ngày càng già hóa, nhu cầu về dịch vụ chăm sóc sức khỏe đang gia tăng." },
+// 25 Initial Structures for Core Album
+const DEFAULT_25_STRUCTURES = [
+  { id: "s1", group: "Mệnh đề phân từ", name: "Having + V3", formula: "Having + past participle (V3), S + V", note: "Hai hành động cùng chủ ngữ; hành động ở mệnh đề phân từ hoàn thành trước hành động ở mệnh đề chính.", example: "Having finished my homework, I decided to play video games.", defaultVi: "Sau khi hoàn thành nghiên cứu, họ đã công bố kết quả trên tạp chí quốc tế." },
+  { id: "s2", group: "Mệnh đề phân từ", name: "Having been + V3", formula: "Having been + past participle (V3), S + V", note: "Dạng hoàn thành bị động của phân từ, nhấn mạnh hành động bị động xảy ra trước.", example: "Having been rejected several times, he lost confidence.", defaultVi: "Sau khi được đào tạo bài bản, các nhân viên mới đã làm việc rất hiệu quả." },
+  { id: "s3", group: "Mệnh đề phân từ", name: "V-ing mở đầu câu", formula: "V-ing ..., S + V", note: "Rút gọn mệnh đề trạng ngữ chỉ nguyên nhân hoặc hai hành động đồng thời cùng chủ ngữ.", example: "Realizing how important English was, I started practising every day.", defaultVi: "Nhận thức được tác hại của ô nhiễm không khí, chính phủ đã ban hành luật mới." },
+  { id: "s4", group: "Mệnh đề phân từ", name: "V3/ed mở đầu câu", formula: "V3/ed ..., S + V", note: "Mệnh đề phân từ mang nghĩa bị động, đóng vai trò giải thích bối cảnh hoặc nguyên nhân.", example: "Surrounded by negative posts, she felt stressed.", defaultVi: "Bị thu hút bởi mức lương hấp dẫn, nhiều bạn trẻ đã nộp đơn vào công ty công nghệ này." },
+  { id: "s5", group: "Mệnh đề phân từ", name: "Not + V-ing", formula: "Not + V-ing ..., S + V", note: "Phủ định trực tiếp của phân từ, diễn tả lý do không làm hoặc không biết điều gì.", example: "Not knowing what to do, I asked AI for help.", defaultVi: "Không hiểu rõ các quy định giao thông, anh ấy đã vô tình vi phạm luật." },
+  { id: "s6", group: "Mệnh đề phân từ", name: "By + V-ing", formula: "By + V-ing, S + V", note: "Diễn tả phương pháp, phương tiện hoặc cách thức để đạt được mục tiêu.", example: "By practising speaking every day, students can improve their confidence.", defaultVi: "Bằng cách đầu tư vào năng lượng tái tạo, quốc gia này đã giảm đáng kể lượng khí thải." },
+  { id: "s7", group: "Mệnh đề phân từ", name: "With + N + V-ing/V3", formula: "With + N + V-ing/V3, S + V", note: "Cấu trúc tuyệt đối (Absolute phrase) diễn tả tình huống đi kèm, nguyên nhân hoặc điều kiện.", example: "With technology developing rapidly, many traditional jobs are changing.", defaultVi: "Với dân số ngày càng già hóa, nhu cầu về dịch vụ chăm sóc sức khỏe đang gia tăng." },
 
-  // Group 2: Cleft sentences
-  { group: "Câu chẻ & nhấn mạnh", name: "It is/was ... that/who", formula: "It + be + [phần nhấn mạnh] + that/who + mệnh đề", note: "Nhấn mạnh chủ ngữ, tân ngữ hoặc trạng ngữ (thời gian, nơi chốn).", example: "It was during my first year at university that I started using AI tools.", defaultVi: "Chính sự kiên trì đã giúp cô ấy vượt qua mọi thử thách trong sự nghiệp." },
-  { group: "Câu chẻ & nhấn mạnh", name: "What ... is ...", formula: "What + S + V + be + [phần nhấn mạnh]", note: "Mệnh đề danh từ 'What' làm chủ ngữ, dùng để nhấn mạnh điều quan trọng nhất.", example: "What I like most about YouTube is its personalized recommendations.", defaultVi: "Điều làm cho khóa học này trở nên đặc biệt là sự tương tác giữa giảng viên và học viên." },
-  { group: "Câu chẻ & nhấn mạnh", name: "All ... is ...", formula: "All + S + V + be + [danh từ / to V]", note: "Nhấn mạnh điều duy nhất mà ai đó cần, muốn hoặc làm.", example: "All I want is a stable job.", defaultVi: "Tất cả những gì chúng ta cần lúc này là một kế hoạch hành động rõ ràng." },
-  { group: "Câu chẻ & nhấn mạnh", name: "The reason why ... is that", formula: "The reason why + S + V + is that + clause", note: "Nhấn mạnh lý do. Lưu ý dùng 'that' sau 'is', không dùng 'because'.", example: "The reason why I prefer YouTube is that it helps me relax.", defaultVi: "Lý do nhiều người chọn làm việc từ xa là nó giúp họ tiết kiệm thời gian đi lại." },
-  { group: "Câu chẻ & nhấn mạnh", name: "It is not A but B that", formula: "It is not + A + but + B + that + clause", note: "Nhấn mạnh sự đối lập: Không phải yếu tố A mà chính B mới mang lại kết quả.", example: "It is not money but personal satisfaction that makes a job meaningful.", defaultVi: "Không phải tài năng bẩm sinh mà chính sự luyện tập chăm chỉ mới đem lại thành công." },
+  { id: "s8", group: "Câu chẻ & nhấn mạnh", name: "It is/was ... that/who", formula: "It + be + [phần nhấn mạnh] + that/who + mệnh đề", note: "Nhấn mạnh chủ ngữ, tân ngữ hoặc trạng ngữ (thời gian, nơi chốn).", example: "It was during my first year at university that I started using AI tools.", defaultVi: "Chính sự kiên trì đã giúp cô ấy vượt qua mọi thử thách trong sự nghiệp." },
+  { id: "s9", group: "Câu chẻ & nhấn mạnh", name: "What ... is ...", formula: "What + S + V + be + [phần nhấn mạnh]", note: "Mệnh đề danh từ 'What' làm chủ ngữ, dùng để nhấn mạnh điều quan trọng nhất.", example: "What I like most about YouTube is its personalized recommendations.", defaultVi: "Điều làm cho khóa học này trở nên đặc biệt là sự tương tác giữa giảng viên và học viên." },
+  { id: "s10", group: "Câu chẻ & nhấn mạnh", name: "All ... is ...", formula: "All + S + V + be + [danh từ / to V]", note: "Nhấn mạnh điều duy nhất mà ai đó cần, muốn hoặc làm.", example: "All I want is a stable job.", defaultVi: "Tất cả những gì chúng ta cần lúc này là một kế hoạch hành động rõ ràng." },
+  { id: "s11", group: "Câu chẻ & nhấn mạnh", name: "The reason why ... is that", formula: "The reason why + S + V + is that + clause", note: "Nhấn mạnh lý do. Lưu ý dùng 'that' sau 'is', không dùng 'because'.", example: "The reason why I prefer YouTube is that it helps me relax.", defaultVi: "Lý do nhiều người chọn làm việc từ xa là nó giúp họ tiết kiệm thời gian đi lại." },
+  { id: "s12", group: "Câu chẻ & nhấn mạnh", name: "It is not A but B that", formula: "It is not + A + but + B + that + clause", note: "Nhấn mạnh sự đối lập: Không phải yếu tố A mà chính B mới mang lại kết quả.", example: "It is not money but personal satisfaction that makes a job meaningful.", defaultVi: "Không phải tài năng bẩm sinh mà chính sự luyện tập chăm chỉ mới đem lại thành công." },
 
-  // Group 3: Inversion
-  { group: "Đảo ngữ", name: "Not only ... but also", formula: "Not only + auxiliary + S + V, but S + also + V", note: "Đảo trợ động từ lên trước chủ ngữ ở vế 'Not only' để tăng tính học thuật.", example: "Not only does AI save time, but it also improves productivity.", defaultVi: "Việc đọc sách không chỉ mở rộng kiến thức mà còn rèn luyện tư duy phản biện." },
-  { group: "Đảo ngữ", name: "Only by + V-ing", formula: "Only by + V-ing + auxiliary + S + V", note: "Đảo ngữ ở mệnh đề chính; nhấn mạnh cách duy nhất để đạt được kết quả.", example: "Only by practising regularly can we improve our English.", defaultVi: "Chỉ bằng cách hợp tác quốc tế, các nước mới có thể giải quyết được biến đổi khí hậu." },
-  { group: "Đảo ngữ", name: "Not until", formula: "Not until + [thời gian / clause] + auxiliary + S + V", note: "Chỉ đảo ngữ ở mệnh đề chính đứng sau, không đảo ngữ trong mệnh đề Not until.", example: "Not until I entered university did I realize the importance of time management.", defaultVi: "Mãi đến khi gặp thất bại, anh ấy mới học được cách lắng nghe người khác." },
-  { group: "Đảo ngữ", name: "Rarely / Seldom / Never", formula: "Rarely / Seldom / Never + auxiliary + S + V", note: "Đảo ngữ sau trạng từ mang nghĩa phủ định hoặc bán phủ định.", example: "Rarely do I spend an entire day without using the Internet.", defaultVi: "Hiếm khi chúng ta thấy một sự đồng thuận cao như vậy giữa các chuyên gia." },
-  { group: "Đảo ngữ", name: "Hardly ... when", formula: "Hardly + had + S + V3 + when + S + V2", note: "Diễn tả hai hành động nối tiếp nhau ngay tức thì ('Vừa mới... thì đã...').", example: "Hardly had I finished my homework when my friends invited me to play games.", defaultVi: "Anh ấy vừa bước ra khỏi nhà thì cơn mưa lớn ập đến." },
-  { group: "Đảo ngữ", name: "So + adj ... that", formula: "So + adjective + be + S + that + clause", note: "Đảo ngữ nhấn mạnh mức độ tính từ trong văn phong IELTS Writing Task 2.", example: "So expensive was the computer that I could not afford it.", defaultVi: "Vấn đề nghiêm trọng đến mức chính phủ phải triệu tập một cuộc họp khẩn cấp." },
+  { id: "s13", group: "Đảo ngữ", name: "Not only ... but also", formula: "Not only + auxiliary + S + V, but S + also + V", note: "Đảo trợ động từ lên trước chủ ngữ ở vế 'Not only' để tăng tính học thuật.", example: "Not only does AI save time, but it also improves productivity.", defaultVi: "Việc đọc sách không chỉ mở rộng kiến thức mà còn rèn luyện tư duy phản biện." },
+  { id: "s14", group: "Đảo ngữ", name: "Only by + V-ing", formula: "Only by + V-ing + auxiliary + S + V", note: "Đảo ngữ ở mệnh đề chính; nhấn mạnh cách duy nhất để đạt được kết quả.", example: "Only by practising regularly can we improve our English.", defaultVi: "Chỉ bằng cách hợp tác quốc tế, các nước mới có thể giải quyết được biến đổi khí hậu." },
+  { id: "s15", group: "Đảo ngữ", name: "Not until", formula: "Not until + [thời gian / clause] + auxiliary + S + V", note: "Chỉ đảo ngữ ở mệnh đề chính đứng sau, không đảo ngữ trong mệnh đề Not until.", example: "Not until I entered university did I realize the importance of time management.", defaultVi: "Mãi đến khi gặp thất bại, anh ấy mới học được cách lắng nghe người khác." },
+  { id: "s16", group: "Đảo ngữ", name: "Rarely / Seldom / Never", formula: "Rarely / Seldom / Never + auxiliary + S + V", note: "Đảo ngữ sau trạng từ mang nghĩa phủ định hoặc bán phủ định.", example: "Rarely do I spend an entire day without using the Internet.", defaultVi: "Hiếm khi chúng ta thấy một sự đồng thuận cao như vậy giữa các chuyên gia." },
+  { id: "s17", group: "Đảo ngữ", name: "Hardly ... when", formula: "Hardly + had + S + V3 + when + S + V2", note: "Diễn tả hai hành động nối tiếp nhau ngay tức thì ('Vừa mới... thì đã...').", example: "Hardly had I finished my homework when my friends invited me to play games.", defaultVi: "Anh ấy vừa bước ra khỏi nhà thì cơn mưa lớn ập đến." },
+  { id: "s18", group: "Đảo ngữ", name: "So + adj ... that", formula: "So + adjective + be + S + that + clause", note: "Đảo ngữ nhấn mạnh mức độ tính từ trong văn phong IELTS Writing Task 2.", example: "So expensive was the computer that I could not afford it.", defaultVi: "Vấn đề nghiêm trọng đến mức chính phủ phải triệu tập một cuộc họp khẩn cấp." },
 
-  // Group 4: Relative & noun clauses
-  { group: "Mệnh đề quan hệ & danh ngữ", name: "Reduced relative (active)", formula: "N + V-ing + ...", note: "Rút gọn mệnh đề quan hệ chủ động bằng V-ing, câu văn gãy gọn và học thuật.", example: "Students relying too heavily on AI may struggle to think independently.", defaultVi: "Những người tiêu dùng tìm kiếm các sản phẩm thân thiện với môi trường ngày càng đông đảo." },
-  { group: "Mệnh đề quan hệ & danh ngữ", name: "Reduced relative (passive)", formula: "N + V3/ed + ...", note: "Rút gọn mệnh đề quan hệ bị động bằng V3/ed.", example: "Information provided by AI is not always accurate.", defaultVi: "Dữ liệu được thu thập từ cuộc khảo sát cho thấy một xu hướng rất đáng chú ý." },
-  { group: "Mệnh đề quan hệ & danh ngữ", name: "Which (whole clause)", formula: "[Mệnh đề], which + V ...", note: "Đại từ 'which' có dấu phẩy đứng trước thay thế cho toàn bộ sự việc ở vế trước.", example: "Many students rely too heavily on AI, which may reduce their ability to think independently.", defaultVi: "Nhiều bạn trẻ thức khuya để dùng mạng xã hội, điều này ảnh hưởng xấu đến sức khỏe tinh thần." },
-  { group: "Mệnh đề quan hệ & danh ngữ", name: "What + S + V", formula: "What + S + V + be + ...", note: "Mệnh đề danh ngữ bắt đầu bằng 'What' làm chủ ngữ số ít.", example: "What concerns me most is the growing dependence on technology.", defaultVi: "Điều làm tôi bất ngờ nhất là tốc độ tiếp thu kiến thức của các em học sinh." },
-  { group: "Mệnh đề quan hệ & danh ngữ", name: "The extent to which", formula: "The extent to which + S + V + depends on ...", note: "Cụm danh ngữ chỉ mức độ: 'Mức độ mà... phụ thuộc vào...'. Không đảo ngữ sau which.", example: "The extent to which AI affects education depends on how students use it.", defaultVi: "Mức độ một người thành công trong công việc phụ thuộc vào khả năng thích ứng của họ." },
+  { id: "s19", group: "Mệnh đề quan hệ & danh ngữ", name: "Reduced relative (active)", formula: "N + V-ing + ...", note: "Rút gọn mệnh đề quan hệ chủ động bằng V-ing, câu văn gãy gọn và học thuật.", example: "Students relying too heavily on AI may struggle to think independently.", defaultVi: "Những người tiêu dùng tìm kiếm các sản phẩm thân thiện với môi trường ngày càng đông đảo." },
+  { id: "s20", group: "Mệnh đề quan hệ & danh ngữ", name: "Reduced relative (passive)", formula: "N + V3/ed + ...", note: "Rút gọn mệnh đề quan hệ bị động bằng V3/ed.", example: "Information provided by AI is not always accurate.", defaultVi: "Dữ liệu được thu thập từ cuộc khảo sát cho thấy một xu hướng rất đáng chú ý." },
+  { id: "s21", group: "Mệnh đề quan hệ & danh ngữ", name: "Which (whole clause)", formula: "[Mệnh đề], which + V ...", note: "Đại từ 'which' có dấu phẩy đứng trước thay thế cho toàn bộ sự việc ở vế trước.", example: "Many students rely too heavily on AI, which may reduce their ability to think independently.", defaultVi: "Nhiều bạn trẻ thức khuya để dùng mạng xã hội, điều này ảnh hưởng xấu đến sức khỏe tinh thần." },
+  { id: "s22", group: "Mệnh đề quan hệ & danh ngữ", name: "What + S + V", formula: "What + S + V + be + ...", note: "Mệnh đề danh ngữ bắt đầu bằng 'What' làm chủ ngữ số ít.", example: "What concerns me most is the growing dependence on technology.", defaultVi: "Điều làm tôi bất ngờ nhất là tốc độ tiếp thu kiến thức của các em học sinh." },
+  { id: "s23", group: "Mệnh đề quan hệ & danh ngữ", name: "The extent to which", formula: "The extent to which + S + V + depends on ...", note: "Cụm danh ngữ chỉ mức độ: 'Mức độ mà... phụ thuộc vào...'. Không đảo ngữ sau which.", example: "The extent to which AI affects education depends on how students use it.", defaultVi: "Mức độ một người thành công trong công việc phụ thuộc vào khả năng thích ứng của họ." },
 
-  // Group 5: Conditionals & Subjunctive
-  { group: "Điều kiện & giả định", name: "Conditional inversion (Had I...)", formula: "Had + S + past participle (V3), S + would have + V3", note: "Đảo ngữ câu điều kiện loại 3 (bỏ 'if', đảo 'Had' lên đầu), giả định trái với quá khứ.", example: "Had I studied harder, I would have achieved better results.", defaultVi: "Nếu tôi chú ý đến lời khuyên của giáo viên, tôi đã không mắc phải sai lầm đó." },
-  { group: "Điều kiện & giả định", name: "But for / Without", formula: "But for / Without + Noun phrase, S + would have + V3", note: "Diễn tả 'Nếu không nhờ có...': Chỉ sự hỗ trợ hoặc nguyên nhân quyết định trong quá khứ.", example: "But for my parents’ support, I would not have been able to attend university.", defaultVi: "Nếu không có sự hướng dẫn tận tình của người thầy, cậu ấy đã không thể đạt giải nhất." },
-  { group: "Điều kiện & giả định", name: "Subjunctive mood (It is essential that...)", formula: "It is essential / crucial that + S + (should) V-bare", note: "Thể giả định hiện tại: động từ sau 'that + S' luôn ở dạng nguyên mẫu không chia.", example: "It is essential that every citizen be aware of environmental protection.", defaultVi: "Điều tối quan trọng là mọi thành viên trong nhóm phải tuân thủ nghiêm ngặt thời hạn đề ra." }
+  { id: "s24", group: "Điều kiện & giả định", name: "Conditional inversion (Had I...)", formula: "Had + S + past participle (V3), S + would have + V3", note: "Đảo ngữ câu điều kiện loại 3 (bỏ 'if', đảo 'Had' lên đầu), giả định trái với quá khứ.", example: "Had I studied harder, I would have achieved better results.", defaultVi: "Nếu tôi chú ý đến lời khuyên của giáo viên, tôi đã không mắc phải sai lầm đó." },
+  { id: "s25", group: "Điều kiện & giả định", name: "Subjunctive mood", formula: "It is essential / crucial that + S + (should) V-bare", note: "Thể giả định hiện tại: động từ sau 'that + S' luôn ở dạng nguyên mẫu không chia.", example: "It is essential that every citizen be aware of environmental protection.", defaultVi: "Điều tối quan trọng là mọi thành viên trong nhóm phải tuân thủ nghiêm ngặt thời hạn đề ra." }
 ];
 
 const $ = id => document.getElementById(id);
 
 // Application State
-let currentStructIndex = 0;
+let albums = [];
+let currentAlbumId = '';
+let currentTrackIndex = 0;
 let currentFilter = 'all';
-let generatedExercises = {}; // index -> { vi, en, vocab_hints, note }
-let currentVocabNotebook = []; // list of saved vocab objects
+let generatedExercises = {}; // map `albumId_trackId` -> { vi, en, vocab_hints, note }
+let currentVocabNotebook = []; // list of saved vocab objects with SRS
 let currentMistakesLog = []; // list of grammar mistakes logged
+let srsFilterMode = 'all';
 
-// Load state from localStorage
+// Initialize from localStorage or defaults
 try {
-  const savedIndex = parseInt(localStorage.getItem('gl_struct_idx') || '0', 10);
-  if (!isNaN(savedIndex) && savedIndex >= 0 && savedIndex < STRUCTURES.length) {
-    currentStructIndex = savedIndex;
+  const savedAlbums = localStorage.getItem('gl_albums_v2');
+  if (savedAlbums) {
+    albums = JSON.parse(savedAlbums);
   }
-  generatedExercises = JSON.parse(localStorage.getItem('gl_generated_exercises') || '{}');
-  currentVocabNotebook = JSON.parse(localStorage.getItem('gl_saved_vocab') || '[]');
+} catch {}
+
+if (!albums || albums.length === 0) {
+  albums = [
+    {
+      id: "album_core_ielts",
+      title: "25 Cấu Trúc IELTS 8.0+",
+      icon: "⚡",
+      desc: "Bộ 25 cấu trúc chuẩn học thuật cho IELTS Writing Task 2",
+      tracks: DEFAULT_25_STRUCTURES
+    }
+  ];
+}
+
+currentAlbumId = localStorage.getItem('gl_cur_album_id') || albums[0].id;
+if (!albums.some(a => a.id === currentAlbumId)) currentAlbumId = albums[0].id;
+
+try {
+  currentTrackIndex = parseInt(localStorage.getItem('gl_cur_track_idx') || '0', 10);
+  generatedExercises = JSON.parse(localStorage.getItem('gl_generated_exercises_v2') || '{}');
+  currentVocabNotebook = JSON.parse(localStorage.getItem('gl_saved_vocab_srs') || '[]');
   currentMistakesLog = JSON.parse(localStorage.getItem('gl_mistakes_log') || '[]');
 } catch {}
 
 function saveState() {
-  localStorage.setItem('gl_struct_idx', currentStructIndex);
-  localStorage.setItem('gl_generated_exercises', JSON.stringify(generatedExercises));
-  localStorage.setItem('gl_saved_vocab', JSON.stringify(currentVocabNotebook));
+  localStorage.setItem('gl_albums_v2', JSON.stringify(albums));
+  localStorage.setItem('gl_cur_album_id', currentAlbumId);
+  localStorage.setItem('gl_cur_track_idx', currentTrackIndex);
+  localStorage.setItem('gl_generated_exercises_v2', JSON.stringify(generatedExercises));
+  localStorage.setItem('gl_saved_vocab_srs', JSON.stringify(currentVocabNotebook));
   localStorage.setItem('gl_mistakes_log', JSON.stringify(currentMistakesLog));
 }
 
+function getCurrentAlbum() {
+  return albums.find(a => a.id === currentAlbumId) || albums[0];
+}
+
+function getCurrentTrack() {
+  const album = getCurrentAlbum();
+  if (currentTrackIndex < 0 || currentTrackIndex >= album.tracks.length) {
+    currentTrackIndex = 0;
+  }
+  return album.tracks[currentTrackIndex] || {
+    name: "Chưa có cấu trúc",
+    group: "Khác",
+    formula: "Bấm '➕ Thêm cấu trúc' để bắt đầu!",
+    note: "",
+    example: "",
+    defaultVi: "Hãy thêm cấu trúc vào album để bắt đầu luyện tập."
+  };
+}
+
 // ----------------------------------------------------
-// GEMINI API CALL WITH MULTI-MODEL FALLBACK
+// GEMINI API HELPER (Latest 3.5 & 3.8 models)
 // ----------------------------------------------------
 function getApiKey() {
   return (localStorage.getItem('gl_gemini_key') || '').trim();
@@ -810,7 +985,7 @@ function updateApiStatusUi() {
   }
 }
 
-async function callGeminiApiWithFallback(prompt, systemInstruction = '', onAttempt = null) {
+async function callGeminiApiWithFallback(prompt, systemInstruction = '') {
   const apiKey = getApiKey();
   if (!apiKey) throw new Error('Chưa cấu hình Gemini API Key. Vui lòng bấm "🔑 Gemini" để nhập key!');
 
@@ -823,32 +998,22 @@ async function callGeminiApiWithFallback(prompt, systemInstruction = '', onAttem
   ]));
 
   let lastError = null;
-
   for (let i = 0; i < candidateModels.length; i++) {
     const model = candidateModels[i];
-    if (onAttempt) onAttempt(model, i + 1, candidateModels.length);
-
     try {
-      const result = await executeSingleGeminiRequest(apiKey, model, prompt, systemInstruction);
-      return result;
+      return await executeSingleGeminiRequest(apiKey, model, prompt, systemInstruction);
     } catch (err) {
       lastError = err;
       const msg = (err.message || '').toLowerCase();
-      const isDeprecationOrBusy = err.status === 503 || err.status === 429 || err.status === 404 || err.status === 400 ||
-        msg.includes('high demand') ||
-        msg.includes('no longer available') ||
-        msg.includes('not found') ||
-        msg.includes('deprecated') ||
-        msg.includes('update your code') ||
-        msg.includes('resource_exhausted');
+      const isRetryable = err.status === 503 || err.status === 429 || err.status === 404 || err.status === 400 ||
+        msg.includes('high demand') || msg.includes('no longer available') || msg.includes('not found') || msg.includes('deprecated');
 
-      if (!isDeprecationOrBusy && i === 0 && err.status === 400 && msg.includes('api_key_invalid')) {
+      if (!isRetryable && i === 0 && err.status === 400 && msg.includes('api_key_invalid')) {
         throw new Error('API Key không hợp lệ. Vui lòng kiểm tra lại tại Google AI Studio!');
       }
-      console.warn(`Model ${model} failed (${err.message}). Trying next fallback...`);
+      console.warn(`Model ${model} failed: ${err.message}. Trying next fallback...`);
     }
   }
-
   throw new Error(lastError ? lastError.message : 'Tất cả các model Gemini đều tạm thời bận. Hãy thử lại sau vài giây!');
 }
 
@@ -858,14 +1023,11 @@ async function executeSingleGeminiRequest(apiKey, model, prompt, systemInstructi
   
   const body = {
     contents: [{ role: 'user', parts: [{ text: fullPrompt }] }],
-    generationConfig: {
-      temperature: 0.25,
-      maxOutputTokens: 900
-    }
+    generationConfig: { temperature: 0.25, maxOutputTokens: 1100 }
   };
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 20000);
+  const timeoutId = setTimeout(() => controller.abort(), 22000);
 
   let res;
   try {
@@ -877,7 +1039,7 @@ async function executeSingleGeminiRequest(apiKey, model, prompt, systemInstructi
     });
   } catch (err) {
     if (err.name === 'AbortError') {
-      const e = new Error(`Model ${model} quá thời gian phản hồi (20s).`);
+      const e = new Error(`Model ${model} quá thời gian chờ (22s).`);
       e.status = 504;
       throw e;
     }
@@ -910,34 +1072,84 @@ async function executeSingleGeminiRequest(apiKey, model, prompt, systemInstructi
 }
 
 // ----------------------------------------------------
-// UI RENDERING: SPOTIFY TRACK LIST & HERO
+// ALBUMS & TRACK RENDERING
 // ----------------------------------------------------
-function renderTrackList() {
-  const container = $('trackList');
-  const filtered = STRUCTURES.map((s, idx) => ({ ...s, idx }))
-    .filter(s => currentFilter === 'all' || s.group === currentFilter);
+function renderAlbumSelector() {
+  const select = $('albumSelect');
+  select.innerHTML = albums.map(a => `
+    <option value="${a.id}" ${a.id === currentAlbumId ? 'selected' : ''}>
+      ${a.icon || '📁'} ${escapeHtml(a.title)} (${a.tracks.length})
+    </option>
+  `).join('');
 
-  container.innerHTML = filtered.map(it => {
-    const isActive = it.idx === currentStructIndex;
-    return `
-      <button class="sp-track-item ${isActive ? 'active' : ''}" data-idx="${it.idx}">
-        <span class="sp-track-num">${String(it.idx + 1).padStart(2, '0')}</span>
-        <div class="sp-track-info">
-          <div class="sp-track-name">${escapeHtml(it.name)}</div>
-          <div class="sp-track-group">${escapeHtml(it.group)}</div>
-        </div>
-        <span class="sp-track-play">${isActive ? '▶' : '▷'}</span>
-      </button>
-    `;
-  }).join('');
+  select.onchange = () => {
+    currentAlbumId = select.value;
+    currentTrackIndex = 0;
+    saveState();
+    renderAll();
+  };
+}
 
-  container.querySelectorAll('.sp-track-item').forEach(btn => {
-    btn.onclick = () => selectStructure(parseInt(btn.dataset.idx, 10));
+function renderCategoryChips() {
+  const album = getCurrentAlbum();
+  const groups = ['all', ...new Set(album.tracks.map(t => t.group).filter(Boolean))];
+  const container = $('categoryChips');
+
+  container.innerHTML = groups.map(g => `
+    <button class="sp-chip ${g === currentFilter ? 'active' : ''}" data-filter="${escapeHtml(g)}">
+      ${g === 'all' ? 'Tất cả' : escapeHtml(g)}
+    </button>
+  `).join('');
+
+  container.querySelectorAll('.sp-chip').forEach(chip => {
+    chip.onclick = () => {
+      currentFilter = chip.dataset.filter;
+      container.querySelectorAll('.sp-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      renderTrackList();
+    };
   });
 }
 
+function renderTrackList() {
+  const album = getCurrentAlbum();
+  const container = $('trackList');
+  const tracks = album.tracks || [];
+
+  const filtered = tracks.map((s, idx) => ({ ...s, idx }))
+    .filter(s => currentFilter === 'all' || s.group === currentFilter);
+
+  if (filtered.length === 0) {
+    container.innerHTML = `
+      <div style="text-align:center; padding:30px 10px; color:var(--sp-subtext); font-size:13px;">
+        Album này chưa có cấu trúc nào.<br>
+        Bấm <strong>➕ Thêm cấu trúc (AI)</strong> để thêm ngay!
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = filtered.map(it => {
+    const isActive = it.idx === currentTrackIndex;
+    return `
+      <div class="sp-track-item ${isActive ? 'active' : ''}" data-idx="${it.idx}">
+        <span class="sp-track-num">${String(it.idx + 1).padStart(2, '0')}</span>
+        <div class="sp-track-info" onclick="selectStructure(${it.idx})">
+          <div class="sp-track-name">${escapeHtml(it.name)}</div>
+          <div class="sp-track-group">${escapeHtml(it.group || 'Cấu trúc')}</div>
+        </div>
+        <div class="sp-track-actions">
+          <button class="sp-track-del-btn" title="Xóa cấu trúc khỏi album" onclick="deleteStructure(${it.idx})">&times;</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
 function selectStructure(idx) {
-  currentStructIndex = idx;
+  const album = getCurrentAlbum();
+  if (idx < 0 || idx >= album.tracks.length) return;
+  currentTrackIndex = idx;
   saveState();
   renderCurrentStructure();
   renderTrackList();
@@ -948,22 +1160,45 @@ function selectStructure(idx) {
   $('response').focus();
 }
 
+function deleteStructure(idx) {
+  const album = getCurrentAlbum();
+  if (album.tracks.length <= 1) {
+    alert('Mỗi album cần giữ lại ít nhất 1 cấu trúc.');
+    return;
+  }
+  const track = album.tracks[idx];
+  if (confirm(`Bạn có chắc muốn xóa cấu trúc "${track.name}" khỏi album?`)) {
+    album.tracks.splice(idx, 1);
+    if (currentTrackIndex >= album.tracks.length) currentTrackIndex = album.tracks.length - 1;
+    saveState();
+    renderAll();
+  }
+}
+
 function renderCurrentStructure() {
-  const cur = STRUCTURES[currentStructIndex];
-  // Hero
-  $('heroCategoryTag').textContent = cur.group;
+  const album = getCurrentAlbum();
+  const cur = getCurrentTrack();
+
+  // Hero Section
+  $('heroCoverIcon').textContent = album.icon || '⚡';
+  $('heroCoverText').textContent = album.title.slice(0, 10).toUpperCase();
+  $('heroCategoryTag').textContent = cur.group || 'CẤU TRÚC NGỮ PHÁP';
   $('heroStructName').textContent = cur.name;
-  $('heroIndexMeta').textContent = `Cấu trúc ${currentStructIndex + 1} / ${STRUCTURES.length}`;
-  // Formula
+  $('heroAlbumTitleMeta').textContent = album.title;
+  $('heroIndexMeta').textContent = `Cấu trúc ${currentTrackIndex + 1} / ${album.tracks.length}`;
+
+  // Formula & Guidance
   $('structFormula').textContent = cur.formula;
-  $('structNote').textContent = cur.note;
-  $('structExample').textContent = `↳ Ví dụ: ${cur.example}`;
+  $('structNote').textContent = cur.note || 'Áp dụng công thức trên vào câu dịch.';
+  $('structExample').textContent = cur.example ? `↳ Ví dụ: ${cur.example}` : '';
+
   // Bottom dock
   $('dockStructName').textContent = cur.name;
-  $('dockGroupName').textContent = cur.group;
+  $('dockGroupName').textContent = `${album.icon || '⚡'} ${album.title}`;
 
-  // Challenge
-  const genEx = generatedExercises[currentStructIndex];
+  // Challenge Prompt
+  const promptKey = `${album.id}_${cur.id || currentTrackIndex}`;
+  const genEx = generatedExercises[promptKey];
   if (genEx && genEx.vi) {
     $('promptVi').textContent = genEx.vi;
     $('aiGenBadge').style.display = 'inline-block';
@@ -976,26 +1211,171 @@ function renderCurrentStructure() {
     $('sampleEnText').textContent = genEx.en || cur.example;
     $('sampleNoteText').textContent = genEx.note || cur.note;
   } else {
-    $('promptVi').textContent = cur.defaultVi;
+    $('promptVi').textContent = cur.defaultVi || 'Hãy dịch câu tiếng Anh áp dụng cấu trúc mục tiêu phía trên.';
     $('aiGenBadge').style.display = 'none';
     $('promptVocabHint').style.display = 'none';
-    $('sampleEnText').textContent = cur.example;
+    $('sampleEnText').textContent = cur.example || cur.formula;
     $('sampleNoteText').textContent = cur.note;
   }
 }
 
+function renderAll() {
+  renderAlbumSelector();
+  renderCategoryChips();
+  renderTrackList();
+  renderCurrentStructure();
+}
+
 // ----------------------------------------------------
-// AI GENERATE CHALLENGE
+// AI GENERATE NEW STRUCTURE FOR ALBUM
+// ----------------------------------------------------
+$('aiGenerateStructBtn').onclick = async () => {
+  const query = $('aiStructPromptInput').value.trim();
+  if (!query) return alert('Vui lòng nhập tên hoặc gợi ý cấu trúc (VD: more and more).');
+
+  const btn = $('aiGenerateStructBtn');
+  const orig = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '⏳ Đang soạn...';
+
+  const prompt = `Bạn là chuyên gia ngữ pháp tiếng Anh IELTS. Người dùng muốn thêm một cấu trúc ngữ pháp mới có từ khóa: "${query}".
+Hãy soạn thảo đầy đủ và chuẩn xác các trường thông tin cho cấu trúc này.
+
+Trả về DUY NHẤT một chuỗi JSON hợp lệ (không kèm Markdown):
+{
+  "name": "Tên cấu trúc chuẩn (VD: The more... the more...)",
+  "group": "Nhóm ngữ pháp phù hợp (VD: So sánh & Nhấn mạnh, Mệnh đề phân từ, Đảo ngữ, Giả định, ...)",
+  "formula": "Công thức chi tiết đầy đủ của cấu trúc",
+  "note": "Giải thích cách dùng, bản chất ngữ pháp và những lỗi người học hay mắc phải",
+  "example": "1 câu ví dụ tiếng Anh học thuật mẫu chuẩn IELTS",
+  "defaultVi": "1 câu tiếng Việt mẫu hay để học viên luyện dịch sang cấu trúc này"
+}`;
+
+  try {
+    const res = await callGeminiApiWithFallback(prompt, 'Chỉ trả về JSON hợp lệ.');
+    if (res && res.name && res.formula) {
+      $('newStructName').value = res.name;
+      $('newStructGroup').value = res.group || 'Cấu trúc mới';
+      $('newStructFormula').value = res.formula;
+      $('newStructNote').value = res.note || '';
+      $('newStructExample').value = res.example || '';
+      $('newStructDefaultVi').value = res.defaultVi || '';
+    }
+  } catch (err) {
+    alert('Không thể tạo cấu trúc: ' + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = orig;
+  }
+};
+
+$('saveNewStructBtn').onclick = () => {
+  const name = $('newStructName').value.trim();
+  const formula = $('newStructFormula').value.trim();
+  if (!name || !formula) return alert('Vui lòng nhập đầy đủ Tên và Công thức cấu trúc.');
+
+  const album = getCurrentAlbum();
+  const newTrack = {
+    id: 's_' + Date.now(),
+    name: name,
+    group: $('newStructGroup').value.trim() || 'Khác',
+    formula: formula,
+    note: $('newStructNote').value.trim(),
+    example: $('newStructExample').value.trim(),
+    defaultVi: $('newStructDefaultVi').value.trim() || 'Dịch câu sang tiếng Anh dùng cấu trúc này.'
+  };
+
+  album.tracks.push(newTrack);
+  currentTrackIndex = album.tracks.length - 1;
+  saveState();
+  renderAll();
+  $('addStructModal').classList.remove('open');
+  // Clear inputs
+  $('aiStructPromptInput').value = '';
+  $('newStructName').value = '';
+  $('newStructFormula').value = '';
+  $('newStructNote').value = '';
+  $('newStructExample').value = '';
+  $('newStructDefaultVi').value = '';
+};
+
+// Album Management
+$('createAlbumModalBtn').onclick = () => $('createAlbumModal').classList.add('open');
+$('closeCreateAlbumBtn').onclick = () => $('createAlbumModal').classList.remove('open');
+$('cancelCreateAlbumBtn').onclick = () => $('createAlbumModal').classList.remove('open');
+
+$('saveNewAlbumBtn').onclick = () => {
+  const title = $('newAlbumTitle').value.trim();
+  if (!title) return alert('Vui lòng nhập tên Album.');
+  const icon = $('newAlbumIcon').value.trim() || '📁';
+  const desc = $('newAlbumDesc').value.trim();
+
+  const newAlbum = {
+    id: 'album_' + Date.now(),
+    title: title,
+    icon: icon,
+    desc: desc,
+    tracks: []
+  };
+
+  albums.push(newAlbum);
+  currentAlbumId = newAlbum.id;
+  currentTrackIndex = 0;
+  saveState();
+  renderAll();
+  $('createAlbumModal').classList.remove('open');
+  $('newAlbumTitle').value = '';
+};
+
+$('editAlbumBtn').onclick = () => {
+  const cur = getCurrentAlbum();
+  $('editAlbumTitle').value = cur.title;
+  $('editAlbumIcon').value = cur.icon || '📁';
+  $('editAlbumModal').classList.add('open');
+};
+$('closeEditAlbumBtn').onclick = () => $('editAlbumModal').classList.remove('open');
+$('cancelEditAlbumBtn').onclick = () => $('editAlbumModal').classList.remove('open');
+
+$('saveEditAlbumBtn').onclick = () => {
+  const cur = getCurrentAlbum();
+  const title = $('editAlbumTitle').value.trim();
+  if (!title) return alert('Tên Album không được để trống.');
+  cur.title = title;
+  cur.icon = $('editAlbumIcon').value.trim() || '📁';
+  saveState();
+  renderAll();
+  $('editAlbumModal').classList.remove('open');
+};
+
+$('deleteAlbumBtn').onclick = () => {
+  if (albums.length <= 1) return alert('Bạn cần giữ lại ít nhất 1 Album.');
+  const cur = getCurrentAlbum();
+  if (confirm(`Bạn có chắc muốn xóa Album "${cur.title}" cùng toàn bộ cấu trúc bên trong?`)) {
+    albums = albums.filter(a => a.id !== cur.id);
+    currentAlbumId = albums[0].id;
+    currentTrackIndex = 0;
+    saveState();
+    renderAll();
+    $('editAlbumModal').classList.remove('open');
+  }
+};
+
+$('addStructModalBtn').onclick = () => $('addStructModal').classList.add('open');
+$('closeAddStructBtn').onclick = () => $('addStructModal').classList.remove('open');
+$('cancelAddStructBtn').onclick = () => $('addStructModal').classList.remove('open');
+
+// ----------------------------------------------------
+// AI GENERATE CHALLENGE FOR ACTIVE TRACK
 // ----------------------------------------------------
 async function generateNewChallenge() {
   const apiKey = getApiKey();
   if (!apiKey) {
     $('apiModal').classList.add('open');
-    alert('Vui lòng kết nối Gemini API để tự động sinh đề bài.');
-    return;
+    return alert('Vui lòng kết nối Gemini API để tự động sinh đề bài.');
   }
 
-  const cur = STRUCTURES[currentStructIndex];
+  const album = getCurrentAlbum();
+  const cur = getCurrentTrack();
   const btn = $('genNewChallengeBtn');
   const origText = btn.textContent;
   btn.disabled = true;
@@ -1016,7 +1396,8 @@ Yêu cầu trả về DUY NHẤT một chuỗi JSON hợp lệ (không kèm Mark
   try {
     const res = await callGeminiApiWithFallback(prompt, 'Chỉ trả về JSON hợp lệ.');
     if (res && res.vi && res.en) {
-      generatedExercises[currentStructIndex] = res;
+      const promptKey = `${album.id}_${cur.id || currentTrackIndex}`;
+      generatedExercises[promptKey] = res;
       saveState();
       renderCurrentStructure();
       $('response').value = '';
@@ -1032,7 +1413,7 @@ Yêu cầu trả về DUY NHẤT một chuỗi JSON hợp lệ (không kèm Mark
 }
 
 // ----------------------------------------------------
-// SUBMIT & GRADE: ENTER KEY + MISTAKE LOGGING
+// SUBMIT EXERCISE (ENTER TO SUBMIT + MISTAKE TRACKER)
 // ----------------------------------------------------
 async function submitExercise() {
   const resp = $('response').value.trim();
@@ -1045,11 +1426,10 @@ async function submitExercise() {
   const apiKey = getApiKey();
   if (!apiKey) {
     $('apiModal').classList.add('open');
-    alert('Vui lòng kết nối Gemini API để chấm điểm bài viết!');
-    return;
+    return alert('Vui lòng kết nối Gemini API để chấm điểm bài viết!');
   }
 
-  const cur = STRUCTURES[currentStructIndex];
+  const cur = getCurrentTrack();
   const promptVi = $('promptVi').textContent;
   const mainBtn = $('mainSubmitBtn');
   const dockBtn = $('dockPlayBtn');
@@ -1105,7 +1485,6 @@ Trả về DUY NHẤT một đối tượng JSON hợp lệ (không kèm Markdow
     );
 
     renderAiFeedback(aiResult);
-    // Log real mistakes to Mistake Tracker
     logMistakes(aiResult.fixes, cur.name, resp);
   } catch (err) {
     alert('Không thể chấm bài: ' + err.message);
@@ -1118,16 +1497,11 @@ Trả về DUY NHẤT một đối tượng JSON hợp lệ (không kèm Markdow
   }
 }
 
-// Bind Submit
-$('exerciseForm').addEventListener('submit', (e) => {
-  e.preventDefault();
-  submitExercise();
-});
+$('exerciseForm').addEventListener('submit', e => { e.preventDefault(); submitExercise(); });
 $('mainSubmitBtn').onclick = submitExercise;
 $('dockPlayBtn').onclick = submitExercise;
 
-// Press ENTER to submit, Shift+Enter for new line
-$('response').addEventListener('keydown', (e) => {
+$('response').addEventListener('keydown', e => {
   if (e.key === 'Enter' && !e.shiftKey) {
     e.preventDefault();
     submitExercise();
@@ -1166,7 +1540,6 @@ function renderAiFeedback(res) {
   setCrit(res.expression, 'critExprStatus', 'critExprComment');
   setCrit(res.meaning, 'critMeaningStatus', 'critMeaningComment');
 
-  // Filter out any accidental capitalization fixes
   const realFixes = (res.fixes || []).filter(f => {
     return !(f.original && f.replacement && f.original.toLowerCase() === f.replacement.toLowerCase());
   });
@@ -1209,16 +1582,13 @@ function renderAiFeedback(res) {
 }
 
 // ----------------------------------------------------
-// MISTAKE LOG TRACKER (SỔ LỖI SAI NGỮ PHÁP)
+// MISTAKE LOG TRACKER
 // ----------------------------------------------------
 function logMistakes(fixes, structName, userSentence) {
   if (!Array.isArray(fixes) || fixes.length === 0) return;
   let added = false;
   fixes.forEach(fix => {
-    // Skip capitalization only fixes
-    if (fix.original && fix.replacement && fix.original.toLowerCase() === fix.replacement.toLowerCase()) {
-      return;
-    }
+    if (fix.original && fix.replacement && fix.original.toLowerCase() === fix.replacement.toLowerCase()) return;
     currentMistakesLog.unshift({
       id: 'err_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
       structure: structName,
@@ -1252,21 +1622,15 @@ function renderMistakesNotebook() {
   const container = $('mistakesListBody');
   const filtersContainer = $('mistakeCategoryFilters');
 
-  // Breakdown counts by errorType
   const counts = {};
   currentMistakesLog.forEach(m => {
     const t = m.errorType || 'Ngữ pháp khác';
     counts[t] = (counts[t] || 0) + 1;
   });
 
-  // Render filter pills
-  let filterHtml = `
-    <span class="sp-mistake-stat-pill ${activeMistakeFilter === 'all' ? 'active' : ''}" data-filter="all">Tất cả (${currentMistakesLog.length})</span>
-  `;
+  let filterHtml = `<span class="sp-mistake-stat-pill ${activeMistakeFilter === 'all' ? 'active' : ''}" data-filter="all">Tất cả (${currentMistakesLog.length})</span>`;
   for (const [t, cnt] of Object.entries(counts)) {
-    filterHtml += `
-      <span class="sp-mistake-stat-pill ${activeMistakeFilter === t ? 'active' : ''}" data-filter="${escapeHtml(t)}">${escapeHtml(t)} (${cnt})</span>
-    `;
+    filterHtml += `<span class="sp-mistake-stat-pill ${activeMistakeFilter === t ? 'active' : ''}" data-filter="${escapeHtml(t)}">${escapeHtml(t)} (${cnt})</span>`;
   }
   filtersContainer.innerHTML = filterHtml;
 
@@ -1277,7 +1641,6 @@ function renderMistakesNotebook() {
     };
   });
 
-  // Filter items
   const filtered = activeMistakeFilter === 'all'
     ? currentMistakesLog
     : currentMistakesLog.filter(m => (m.errorType || 'Ngữ pháp khác') === activeMistakeFilter);
@@ -1287,7 +1650,7 @@ function renderMistakesNotebook() {
       <div style="text-align:center; padding:40px 10px; color:var(--sp-subtext);">
         <div style="font-size:36px; margin-bottom:8px;">🎉</div>
         <strong style="color:#fff; font-size:15px;">Chưa có lỗi nào được ghi nhận</strong>
-        <p style="font-size:13px; margin-top:6px;">Khi bạn làm bài, AI sẽ tự động phân loại những chỗ hay sai (chia thì, mạo từ, giới từ...) để bạn ôn lại tại đây!</p>
+        <p style="font-size:13px; margin-top:6px;">Khi bạn làm bài, AI sẽ tự động phân loại những lỗi hay sai (thì, mạo từ, giới từ...) để bạn ôn lại tại đây!</p>
       </div>
     `;
     return;
@@ -1299,7 +1662,7 @@ function renderMistakesNotebook() {
         <span class="sp-mistake-struct">${escapeHtml(item.structure)}</span>
         <div style="display:flex; align-items:center; gap:6px;">
           <span class="sp-mistake-type">${escapeHtml(item.errorType)}</span>
-          <button class="sp-close-btn mistake-del-btn" title="Đã khắc phục / Xóa lỗi này" style="font-size:16px;">&times;</button>
+          <button class="sp-close-btn mistake-del-btn" title="Đã khắc phục / Xóa" style="font-size:16px;">&times;</button>
         </div>
       </div>
       <div class="sp-mistake-sentence">"${escapeHtml(item.sentence)}"</div>
@@ -1313,9 +1676,8 @@ function renderMistakesNotebook() {
   `).join('');
 
   container.querySelectorAll('.mistake-del-btn').forEach(btn => {
-    btn.onclick = (e) => {
-      const card = btn.closest('.sp-mistake-item');
-      const id = card.dataset.id;
+    btn.onclick = () => {
+      const id = btn.closest('.sp-mistake-item').dataset.id;
       currentMistakesLog = currentMistakesLog.filter(m => m.id !== id);
       saveState();
       updateMistakesCountUi();
@@ -1335,31 +1697,396 @@ $('clearAllMistakesBtn').onclick = () => {
 };
 
 // ----------------------------------------------------
-// DRAWER SYSTEM (DICTIONARY / VOCAB / MISTAKES)
+// SPACED REPETITION (SRS) & VOCABULARY NOTEBOOK
 // ----------------------------------------------------
-function openDrawer(activeTab = 'dict') {
-  $('drawerOverlay').classList.add('open');
-  $('mainDrawer').classList.add('open');
-  switchDrawerTab(activeTab);
+// SRS Intervals in milliseconds:
+// Stage 0: 0 hours (new)
+// Stage 1: 1 day
+// Stage 2: 3 days
+// Stage 3: 7 days
+// Stage 4: 14 days
+// Stage 5: 30 days (Mastered)
+const SRS_INTERVALS = [
+  0,
+  1 * 24 * 60 * 60 * 1000,
+  3 * 24 * 60 * 60 * 1000,
+  7 * 24 * 60 * 60 * 1000,
+  14 * 24 * 60 * 60 * 1000,
+  30 * 24 * 60 * 60 * 1000
+];
+
+function isWordSaved(word) {
+  return currentVocabNotebook.some(v => v.word.toLowerCase() === word.toLowerCase());
 }
 
-function closeDrawer() {
-  $('drawerOverlay').classList.remove('open');
-  $('mainDrawer').classList.remove('open');
-  $('dictSuggestions').style.display = 'none';
+function toggleSaveWord(word, ipa, groupedMeanings, audioUrl) {
+  const existingIdx = currentVocabNotebook.findIndex(v => v.word.toLowerCase() === word.toLowerCase());
+  if (existingIdx >= 0) {
+    currentVocabNotebook.splice(existingIdx, 1);
+  } else {
+    const sampleMeanings = [];
+    let firstPos = '';
+    for (const [pos, items] of Object.entries(groupedMeanings)) {
+      if (!firstPos) firstPos = pos;
+      items.forEach(it => sampleMeanings.push(it.definition));
+      if (sampleMeanings.length >= 2) break;
+    }
+    currentVocabNotebook.unshift({
+      word,
+      ipa: ipa || '',
+      pos: firstPos || 'Từ vựng',
+      meaning: sampleMeanings.join('; ') || 'Từ vựng đã lưu',
+      audio: audioUrl || null,
+      savedAt: Date.now(),
+      srsStage: 0,
+      nextReview: Date.now(),
+      lastReviewed: null,
+      reviewCount: 0
+    });
+  }
+  saveState();
+  updateVocabCountUi();
+
+  const btn = $('saveVocabBtn');
+  if (btn) {
+    const saved = isWordSaved(word);
+    btn.className = `sp-pill ${saved ? 'green active' : 'green'}`;
+    btn.innerHTML = saved ? '★ Đã lưu' : '⭐ Lưu từ';
+  }
 }
 
-function switchDrawerTab(tab) {
-  $('tabDict').classList.toggle('active', tab === 'dict');
-  $('tabVocab').classList.toggle('active', tab === 'vocab');
-  $('tabMistakes').classList.toggle('active', tab === 'mistakes');
+function updateVocabCountUi() {
+  const count = currentVocabNotebook.length;
+  const now = Date.now();
+  const dueCount = currentVocabNotebook.filter(v => (v.nextReview || 0) <= now).length;
+  const masteredCount = currentVocabNotebook.filter(v => (v.srsStage || 0) >= 5).length;
 
-  $('viewDict').style.display = tab === 'dict' ? 'block' : 'none';
-  $('viewVocab').style.display = tab === 'vocab' ? 'block' : 'none';
-  $('viewMistakes').style.display = tab === 'mistakes' ? 'block' : 'none';
+  $('topVocabCount').textContent = count;
+  $('dockVocabCount').textContent = count;
+  $('drawerVocabCount').textContent = count;
 
-  if (tab === 'vocab') renderVocabNotebook();
-  if (tab === 'mistakes') renderMistakesNotebook();
+  $('srsCountAll').textContent = count;
+  $('srsCountDue').textContent = dueCount;
+  $('srsCountMastered').textContent = masteredCount;
+
+  if (dueCount > 0) {
+    $('topSrsDueBadge').style.display = 'inline-block';
+    $('topSrsDueBadge').textContent = dueCount;
+  } else {
+    $('topSrsDueBadge').style.display = 'none';
+  }
+}
+
+function renderVocabNotebook() {
+  const container = $('vocabListBody');
+  const now = Date.now();
+  const query = ($('vocabFilterInput').value || '').trim().toLowerCase();
+
+  let list = currentVocabNotebook;
+  if (srsFilterMode === 'due') {
+    list = list.filter(v => (v.nextReview || 0) <= now);
+  } else if (srsFilterMode === 'mastered') {
+    list = list.filter(v => (v.srsStage || 0) >= 5);
+  }
+
+  if (query) {
+    list = list.filter(v => v.word.toLowerCase().includes(query) || v.meaning.toLowerCase().includes(query));
+  }
+
+  if (list.length === 0) {
+    container.innerHTML = `
+      <div style="text-align:center; padding:40px 10px; color:var(--sp-subtext);">
+        <div style="font-size:36px; margin-bottom:8px;">⭐</div>
+        <strong style="color:#fff; font-size:15px;">Không có từ nào trong danh mục này</strong>
+        <p style="font-size:13px; margin-top:6px;">Bấm ⭐ Lưu từ khi tra từ điển để bắt đầu lộ trình lặp lại ngắt quãng!</p>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = list.map(item => {
+    const stage = item.srsStage || 0;
+    const isDue = (item.nextReview || 0) <= now;
+    let badgeClass = 'srs-ok';
+    let badgeText = `Giai đoạn ${stage}/5`;
+    if (stage >= 5) {
+      badgeClass = 'srs-mastered';
+      badgeText = '⭐ Thành thạo';
+    } else if (isDue) {
+      badgeClass = 'srs-due';
+      badgeText = '🔔 Cần ôn tập';
+    }
+
+    return `
+      <div class="sp-vocab-item" data-word="${escapeHtml(item.word)}">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:4px;">
+          <div>
+            <span style="font-size:16px; font-weight:800; color:#fff;">${escapeHtml(item.word)}</span>
+            ${item.ipa ? `<span style="font-size:12px; color:var(--sp-blue); font-family:monospace; margin-left:6px;">${escapeHtml(item.ipa)}</span>` : ''}
+            <span style="font-size:10px; font-weight:800; padding:1px 5px; border-radius:4px; background:rgba(29, 185, 84, 0.15); color:var(--sp-green); text-transform:uppercase; margin-left:4px;">${escapeHtml(item.pos)}</span>
+            <span class="sp-srs-badge ${badgeClass}" style="margin-left:4px;">${badgeText}</span>
+          </div>
+          <div style="display:flex; gap:4px; align-items:center;">
+            <button class="sp-close-btn vocab-audio-btn" title="Nghe phát âm" style="font-size:15px;">🔊</button>
+            <button class="sp-close-btn vocab-del-btn" title="Xóa từ" style="font-size:18px;">&times;</button>
+          </div>
+        </div>
+        <div style="font-size:13px; color:#dbe4f8; margin:4px 0;">${escapeHtml(item.meaning)}</div>
+        
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; pt-2; border-top:1px solid rgba(255,255,255,0.06);">
+          <span style="font-size:11px; color:var(--sp-muted);">Ôn lần cuối: ${item.lastReviewed ? new Date(item.lastReviewed).toLocaleDateString('vi-VN') : 'Mới'}</span>
+          <button class="sp-btn-sm green vocab-deep-btn" style="padding:4px 10px; font-size:11.5px;">
+            ✨ Luyện tập từ này (AI)
+          </button>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  container.querySelectorAll('.vocab-audio-btn').forEach(btn => {
+    btn.onclick = () => {
+      const word = btn.closest('.sp-vocab-item').dataset.word;
+      const it = currentVocabNotebook.find(v => v.word.toLowerCase() === word.toLowerCase());
+      playWordAudio(it?.audio, word, 'en');
+    };
+  });
+
+  container.querySelectorAll('.vocab-del-btn').forEach(btn => {
+    btn.onclick = () => {
+      const word = btn.closest('.sp-vocab-item').dataset.word;
+      currentVocabNotebook = currentVocabNotebook.filter(v => v.word.toLowerCase() !== word.toLowerCase());
+      saveState();
+      updateVocabCountUi();
+      renderVocabNotebook();
+    };
+  });
+
+  container.querySelectorAll('.vocab-deep-btn').forEach(btn => {
+    btn.onclick = () => {
+      const word = btn.closest('.sp-vocab-item').dataset.word;
+      const it = currentVocabNotebook.find(v => v.word.toLowerCase() === word.toLowerCase());
+      if (it) openVocabPracticeModal(it);
+    };
+  });
+}
+
+$('srsFilterAll').onclick = () => { srsFilterMode = 'all'; updateSrsFilterPills(); renderVocabNotebook(); };
+$('srsFilterDue').onclick = () => { srsFilterMode = 'due'; updateSrsFilterPills(); renderVocabNotebook(); };
+$('srsFilterMastered').onclick = () => { srsFilterMode = 'mastered'; updateSrsFilterPills(); renderVocabNotebook(); };
+
+function updateSrsFilterPills() {
+  $('srsFilterAll').classList.toggle('active', srsFilterMode === 'all');
+  $('srsFilterDue').classList.toggle('active', srsFilterMode === 'due');
+  $('srsFilterMastered').classList.toggle('active', srsFilterMode === 'mastered');
+}
+
+// ----------------------------------------------------
+// AI DEEP VOCABULARY PRACTICE (Word Family, Collocations, SRS)
+// ----------------------------------------------------
+let activePracticingWord = null;
+
+async function openVocabPracticeModal(vocabItem) {
+  activePracticingWord = vocabItem;
+  $('practiceWordTitle').textContent = vocabItem.word;
+  $('practiceWordIpa').textContent = vocabItem.ipa ? `${vocabItem.ipa} • ${vocabItem.pos}` : vocabItem.pos;
+  $('practiceModalBody').innerHTML = `
+    <div style="text-align:center; padding:40px; color:var(--sp-subtext);">
+      <div class="sp-dot sp-dot-busy" style="width:16px; height:16px; margin-bottom:12px;"></div>
+      <div style="font-size:15px; color:#fff; font-weight:700;">AI đang phân tích chuyên sâu từ "${vocabItem.word}"...</div>
+      <div style="font-size:12.5px; margin-top:6px;">Biên soạn Word Family, Collocations IELTS & Bài tập dịch 2 chiều.</div>
+    </div>
+  `;
+  $('vocabPracticeModal').classList.add('open');
+
+  const prompt = `Bạn là chuyên gia từ vựng IELTS. Hãy phân tích chuyên sâu từ tiếng Anh: "${vocabItem.word}" (Nghĩa: ${vocabItem.meaning}):
+1. Word Family (Họ từ vựng): Các dạng danh từ, động từ, tính từ, trạng từ liên quan cùng nghĩa tiếng Việt.
+2. Collocations: 3-4 cụm từ/collocations phổ biến nhất trong IELTS.
+3. Bài tập 1 (Dịch Việt -> Anh): 1 câu tiếng Việt cần học viên dịch sang tiếng Anh sử dụng từ "${vocabItem.word}".
+4. Bài tập 2 (Dịch Anh -> Việt): 1 câu tiếng Anh hay chứa từ "${vocabItem.word}" để học viên dịch sang tiếng Việt.
+5. Bài tập 3 (Word Family form): 1 câu có chỗ trống cần học viên chia đúng dạng từ của "${vocabItem.word}".
+
+Trả về DUY NHẤT một chuỗi JSON hợp lệ (không kèm Markdown block):
+{
+  "word_family": [
+    { "type": "Verb", "word": "...", "vi": "..." },
+    { "type": "Noun", "word": "...", "vi": "..." },
+    { "type": "Adjective", "word": "...", "vi": "..." },
+    { "type": "Adverb", "word": "...", "vi": "..." }
+  ],
+  "collocations": [
+    { "en": "collocation 1", "vi": "nghĩa" },
+    { "en": "collocation 2", "vi": "nghĩa" }
+  ],
+  "ex1_vi_to_en": {
+    "vi": "câu tiếng Việt luyện dịch",
+    "sample_en": "câu tiếng Anh mẫu"
+  },
+  "ex2_en_to_vi": {
+    "en": "câu tiếng Anh luyện dịch",
+    "sample_vi": "câu tiếng Việt mẫu"
+  },
+  "ex3_word_form": {
+    "sentence": "câu chứa [____] và từ gốc trong ngoặc",
+    "correct_form": "dạng đúng",
+    "why": "giải thích"
+  }
+}`;
+
+  try {
+    const data = await callGeminiApiWithFallback(prompt, 'Chỉ trả về JSON hợp lệ.');
+    renderVocabPracticeContent(data, vocabItem);
+  } catch (err) {
+    $('practiceModalBody').innerHTML = `
+      <div style="text-align:center; padding:30px; color:var(--sp-orange);">
+        <strong style="font-size:15px;">Lỗi khi tải bài tập:</strong>
+        <p style="font-size:13px; margin:8px 0 16px;">${escapeHtml(err.message)}</p>
+        <button class="sp-btn-secondary" onclick="openVocabPracticeModal(activePracticingWord)">Thử lại</button>
+      </div>
+    `;
+  }
+}
+
+function renderVocabPracticeContent(data, vocabItem) {
+  let wfHtml = (data.word_family || []).map(f => `
+    <tr>
+      <td style="color:var(--sp-green); font-weight:700; width:90px;">${escapeHtml(f.type)}</td>
+      <td style="color:#fff; font-weight:600;">${escapeHtml(f.word)}</td>
+      <td style="color:var(--sp-subtext);">${escapeHtml(f.vi)}</td>
+    </tr>
+  `).join('');
+
+  let collocHtml = (data.collocations || []).map(c => `
+    <span class="sp-colloc-tag">${escapeHtml(c.en)} <small style="color:rgba(255,255,255,0.7); font-weight:normal;">(${escapeHtml(c.vi)})</small></span>
+  `).join('');
+
+  $('practiceModalBody').innerHTML = `
+    <!-- 1. Word Family -->
+    <div class="sp-deep-card">
+      <div style="font-size:12px; font-weight:800; color:var(--sp-green); text-transform:uppercase; margin-bottom:4px;">1. Họ từ vựng (Word Family)</div>
+      <table class="sp-wf-table">
+        <tbody>${wfHtml || '<tr><td>Không có dữ liệu họ từ</td></tr>'}</tbody>
+      </table>
+    </div>
+
+    <!-- 2. Collocations -->
+    <div class="sp-deep-card">
+      <div style="font-size:12px; font-weight:800; color:var(--sp-blue); text-transform:uppercase; margin-bottom:8px;">2. Collocations IELTS phổ biến</div>
+      <div>${collocHtml || 'Không có collocations'}</div>
+    </div>
+
+    <!-- 3. Bài tập 1: Dịch Việt -> Anh -->
+    <div class="sp-deep-card">
+      <div style="font-size:12px; font-weight:800; color:var(--sp-orange); text-transform:uppercase; margin-bottom:6px;">3. Bài tập Dịch Việt ➔ Anh</div>
+      <div style="font-size:14.5px; font-weight:600; color:#fff; margin-bottom:8px;">"${escapeHtml(data.ex1_vi_to_en?.vi || '')}"</div>
+      <div style="display:flex; gap:8px;">
+        <input type="text" id="practiceInput1" style="flex:1; padding:8px 12px; border-radius:6px; border:1px solid var(--sp-border); background:#121212; color:#fff; outline:none;" placeholder="Gõ câu dịch tiếng Anh của bạn...">
+        <button class="sp-btn-secondary" id="checkEx1Btn">Kiểm tra</button>
+      </div>
+      <div id="ex1Result" style="margin-top:8px; font-size:13px; display:none;"></div>
+    </div>
+
+    <!-- 4. Bài tập 2: Dịch Anh -> Việt -->
+    <div class="sp-deep-card">
+      <div style="font-size:12px; font-weight:800; color:var(--sp-green); text-transform:uppercase; margin-bottom:6px;">4. Bài tập Dịch Anh ➔ Việt</div>
+      <div style="font-size:14.5px; font-weight:600; color:#fff; margin-bottom:8px;">"${escapeHtml(data.ex2_en_to_vi?.en || '')}"</div>
+      <div style="display:flex; gap:8px;">
+        <input type="text" id="practiceInput2" style="flex:1; padding:8px 12px; border-radius:6px; border:1px solid var(--sp-border); background:#121212; color:#fff; outline:none;" placeholder="Gõ câu dịch tiếng Việt của bạn...">
+        <button class="sp-btn-secondary" id="checkEx2Btn">Kiểm tra</button>
+      </div>
+      <div id="ex2Result" style="margin-top:8px; font-size:13px; display:none;"></div>
+    </div>
+
+    <!-- Completion / SRS Level Up Button -->
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:16px;">
+      <span style="font-size:12px; color:var(--sp-subtext);">Cấp độ hiện tại: <strong>Giai đoạn ${vocabItem.srsStage || 0}/5</strong></span>
+      <button class="sp-pill green" id="completeSrsSessionBtn" style="padding:9px 20px; font-size:14px;">
+        🎉 Đã hoàn thành ôn tập (Lên cấp SRS)
+      </button>
+    </div>
+  `;
+
+  // Bind checks
+  $('checkEx1Btn').onclick = () => {
+    $('ex1Result').style.display = 'block';
+    $('ex1Result').innerHTML = `
+      <div style="background:rgba(255,255,255,0.05); padding:8px 12px; border-radius:6px;">
+        <span style="color:var(--sp-green); font-weight:700;">Đáp án mẫu:</span>
+        <div style="color:#fff; margin-top:2px;">"${escapeHtml(data.ex1_vi_to_en?.sample_en || '')}"</div>
+      </div>
+    `;
+  };
+
+  $('checkEx2Btn').onclick = () => {
+    $('ex2Result').style.display = 'block';
+    $('ex2Result').innerHTML = `
+      <div style="background:rgba(255,255,255,0.05); padding:8px 12px; border-radius:6px;">
+        <span style="color:var(--sp-green); font-weight:700;">Đáp án tham khảo:</span>
+        <div style="color:#fff; margin-top:2px;">"${escapeHtml(data.ex2_en_to_vi?.sample_vi || '')}"</div>
+      </div>
+    `;
+  };
+
+  // Complete SRS Practice
+  $('completeSrsSessionBtn').onclick = () => {
+    const nextStage = Math.min(5, (vocabItem.srsStage || 0) + 1);
+    vocabItem.srsStage = nextStage;
+    vocabItem.lastReviewed = Date.now();
+    vocabItem.nextReview = Date.now() + (SRS_INTERVALS[nextStage] || 30 * 86400000);
+    vocabItem.reviewCount = (vocabItem.reviewCount || 0) + 1;
+    saveState();
+    updateVocabCountUi();
+    renderVocabNotebook();
+    $('vocabPracticeModal').classList.remove('open');
+    alert(`🎉 Chúc mừng! Từ "${vocabItem.word}" đã nâng lên Cấp SRS ${nextStage}/5. Lần ôn tập tiếp theo: sau ${Math.round((SRS_INTERVALS[nextStage] || 0) / 86400000)} ngày.`);
+  };
+}
+
+$('closeVocabPracticeBtn').onclick = () => $('vocabPracticeModal').classList.remove('open');
+
+// ----------------------------------------------------
+// WEB NOTIFICATIONS FOR SRS
+// ----------------------------------------------------
+function updateNotificationButton() {
+  const status = ('Notification' in window) ? Notification.permission : 'denied';
+  if (status === 'granted') {
+    $('notifStatusText').textContent = 'Bật ✓';
+    $('notifStatusText').style.color = 'var(--sp-green)';
+  } else {
+    $('notifStatusText').textContent = 'Tắt';
+    $('notifStatusText').style.color = 'var(--sp-subtext)';
+  }
+}
+
+$('notifToggleBtn').onclick = async () => {
+  if (!('Notification' in window)) return alert('Trình duyệt của bạn không hỗ trợ Web Notification.');
+  if (Notification.permission === 'granted') {
+    checkAndSendSrsNotification(true);
+  } else {
+    const perm = await Notification.requestPermission();
+    updateNotificationButton();
+    if (perm === 'granted') {
+      checkAndSendSrsNotification(true);
+    } else {
+      alert('Bạn đã từ chối cấp quyền thông báo. Hãy bật trong cài đặt trang web nếu muốn nhận nhắc nhở ôn từ vựng!');
+    }
+  }
+};
+
+function checkAndSendSrsNotification(forceTest = false) {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  const now = Date.now();
+  const due = currentVocabNotebook.filter(v => (v.nextReview || 0) <= now);
+  if (due.length > 0) {
+    new Notification('Grammar Lab IELTS — Lịch ôn tập từ vựng', {
+      body: `Hôm nay bạn có ${due.length} từ vựng cần ôn tập theo phương pháp lặp lại ngắt quãng (SRS)!`,
+      icon: 'https://cdn-icons-png.flaticon.com/512/3898/3898150.png'
+    });
+  } else if (forceTest) {
+    new Notification('Grammar Lab IELTS', {
+      body: 'Thông báo đã được bật thành công! Web sẽ tự động nhắc nhở khi có từ vựng đến lịch ôn tập.',
+      icon: 'https://cdn-icons-png.flaticon.com/512/3898/3898150.png'
+    });
+  }
 }
 
 // ----------------------------------------------------
@@ -1479,100 +2206,6 @@ function playSpeech(word, lang) {
 }
 
 // ----------------------------------------------------
-// SAVED VOCABULARY NOTEBOOK
-// ----------------------------------------------------
-function isWordSaved(word) {
-  return currentVocabNotebook.some(v => v.word.toLowerCase() === word.toLowerCase());
-}
-
-function toggleSaveWord(word, ipa, groupedMeanings, audioUrl) {
-  const existingIdx = currentVocabNotebook.findIndex(v => v.word.toLowerCase() === word.toLowerCase());
-  if (existingIdx >= 0) {
-    currentVocabNotebook.splice(existingIdx, 1);
-  } else {
-    const sampleMeanings = [];
-    let firstPos = '';
-    for (const [pos, items] of Object.entries(groupedMeanings)) {
-      if (!firstPos) firstPos = pos;
-      items.forEach(it => sampleMeanings.push(it.definition));
-      if (sampleMeanings.length >= 2) break;
-    }
-    currentVocabNotebook.unshift({
-      word,
-      ipa: ipa || '',
-      pos: firstPos || 'Từ vựng',
-      meaning: sampleMeanings.join('; ') || 'Từ vựng đã lưu',
-      audio: audioUrl || null,
-      savedAt: Date.now()
-    });
-  }
-  saveState();
-  updateVocabCountUi();
-
-  const btn = $('saveVocabBtn');
-  if (btn) {
-    const saved = isWordSaved(word);
-    btn.className = `sp-pill ${saved ? 'green active' : 'green'}`;
-    btn.innerHTML = saved ? '★ Đã lưu' : '⭐ Lưu từ';
-  }
-}
-
-function updateVocabCountUi() {
-  const count = currentVocabNotebook.length;
-  $('topVocabCount').textContent = count;
-  $('dockVocabCount').textContent = count;
-  $('drawerVocabCount').textContent = count;
-}
-
-function renderVocabNotebook(filterText = '') {
-  const container = $('vocabListBody');
-  const query = (filterText || $('vocabFilterInput').value).trim().toLowerCase();
-  const list = query 
-    ? currentVocabNotebook.filter(v => v.word.toLowerCase().includes(query) || v.meaning.toLowerCase().includes(query))
-    : currentVocabNotebook;
-
-  if (list.length === 0) {
-    container.innerHTML = `
-      <div style="text-align:center; padding:40px 10px; color:var(--sp-subtext);">
-        <div style="font-size:36px; margin-bottom:8px;">⭐</div>
-        <strong style="color:#fff; font-size:15px;">Sổ từ vựng đang trống</strong>
-        <p style="font-size:13px; margin-top:6px;">Khi tra từ điển hoặc bôi đen từ trên màn hình, hãy bấm ⭐ Lưu từ để ghi nhớ tại đây!</p>
-      </div>
-    `;
-    return;
-  }
-
-  container.innerHTML = list.map(item => `
-    <div class="sp-vocab-item" data-word="${escapeHtml(item.word)}">
-      <div class="sp-vocab-head">
-        <div>
-          <span class="sp-vocab-word">${escapeHtml(item.word)}</span>
-          ${item.ipa ? `<span class="sp-vocab-ipa">${escapeHtml(item.ipa)}</span>` : ''}
-          <span class="sp-vocab-pos">${escapeHtml(item.pos)}</span>
-        </div>
-        <div style="display:flex; gap:6px; align-items:center;">
-          <button class="sp-close-btn vocab-audio-btn" title="Nghe phát âm" style="font-size:15px;">🔊</button>
-          <button class="sp-close-btn vocab-del-btn" title="Xóa từ" style="font-size:18px;">&times;</button>
-        </div>
-      </div>
-      <div class="sp-vocab-def">${escapeHtml(item.meaning)}</div>
-    </div>
-  `).join('');
-
-  container.querySelectorAll('.sp-vocab-item').forEach(card => {
-    const word = card.dataset.word;
-    const item = currentVocabNotebook.find(v => v.word.toLowerCase() === word.toLowerCase());
-    card.querySelector('.vocab-audio-btn').onclick = () => playWordAudio(item?.audio, word, 'en');
-    card.querySelector('.vocab-del-btn').onclick = () => {
-      currentVocabNotebook = currentVocabNotebook.filter(v => v.word.toLowerCase() !== word.toLowerCase());
-      saveState();
-      updateVocabCountUi();
-      renderVocabNotebook();
-    };
-  });
-}
-
-// ----------------------------------------------------
 // UNIVERSAL SELECTION LOOKUP
 // ----------------------------------------------------
 let currentSelectedText = '';
@@ -1625,8 +2258,8 @@ function setupUniversalSelection() {
     }
   };
 
-  document.addEventListener('mouseup', (e) => setTimeout(() => checkSelection(e), 60));
-  document.addEventListener('keyup', (e) => setTimeout(() => checkSelection(e), 60));
+  document.addEventListener('mouseup', e => setTimeout(() => checkSelection(e), 60));
+  document.addEventListener('keyup', e => setTimeout(() => checkSelection(e), 60));
   document.addEventListener('selectionchange', () => {
     const sel = window.getSelection();
     if (sel && sel.isCollapsed && document.activeElement?.selectionStart === document.activeElement?.selectionEnd) {
@@ -1634,7 +2267,7 @@ function setupUniversalSelection() {
     }
   });
 
-  tooltip.onclick = (e) => {
+  tooltip.onclick = e => {
     e.stopPropagation();
     tooltip.style.display = 'none';
     if (currentSelectedText) {
@@ -1648,42 +2281,61 @@ function setupUniversalSelection() {
 }
 
 // ----------------------------------------------------
-// EVENT LISTENERS & BOOTSTRAP
+// DRAWER SYSTEM
+// ----------------------------------------------------
+function openDrawer(activeTab = 'dict') {
+  $('drawerOverlay').classList.add('open');
+  $('mainDrawer').classList.add('open');
+  switchDrawerTab(activeTab);
+}
+
+function closeDrawer() {
+  $('drawerOverlay').classList.remove('open');
+  $('mainDrawer').classList.remove('open');
+  $('dictSuggestions').style.display = 'none';
+}
+
+function switchDrawerTab(tab) {
+  $('tabDict').classList.toggle('active', tab === 'dict');
+  $('tabVocab').classList.toggle('active', tab === 'vocab');
+  $('tabMistakes').classList.toggle('active', tab === 'mistakes');
+
+  $('viewDict').style.display = tab === 'dict' ? 'block' : 'none';
+  $('viewVocab').style.display = tab === 'vocab' ? 'block' : 'none';
+  $('viewMistakes').style.display = tab === 'mistakes' ? 'block' : 'none';
+
+  if (tab === 'vocab') renderVocabNotebook();
+  if (tab === 'mistakes') renderMistakesNotebook();
+}
+
+// ----------------------------------------------------
+// BOOTSTRAP & EVENT LISTENERS
 // ----------------------------------------------------
 function initEvents() {
-  // Navigation
   $('prevTrackBtn').onclick = () => {
-    const nextIdx = (currentStructIndex - 1 + STRUCTURES.length) % STRUCTURES.length;
+    const album = getCurrentAlbum();
+    const nextIdx = (currentTrackIndex - 1 + album.tracks.length) % album.tracks.length;
     selectStructure(nextIdx);
   };
   $('nextTrackBtn').onclick = () => {
-    const nextIdx = (currentStructIndex + 1) % STRUCTURES.length;
+    const album = getCurrentAlbum();
+    const nextIdx = (currentTrackIndex + 1) % album.tracks.length;
     selectStructure(nextIdx);
   };
   $('randomStructBtn').onclick = () => {
+    const album = getCurrentAlbum();
+    if (album.tracks.length <= 1) return;
     let rand;
-    do { rand = Math.floor(Math.random() * STRUCTURES.length); } while (rand === currentStructIndex && STRUCTURES.length > 1);
+    do { rand = Math.floor(Math.random() * album.tracks.length); } while (rand === currentTrackIndex);
     selectStructure(rand);
   };
 
-  // Keyboard navigation: Left/Right arrow outside input
-  document.addEventListener('keydown', (e) => {
+  document.addEventListener('keydown', e => {
     if (['TEXTAREA', 'INPUT'].includes(document.activeElement?.tagName)) return;
     if (e.key === 'ArrowLeft') $('prevTrackBtn').click();
     if (e.key === 'ArrowRight') $('nextTrackBtn').click();
   });
 
-  // Filter chips in sidebar
-  $('categoryChips').querySelectorAll('.sp-chip').forEach(chip => {
-    chip.onclick = () => {
-      $('categoryChips').querySelectorAll('.sp-chip').forEach(c => c.classList.remove('active'));
-      chip.classList.add('active');
-      currentFilter = chip.dataset.filter;
-      renderTrackList();
-    };
-  });
-
-  // Action buttons
   $('genNewChallengeBtn').onclick = generateNewChallenge;
   $('openDictActionBtn').onclick = () => openDrawer('dict');
   $('toggleSampleBtn').onclick = () => {
@@ -1697,7 +2349,6 @@ function initEvents() {
     }
   };
 
-  // Drawer triggers
   $('topDictBtn').onclick = () => openDrawer('dict');
   $('dockDictBtn').onclick = () => openDrawer('dict');
   $('topVocabBtn').onclick = () => openDrawer('vocab');
@@ -1711,7 +2362,6 @@ function initEvents() {
   $('tabVocab').onclick = () => switchDrawerTab('vocab');
   $('tabMistakes').onclick = () => switchDrawerTab('mistakes');
 
-  // Dict Events
   $('dictLangToggle').onclick = () => {
     dictLang = dictLang === 'en' ? 'vi' : 'en';
     $('dictLangToggle').textContent = dictLang === 'en' ? '🇬🇧 Anh → 🇻🇳 Việt' : '🇻🇳 Việt → 🇬🇧 Anh';
@@ -1719,15 +2369,11 @@ function initEvents() {
     if (curVal) doLookup(curVal);
   };
   $('dictSearchBtn').onclick = () => doLookup();
-  $('dictSearchInput').addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      doLookup();
-    }
+  $('dictSearchInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); doLookup(); }
   });
 
-  // Vocab filter & copy
-  $('vocabFilterInput').addEventListener('input', (e) => renderVocabNotebook(e.target.value));
+  $('vocabFilterInput').addEventListener('input', e => renderVocabNotebook(e.target.value));
   $('copyVocabBtn').onclick = () => {
     if (currentVocabNotebook.length === 0) return alert('Sổ từ vựng đang trống.');
     const text = currentVocabNotebook.map(v => `${v.word} (${v.ipa}) [${v.pos}]: ${v.meaning}`).join('\n');
@@ -1776,33 +2422,16 @@ function escapeHtml(str) {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
 }
 
-// Anti-Watermark script
-function removeWatermarks() {
-  const badSelectors = [
-    'a[href*="tiiny.host"]',
-    'a[href*="drophtml"]',
-    '.sidebar-container',
-    'div[style*="z-index:9999"]',
-    'div[style*="z-index: 9999"]',
-    'div[style*="height: 55px"]'
-  ];
-  document.querySelectorAll(badSelectors.join(',')).forEach(el => {
-    el.style.display = 'none';
-    el.remove();
-  });
-}
-
-// Boot
 window.addEventListener('DOMContentLoaded', () => {
+  renderAll();
   initEvents();
   setupUniversalSelection();
   updateApiStatusUi();
   updateVocabCountUi();
   updateMistakesCountUi();
-  renderTrackList();
-  renderCurrentStructure();
-  removeWatermarks();
-  setInterval(removeWatermarks, 400);
+  updateNotificationButton();
+  // Check SRS notification on boot
+  setTimeout(() => checkAndSendSrsNotification(false), 2000);
 });
 </script>
 </body>
