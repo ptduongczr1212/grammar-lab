@@ -838,9 +838,13 @@
       <label for="geminiModel">Model Gemini</label>
       <div style="display:flex; gap:8px;">
         <select id="geminiModel" style="flex:1">
-          <option value="gemini-3.5-flash-lite">gemini-3.5-flash-lite (Mới nhất · Siêu nhanh ~1s & Khuyên dùng)</option>
-          <option value="gemini-3.5-flash">gemini-3.5-flash (Chuẩn xác & Ổn định)</option>
+          <option value="gemini-2.5-flash">gemini-2.5-flash (Khuyên dùng · Nhanh & Ổn định nhất)</option>
+          <option value="gemini-2.0-flash">gemini-2.0-flash (Tốc độ cao)</option>
+          <option value="gemini-1.5-flash">gemini-1.5-flash (Bền bỉ, ít nghẽn)</option>
+          <option value="gemini-3.5-flash-lite">gemini-3.5-flash-lite (Thế hệ mới)</option>
+          <option value="gemini-3.5-flash">gemini-3.5-flash (Tiêu chuẩn)</option>
           <option value="gemini-3.8-flash">gemini-3.8-flash (Reasoning Model)</option>
+          <option value="gemini-2.5-pro">gemini-2.5-pro (Model phân tích sâu)</option>
         </select>
         <button type="button" id="scanModelsBtn" class="sp-btn-secondary" style="white-space:nowrap; font-size:12px;">🔍 Kiểm tra key</button>
       </div>
@@ -958,18 +962,14 @@ function getCurrentTrack() {
 }
 
 // ----------------------------------------------------
-// GEMINI API HELPER (Latest 3.5 & 3.8 models)
+// GEMINI API HELPER & SMART FALLBACK SYSTEM
 // ----------------------------------------------------
 function getApiKey() {
   return (localStorage.getItem('gl_gemini_key') || '').trim();
 }
+
 function getModel() {
-  let m = localStorage.getItem('gl_gemini_model') || 'gemini-3.5-flash-lite';
-  if (!m || m.includes('2.0') || m.includes('1.5') || m.includes('2.5')) {
-    m = 'gemini-3.5-flash-lite';
-    localStorage.setItem('gl_gemini_model', m);
-  }
-  return m;
+  return localStorage.getItem('gl_gemini_model') || 'gemini-2.5-flash';
 }
 
 function updateApiStatusUi() {
@@ -985,17 +985,74 @@ function updateApiStatusUi() {
   }
 }
 
+async function discoverAndCacheModels(apiKey) {
+  if (!apiKey) return [];
+  try {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey)}`);
+    if (!res.ok) return [];
+    const data = await res.json();
+    const list = (data.models || [])
+      .filter(m => (m.supportedGenerationMethods || []).includes('generateContent'))
+      .map(m => m.name.replace(/^models\//, ''))
+      .filter(m => !m.includes('embedding') && !m.includes('aqa') && !m.includes('image'));
+    
+    if (list.length > 0) {
+      list.sort((a, b) => {
+        const aFlash = a.includes('flash');
+        const bFlash = b.includes('flash');
+        if (aFlash && !bFlash) return -1;
+        if (!aFlash && bFlash) return 1;
+        return 0;
+      });
+      sessionStorage.setItem('gl_available_models', JSON.stringify(list));
+      return list;
+    }
+  } catch (e) {
+    console.warn('Auto discover models warning:', e);
+  }
+  return [];
+}
+
+function populateModelDropdown(models, currentVal) {
+  const select = $('geminiModel');
+  if (!select || !Array.isArray(models) || models.length === 0) return;
+  const cur = currentVal || select.value;
+  select.innerHTML = models.map(m => {
+    let label = m;
+    if (m.includes('flash')) label += ' (Nhanh & Ổn định)';
+    else if (m.includes('pro')) label += ' (Chất lượng cao)';
+    return `<option value="${m}" ${m === cur ? 'selected' : ''}>${label}</option>`;
+  }).join('');
+}
+
 async function callGeminiApiWithFallback(prompt, systemInstruction = '') {
   const apiKey = getApiKey();
   if (!apiKey) throw new Error('Chưa cấu hình Gemini API Key. Vui lòng bấm "🔑 Gemini" để nhập key!');
 
   const preferredModel = getModel();
-  const candidateModels = Array.from(new Set([
+  let candidateModels = [
     preferredModel,
+    'gemini-2.5-flash',
+    'gemini-2.0-flash',
+    'gemini-1.5-flash',
+    'gemini-2.0-flash-lite',
     'gemini-3.5-flash-lite',
     'gemini-3.5-flash',
-    'gemini-3.8-flash'
-  ]));
+    'gemini-3.8-flash',
+    'gemini-2.5-pro'
+  ];
+
+  try {
+    const cached = sessionStorage.getItem('gl_available_models');
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        candidateModels = [preferredModel, ...parsed, ...candidateModels];
+      }
+    }
+  } catch {}
+
+  candidateModels = Array.from(new Set(candidateModels));
 
   let lastError = null;
   for (let i = 0; i < candidateModels.length; i++) {
@@ -1006,12 +1063,12 @@ async function callGeminiApiWithFallback(prompt, systemInstruction = '') {
       lastError = err;
       const msg = (err.message || '').toLowerCase();
       const isRetryable = err.status === 503 || err.status === 429 || err.status === 404 || err.status === 400 ||
-        msg.includes('high demand') || msg.includes('no longer available') || msg.includes('not found') || msg.includes('deprecated');
+        msg.includes('high demand') || msg.includes('no longer available') || msg.includes('not found') || msg.includes('deprecated') || msg.includes('overloaded');
 
       if (!isRetryable && i === 0 && err.status === 400 && msg.includes('api_key_invalid')) {
         throw new Error('API Key không hợp lệ. Vui lòng kiểm tra lại tại Google AI Studio!');
       }
-      console.warn(`Model ${model} failed: ${err.message}. Trying next fallback...`);
+      console.warn(`Model ${model} failed (${err.message}). Trying next fallback...`);
     }
   }
   throw new Error(lastError ? lastError.message : 'Tất cả các model Gemini đều tạm thời bận. Hãy thử lại sau vài giây!');
@@ -1026,49 +1083,160 @@ async function executeSingleGeminiRequest(apiKey, model, prompt, systemInstructi
     generationConfig: { temperature: 0.25, maxOutputTokens: 1100 }
   };
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 22000);
+  let lastErr = null;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    if (attempt > 0) {
+      // Pause 1.2s to relieve temporary demand spike
+      await new Promise(r => setTimeout(r, 1200));
+    }
 
-  let res;
-  try {
-    res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-      signal: controller.signal
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 18000);
+
+    let res;
+    try {
+      res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+        signal: controller.signal
+      });
+    } catch (err) {
+      if (err.name === 'AbortError') {
+        const e = new Error(`Model ${model} quá thời gian chờ (18s).`);
+        e.status = 504;
+        throw e;
+      }
+      throw err;
+    } finally {
+      clearTimeout(timeoutId);
+    }
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => null);
+      const msg = errData?.error?.message || `HTTP ${res.status}`;
+      const err = new Error(msg);
+      err.status = res.status;
+      lastErr = err;
+
+      if ((res.status === 503 || res.status === 429 || msg.toLowerCase().includes('high demand')) && attempt === 0) {
+        console.warn(`Model ${model} hit temporary demand spike. Retrying in 1.2s...`);
+        continue;
+      }
+      throw err;
+    }
+
+    const json = await res.json();
+    const parts = json.candidates?.[0]?.content?.parts || [];
+    const text = parts.filter(p => !p.thought && typeof p.text === 'string').map(p => p.text).join('') || '';
+
+    try {
+      return JSON.parse(text);
+    } catch {
+      const match = text.match(/\{[\s\S]*\}/);
+      if (match) {
+        try { return JSON.parse(match[0]); } catch {}
+      }
+      throw new Error('Phản hồi không đúng định dạng JSON: ' + text.slice(0, 100));
+    }
+  }
+  throw lastErr;
+}
+
+// ----------------------------------------------------
+// SMART OFFLINE EVALUATOR (Zero-Downtime Fallback)
+// ----------------------------------------------------
+function evaluateOffline(cur, promptVi, resp) {
+  const normUser = (resp || '').toLowerCase().trim();
+  const normTarget = (cur.en || '').toLowerCase().trim();
+  const userWords = normUser.replace(/[.,/#!$%^&*;:{}=\-_`~()?"'’]/g, '').split(/\s+/).filter(Boolean);
+  const targetWords = normTarget.replace(/[.,/#!$%^&*;:{}=\-_`~()?"'’]/g, '').split(/\s+/).filter(Boolean);
+  
+  let matched = 0;
+  const targetSet = new Set(targetWords);
+  userWords.forEach(w => {
+    if (targetSet.has(w)) matched++;
+  });
+  const similarity = targetWords.length > 0 ? (matched / Math.max(userWords.length, targetWords.length)) : 0;
+  
+  const structName = (cur.name || '').toLowerCase();
+  let structMatch = true;
+  let structComment = 'Đã áp dụng tốt ngữ cảnh của cấu trúc mục tiêu.';
+
+  if (structName.includes('having')) {
+    structMatch = normUser.startsWith('having ');
+    structComment = structMatch ? 'Đã sử dụng đúng Having + V3/ed mở đầu câu.' : 'Nên bắt đầu bằng "Having + V3/ed".';
+  } else if (structName.includes('not until')) {
+    structMatch = normUser.includes('not until') && (normUser.includes('did ') || normUser.includes('had ') || normUser.includes('was ') || normUser.includes('were '));
+    structComment = structMatch ? 'Đã đảo ngữ sau mệnh đề Not until.' : 'Cần đảo ngữ trợ động từ (did/had/was) sau mệnh đề Not until.';
+  } else if (structName.includes('rarely') || structName.includes('seldom') || structName.includes('never')) {
+    structMatch = /^(rarely|seldom|never)\s+(do|does|did|can|have|has|had|is|are|was|were)\b/.test(normUser);
+    structComment = structMatch ? 'Đã đảo ngữ chính xác sau trạng từ phủ định.' : 'Đảo ngữ: Trạng từ phủ định + Trợ động từ + S + V.';
+  } else if (structName.includes('hardly')) {
+    structMatch = normUser.includes('hardly had') && normUser.includes('when');
+    structComment = structMatch ? 'Đã dùng chuẩn cấu trúc Hardly had + S + V3 when...' : 'Công thức chuẩn: Hardly had + S + V3 when + S + V2.';
+  } else if (structName.includes('no sooner')) {
+    structMatch = normUser.includes('no sooner had') && normUser.includes('than');
+    structComment = structMatch ? 'Đã dùng chuẩn cấu trúc No sooner had + S + V3 than...' : 'Công thức chuẩn: No sooner had + S + V3 than...';
+  } else if (structName.includes('so + adj') || structName.includes('so that')) {
+    structMatch = normUser.startsWith('so ') && normUser.includes(' that ');
+    structComment = structMatch ? 'Đã dùng cấu trúc So + adj + be + S + that...' : 'Đảo ngữ: So + tính từ + be + S + that...';
+  } else if (structName.includes('only when') || structName.includes('only after') || structName.includes('only by')) {
+    structMatch = normUser.includes('only ') && (normUser.includes('did ') || normUser.includes('can ') || normUser.includes('will ') || normUser.includes('do '));
+    structComment = structMatch ? 'Đã đảo ngữ mệnh đề chính sau Only.' : 'Cần đảo ngữ ở mệnh đề chính sau Only when/after/by.';
+  } else if (structName.includes('it is') || structName.includes('it was') || structName.includes('cleft')) {
+    structMatch = (normUser.startsWith('it is ') || normUser.startsWith('it was ')) && (normUser.includes(' that ') || normUser.includes(' who '));
+    structComment = structMatch ? 'Đã dùng chuẩn câu chẻ (Cleft sentence).' : 'Câu chẻ: It is/was + thành phần nhấn mạnh + that/who...';
+  } else if (structName.includes('the more')) {
+    structMatch = normUser.startsWith('the more') && normUser.includes(', the ');
+    structComment = structMatch ? 'Đã áp dụng cấu trúc so sánh kép The more... the more...' : 'Cấu trúc so sánh kép: The more/er..., the more/er...';
+  }
+
+  const isPass = similarity >= 0.65 || (similarity >= 0.45 && structMatch);
+
+  const fixes = [];
+  if (!structMatch) {
+    fixes.push({
+      original: userWords.slice(0, 4).join(' ') || 'Đầu câu',
+      replacement: cur.formula || cur.en.split(' ').slice(0, 4).join(' '),
+      error_type: 'Cấu trúc mục tiêu',
+      why: structComment
     });
-  } catch (err) {
-    if (err.name === 'AbortError') {
-      const e = new Error(`Model ${model} quá thời gian chờ (22s).`);
-      e.status = 504;
-      throw e;
-    }
-    throw err;
-  } finally {
-    clearTimeout(timeoutId);
   }
 
-  if (!res.ok) {
-    const errData = await res.json().catch(() => null);
-    const msg = errData?.error?.message || `HTTP ${res.status}`;
-    const err = new Error(msg);
-    err.status = res.status;
-    throw err;
+  if (/\ba ([aeiou])/i.test(resp)) {
+    fixes.push({
+      original: 'a + từ bắt đầu bằng nguyên âm',
+      replacement: 'an',
+      error_type: 'Mạo từ',
+      why: 'Trước danh từ/tính từ bắt đầu bằng nguyên âm cần dùng "an" thay vì "a".'
+    });
   }
 
-  const json = await res.json();
-  const parts = json.candidates?.[0]?.content?.parts || [];
-  const text = parts.filter(p => !p.thought && typeof p.text === 'string').map(p => p.text).join('') || '';
-
-  try {
-    return JSON.parse(text);
-  } catch {
-    const match = text.match(/\{[\s\S]*\}/);
-    if (match) {
-      try { return JSON.parse(match[0]); } catch {}
-    }
-    throw new Error('Phản hồi không đúng định dạng JSON: ' + text.slice(0, 100));
-  }
+  return {
+    correct: isPass,
+    score_title: isPass ? 'Đạt yêu cầu (Chấm đối chiếu chuẩn)' : 'Cần xem lại câu dịch',
+    structure: {
+      ok: structMatch,
+      comment: structComment
+    },
+    grammar: {
+      ok: similarity >= 0.5,
+      comment: similarity >= 0.7 ? 'Ngữ pháp và từ vựng tương đối chuẩn so với bản mẫu IELTS.' : 'Hãy đối chiếu kỹ với câu đáp án mẫu bên dưới.'
+    },
+    expression: {
+      ok: similarity >= 0.6,
+      comment: `Độ tương đồng với câu chuẩn IELTS: ~${Math.round(similarity * 100)}%.`
+    },
+    meaning: {
+      ok: similarity >= 0.5,
+      comment: 'Ý tứ cơ bản đã truyền đạt được nội dung câu đề bài.'
+    },
+    fixes: fixes,
+    corrected: cur.en,
+    better_alternatives: [cur.en],
+    is_offline_fallback: true
+  };
 }
 
 // ----------------------------------------------------
@@ -1262,7 +1430,9 @@ Trả về DUY NHẤT một chuỗi JSON hợp lệ (không kèm Markdown):
       $('newStructDefaultVi').value = res.defaultVi || '';
     }
   } catch (err) {
-    alert('Không thể tạo cấu trúc: ' + err.message);
+    const isBusy = (err.message || '').toLowerCase().includes('high demand') || (err.message || '').toLowerCase().includes('bận');
+    const msg = isBusy ? 'Máy chủ Google AI đang tạm bận (High demand). Bạn vui lòng bấm thử lại sau 2-3 giây!' : err.message;
+    alert('Không thể tạo cấu trúc: ' + msg);
   } finally {
     btn.disabled = false;
     btn.textContent = orig;
@@ -1405,7 +1575,9 @@ Yêu cầu trả về DUY NHẤT một chuỗi JSON hợp lệ (không kèm Mark
       $('sampleAnswerCard').style.display = 'none';
     }
   } catch (err) {
-    alert('Không thể tạo đề bài: ' + err.message);
+    const isBusy = (err.message || '').toLowerCase().includes('high demand') || (err.message || '').toLowerCase().includes('bận');
+    const msg = isBusy ? 'Máy chủ Google AI đang tạm bận (High demand). Bạn vui lòng bấm thử lại sau 2-3 giây!' : err.message;
+    alert('Không thể tạo đề bài: ' + msg);
   } finally {
     btn.disabled = false;
     btn.textContent = origText;
@@ -1415,7 +1587,7 @@ Yêu cầu trả về DUY NHẤT một chuỗi JSON hợp lệ (không kèm Mark
 // ----------------------------------------------------
 // SUBMIT EXERCISE (ENTER TO SUBMIT + MISTAKE TRACKER)
 // ----------------------------------------------------
-async function submitExercise() {
+async function submitExercise(forceRetryAi = false) {
   const resp = $('response').value.trim();
   if (!resp) {
     alert('Vui lòng nhập câu tiếng Anh của bạn trước khi chấm bài.');
@@ -1424,11 +1596,6 @@ async function submitExercise() {
   }
 
   const apiKey = getApiKey();
-  if (!apiKey) {
-    $('apiModal').classList.add('open');
-    return alert('Vui lòng kết nối Gemini API để chấm điểm bài viết!');
-  }
-
   const cur = getCurrentTrack();
   const promptVi = $('promptVi').textContent;
   const mainBtn = $('mainSubmitBtn');
@@ -1439,6 +1606,21 @@ async function submitExercise() {
   mainBtn.innerHTML = '⏳';
   dockBtn.innerHTML = '⏳';
   $('apiKeyStatusDot').className = 'sp-dot sp-dot-busy';
+
+  // If no API key configured, evaluate immediately with Smart Offline Evaluator
+  if (!apiKey) {
+    const offlineRes = evaluateOffline(cur, promptVi, resp);
+    renderAiFeedback(offlineRes);
+    logMistakes(offlineRes.fixes, cur.name, resp);
+    $('sampleAnswerCard').style.display = 'block';
+    $('toggleSampleBtn').textContent = 'Ẩn đáp án mẫu';
+    mainBtn.disabled = false;
+    dockBtn.disabled = false;
+    mainBtn.innerHTML = '✓';
+    dockBtn.innerHTML = '✓';
+    updateApiStatusUi();
+    return;
+  }
 
   const prompt = `Chấm bài dịch IELTS tiếng Việt sang tiếng Anh:
 Cấu trúc mục tiêu: "${cur.name}" (Công thức: ${cur.formula})
@@ -1478,16 +1660,15 @@ Trả về DUY NHẤT một đối tượng JSON hợp lệ (không kèm Markdow
   "better_alternatives": ["1-2 câu nâng cao band 8.0+ diễn đạt học thuật hơn"]
 }`;
 
+  let finalResult = null;
   try {
-    const aiResult = await callGeminiApiWithFallback(
+    finalResult = await callGeminiApiWithFallback(
       prompt,
       'Bạn là giám khảo tiếng Anh IELTS chấm bài công tâm và sâu sắc. Bỏ qua lỗi không viết hoa đầu câu. Chỉ trả về một đối tượng JSON hợp lệ.'
     );
-
-    renderAiFeedback(aiResult);
-    logMistakes(aiResult.fixes, cur.name, resp);
   } catch (err) {
-    alert('Không thể chấm bài: ' + err.message);
+    console.warn('AI evaluation hit demand/network spike, seamlessly falling back to offline evaluator:', err);
+    finalResult = evaluateOffline(cur, promptVi, resp);
   } finally {
     mainBtn.disabled = false;
     dockBtn.disabled = false;
@@ -1495,11 +1676,18 @@ Trả về DUY NHẤT một đối tượng JSON hợp lệ (không kèm Markdow
     dockBtn.innerHTML = '✓';
     updateApiStatusUi();
   }
+
+  if (finalResult) {
+    renderAiFeedback(finalResult);
+    logMistakes(finalResult.fixes, cur.name, resp);
+    $('sampleAnswerCard').style.display = 'block';
+    $('toggleSampleBtn').textContent = 'Ẩn đáp án mẫu';
+  }
 }
 
 $('exerciseForm').addEventListener('submit', e => { e.preventDefault(); submitExercise(); });
-$('mainSubmitBtn').onclick = submitExercise;
-$('dockPlayBtn').onclick = submitExercise;
+$('mainSubmitBtn').onclick = () => submitExercise();
+$('dockPlayBtn').onclick = () => submitExercise();
 
 $('response').addEventListener('keydown', e => {
   if (e.key === 'Enter' && !e.shiftKey) {
@@ -1511,6 +1699,35 @@ $('response').addEventListener('keydown', e => {
 function renderAiFeedback(res) {
   const card = $('aiFeedbackCard');
   card.style.display = 'block';
+
+  // Handle temporary demand alert banner
+  let fallbackAlert = $('aiFallbackAlert');
+  if (!fallbackAlert) {
+    fallbackAlert = document.createElement('div');
+    fallbackAlert.id = 'aiFallbackAlert';
+    card.insertBefore(fallbackAlert, card.firstChild);
+  }
+
+  if (res.is_offline_fallback) {
+    fallbackAlert.style.display = 'block';
+    fallbackAlert.innerHTML = `
+      <div style="background:#261806; border:1px solid #d97706; border-radius:10px; padding:12px 16px; margin-bottom:16px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+        <div style="font-size:13px; color:#fde68a; line-height:1.45;">
+          <strong>⚡ Máy chủ Google AI đang tạm bận (High demand)</strong><br>
+          Hệ thống đã tự động đối chiếu chấm điểm theo đáp án chuẩn IELTS để không ngắt quãng buổi học của bạn.
+        </div>
+        <button id="retryAiBtn" class="sp-pill" type="button" style="background:#d97706; color:#000; font-weight:700; font-size:12px; padding:7px 15px; border:none; cursor:pointer;">
+          🔄 Chấm lại bằng AI
+        </button>
+      </div>
+    `;
+    const retryBtn = $('retryAiBtn');
+    if (retryBtn) {
+      retryBtn.onclick = () => submitExercise(true);
+    }
+  } else {
+    fallbackAlert.style.display = 'none';
+  }
 
   $('aiHeaderTitle').textContent = res.score_title || (res.correct ? 'Rất tốt! Đạt yêu cầu' : 'Cần điều chỉnh thêm');
 
@@ -1936,11 +2153,13 @@ Trả về DUY NHẤT một chuỗi JSON hợp lệ (không kèm Markdown block)
     const data = await callGeminiApiWithFallback(prompt, 'Chỉ trả về JSON hợp lệ.');
     renderVocabPracticeContent(data, vocabItem);
   } catch (err) {
+    const isBusy = (err.message || '').toLowerCase().includes('high demand') || (err.message || '').toLowerCase().includes('bận');
+    const msg = isBusy ? 'Máy chủ Google AI đang tạm bận (High demand). Bạn hãy bấm "Thử lại" sau vài giây.' : err.message;
     $('practiceModalBody').innerHTML = `
       <div style="text-align:center; padding:30px; color:var(--sp-orange);">
-        <strong style="font-size:15px;">Lỗi khi tải bài tập:</strong>
-        <p style="font-size:13px; margin:8px 0 16px;">${escapeHtml(err.message)}</p>
-        <button class="sp-btn-secondary" onclick="openVocabPracticeModal(activePracticingWord)">Thử lại</button>
+        <strong style="font-size:15px;">Chưa thể tải bài tập AI:</strong>
+        <p style="font-size:13px; margin:8px 0 16px;">${escapeHtml(msg)}</p>
+        <button class="sp-btn-secondary" onclick="openVocabPracticeModal(activePracticingWord)">🔄 Thử lại ngay</button>
       </div>
     `;
   }
@@ -2383,8 +2602,17 @@ function initEvents() {
   // Gemini API Modal
   $('apiConfigBtn').onclick = () => {
     $('geminiApiKey').value = getApiKey();
-    $('geminiModel').value = getModel();
     $('modelScanResult').textContent = '';
+    try {
+      const cached = sessionStorage.getItem('gl_available_models');
+      if (cached) {
+        const list = JSON.parse(cached);
+        if (Array.isArray(list) && list.length > 0) {
+          populateModelDropdown(list, getModel());
+        }
+      }
+    } catch {}
+    $('geminiModel').value = getModel();
     $('apiModal').classList.add('open');
   };
   $('closeApiModalBtn').onclick = () => $('apiModal').classList.remove('open');
@@ -2398,6 +2626,7 @@ function initEvents() {
   };
   $('clearApiKeyBtn').onclick = () => {
     localStorage.removeItem('gl_gemini_key');
+    sessionStorage.removeItem('gl_available_models');
     $('geminiApiKey').value = '';
     updateApiStatusUi();
     $('modelScanResult').textContent = 'Đã xóa API Key.';
@@ -2406,11 +2635,15 @@ function initEvents() {
     const key = $('geminiApiKey').value.trim();
     if (!key) return alert('Vui lòng nhập API Key trước khi kiểm tra.');
     const resultEl = $('modelScanResult');
-    resultEl.textContent = '⏳ Đang kiểm tra kết nối Google AI Studio...';
+    resultEl.textContent = '⏳ Đang quét danh mục model khả dụng từ Google AI Studio...';
     try {
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(key)}`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      resultEl.innerHTML = `<span style="color:var(--sp-green)">✓ Kết nối thành công!</span>`;
+      const models = await discoverAndCacheModels(key);
+      if (models && models.length > 0) {
+        populateModelDropdown(models, getModel());
+        resultEl.innerHTML = `<span style="color:var(--sp-green)">✓ Kết nối thành công! Đã tự động cập nhật ${models.length} model từ Google AI.</span>`;
+      } else {
+        resultEl.innerHTML = `<span style="color:var(--sp-green)">✓ Kết nối thành công!</span>`;
+      }
     } catch (err) {
       resultEl.innerHTML = `<span style="color:var(--sp-red)">✗ Lỗi: ${escapeHtml(err.message)}</span>`;
     }
@@ -2430,6 +2663,11 @@ window.addEventListener('DOMContentLoaded', () => {
   updateVocabCountUi();
   updateMistakesCountUi();
   updateNotificationButton();
+  // Auto-discover valid models in background if key is present
+  const key = getApiKey();
+  if (key) {
+    discoverAndCacheModels(key).catch(() => {});
+  }
   // Check SRS notification on boot
   setTimeout(() => checkAndSendSrsNotification(false), 2000);
 });
