@@ -846,11 +846,12 @@
       <label for="geminiModel">Model Gemini</label>
       <div style="display:flex; gap:8px;">
         <select id="geminiModel" style="flex:1">
-          <option value="gemini-2.5-flash">gemini-2.5-flash (Khuyên dùng · Nhanh & Ổn định nhất)</option>
+          <option value="gemini-3.5-flash-lite">gemini-3.5-flash-lite (Khuyên dùng · Siêu tốc ~1-2s)</option>
+          <option value="gemini-3.5-flash">gemini-3.5-flash (Chuẩn xác & Nhanh ~2-3s)</option>
+          <option value="gemini-2.0-flash-lite">gemini-2.0-flash-lite (Siêu nhanh ~1-2s)</option>
+          <option value="gemini-2.5-flash">gemini-2.5-flash (Cân bằng)</option>
           <option value="gemini-2.0-flash">gemini-2.0-flash (Tốc độ cao)</option>
           <option value="gemini-1.5-flash">gemini-1.5-flash (Bền bỉ, ít nghẽn)</option>
-          <option value="gemini-3.5-flash-lite">gemini-3.5-flash-lite (Thế hệ mới)</option>
-          <option value="gemini-3.5-flash">gemini-3.5-flash (Tiêu chuẩn)</option>
           <option value="gemini-3.8-flash">gemini-3.8-flash (Reasoning Model)</option>
           <option value="gemini-2.5-pro">gemini-2.5-pro (Model phân tích sâu)</option>
         </select>
@@ -994,7 +995,9 @@ function getApiKey() {
 }
 
 function getModel() {
-  return localStorage.getItem('gl_gemini_model') || 'gemini-2.5-flash';
+  const m = localStorage.getItem('gl_gemini_model');
+  if (m && !m.includes('2.5-flash')) return m;
+  return 'gemini-3.5-flash-lite';
 }
 
 function updateApiStatusUi() {
@@ -1022,7 +1025,12 @@ async function discoverAndCacheModels(apiKey) {
       .filter(m => !m.includes('embedding') && !m.includes('aqa') && !m.includes('image'));
     
     if (list.length > 0) {
+      // Prioritize flash-lite and flash models to top
       list.sort((a, b) => {
+        const aLite = a.includes('lite');
+        const bLite = b.includes('lite');
+        if (aLite && !bLite) return -1;
+        if (!aLite && bLite) return 1;
         const aFlash = a.includes('flash');
         const bFlash = b.includes('flash');
         if (aFlash && !bFlash) return -1;
@@ -1044,7 +1052,8 @@ function populateModelDropdown(models, currentVal) {
   const cur = currentVal || select.value;
   select.innerHTML = models.map(m => {
     let label = m;
-    if (m.includes('flash')) label += ' (Nhanh & Ổn định)';
+    if (m.includes('lite')) label += ' (Siêu tốc ~1s)';
+    else if (m.includes('flash')) label += ' (Nhanh ~2-3s)';
     else if (m.includes('pro')) label += ' (Chất lượng cao)';
     return `<option value="${m}" ${m === cur ? 'selected' : ''}>${label}</option>`;
   }).join('');
@@ -1055,16 +1064,16 @@ async function callGeminiApiWithFallback(prompt, systemInstruction = '') {
   if (!apiKey) throw new Error('Chưa cấu hình Gemini API Key. Vui lòng bấm "🔑 Gemini" để nhập key!');
 
   const preferredModel = getModel();
+  // Fast models first: lite and low-latency flash models
   let candidateModels = [
     preferredModel,
+    'gemini-3.5-flash-lite',
+    'gemini-2.0-flash-lite',
+    'gemini-3.5-flash',
     'gemini-2.5-flash',
     'gemini-2.0-flash',
     'gemini-1.5-flash',
-    'gemini-2.0-flash-lite',
-    'gemini-3.5-flash-lite',
-    'gemini-3.5-flash',
-    'gemini-3.8-flash',
-    'gemini-2.5-pro'
+    'gemini-3.8-flash'
   ];
 
   try {
@@ -1087,13 +1096,13 @@ async function callGeminiApiWithFallback(prompt, systemInstruction = '') {
     } catch (err) {
       lastError = err;
       const msg = (err.message || '').toLowerCase();
-      const isRetryable = err.status === 503 || err.status === 429 || err.status === 404 || err.status === 400 ||
+      const isRetryable = err.status === 503 || err.status === 429 || err.status === 404 || err.status === 400 || err.status === 504 ||
         msg.includes('high demand') || msg.includes('no longer available') || msg.includes('not found') || msg.includes('deprecated') || msg.includes('overloaded');
 
       if (!isRetryable && i === 0 && err.status === 400 && msg.includes('api_key_invalid')) {
         throw new Error('API Key không hợp lệ. Vui lòng kiểm tra lại tại Google AI Studio!');
       }
-      console.warn(`Model ${model} failed (${err.message}). Trying next fallback...`);
+      console.warn(`Model ${model} failed (${err.message}). Trying next fast fallback...`);
     }
   }
   throw new Error(lastError ? lastError.message : 'Tất cả các model Gemini đều tạm thời bận. Hãy thử lại sau vài giây!');
@@ -1103,69 +1112,65 @@ async function executeSingleGeminiRequest(apiKey, model, prompt, systemInstructi
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
   const fullPrompt = (systemInstruction ? systemInstruction + '\n\n' : '') + prompt;
   
-  const body = {
-    contents: [{ role: 'user', parts: [{ text: fullPrompt }] }],
-    generationConfig: { temperature: 0.25, maxOutputTokens: 1100 }
+  const generationConfig = {
+    temperature: 0.2,
+    maxOutputTokens: 800
   };
 
-  let lastErr = null;
-  for (let attempt = 0; attempt < 2; attempt++) {
-    if (attempt > 0) {
-      // Pause 1.2s to relieve temporary demand spike
-      await new Promise(r => setTimeout(r, 1200));
-    }
-
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 18000);
-
-    let res;
-    try {
-      res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-        signal: controller.signal
-      });
-    } catch (err) {
-      if (err.name === 'AbortError') {
-        const e = new Error(`Model ${model} quá thời gian chờ (18s).`);
-        e.status = 504;
-        throw e;
-      }
-      throw err;
-    } finally {
-      clearTimeout(timeoutId);
-    }
-
-    if (!res.ok) {
-      const errData = await res.json().catch(() => null);
-      const msg = errData?.error?.message || `HTTP ${res.status}`;
-      const err = new Error(msg);
-      err.status = res.status;
-      lastErr = err;
-
-      if ((res.status === 503 || res.status === 429 || msg.toLowerCase().includes('high demand')) && attempt === 0) {
-        console.warn(`Model ${model} hit temporary demand spike. Retrying in 1.2s...`);
-        continue;
-      }
-      throw err;
-    }
-
-    const json = await res.json();
-    const parts = json.candidates?.[0]?.content?.parts || [];
-    const text = parts.filter(p => !p.thought && typeof p.text === 'string').map(p => p.text).join('') || '';
-
-    try {
-      return JSON.parse(text);
-    } catch {
-      const match = text.match(/\{[\s\S]*\}/);
-      if (match) {
-        try { return JSON.parse(match[0]); } catch {}
-      }
-      throw new Error('Phản hồi không đúng định dạng JSON: ' + text.slice(0, 100));
-    }
+  // Disable thinking reasoning tokens on thinking models to return instant 2-3s responses
+  if (model.includes('2.5') || model.includes('thinking')) {
+    generationConfig.thinkingConfig = { thinkingBudget: 0 };
   }
-  throw lastErr;
+
+  const body = {
+    contents: [{ role: 'user', parts: [{ text: fullPrompt }] }],
+    generationConfig: generationConfig
+  };
+
+  const controller = new AbortController();
+  // Fast 8.5s timeout: immediately fallback if server node is stalled
+  const timeoutId = setTimeout(() => controller.abort(), 8500);
+
+  let res;
+  try {
+    res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      signal: controller.signal
+    });
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      const e = new Error(`Model ${model} quá thời gian chờ (8.5s).`);
+      e.status = 504;
+      throw e;
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+
+  if (!res.ok) {
+    const errData = await res.json().catch(() => null);
+    const msg = errData?.error?.message || `HTTP ${res.status}`;
+    const err = new Error(msg);
+    err.status = res.status;
+    throw err;
+  }
+
+  const json = await res.json();
+  const parts = json.candidates?.[0]?.content?.parts || [];
+  const text = parts.filter(p => !p.thought && typeof p.text === 'string').map(p => p.text).join('') || '';
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    const match = text.match(/\{[\s\S]*\}/);
+    if (match) {
+      try { return JSON.parse(match[0]); } catch {}
+    }
+    throw new Error('Phản hồi không đúng định dạng JSON: ' + text.slice(0, 100));
+  }
 }
 
 // ----------------------------------------------------
