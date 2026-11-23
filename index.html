@@ -1,0 +1,1725 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Grammar Lab — Luyện Dịch Việt → Anh (Gemini AI & Từ Điển)</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --panel: #141c30;
+      --panel2: #1c2840;
+      --text: #eff4ff;
+      --muted: #a4b1c9;
+      --line: #2c3951;
+      --accent: #80e3c4;
+      --blue: #91b5ff;
+      --orange: #ffd18a;
+      --red: #ff7b72;
+      --green: #7ee787;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: radial-gradient(ellipse at 80% -10%, #233959 0, transparent 45%), var(--bg);
+      color: var(--text);
+      font: 16px/1.55 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    }
+    .wrap { max-width: 1180px; margin: auto; padding: 26px 20px 60px; }
+    header {
+      display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-bottom: 24px; flex-wrap: wrap;
+    }
+    .brand { font-size: 13.5px; letter-spacing: .15em; color: var(--accent); font-weight: 800; text-transform: uppercase; }
+    h1 { font-size: clamp(26px, 4vw, 40px); line-height: 1.2; margin: 4px 0 6px; }
+    p { color: var(--muted); margin: 4px 0; }
+    .header-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .pill {
+      border: 1px solid var(--line); border-radius: 30px; padding: 7px 14px; color: var(--muted); font-size: 13px;
+      display: inline-flex; align-items: center; gap: 8px; background: rgba(20, 28, 48, 0.6);
+    }
+    .pill-btn {
+      cursor: pointer; font: inherit; transition: all .2s; border-color: #3b5072; color: #dbe4f8;
+    }
+    .pill-btn:hover { border-color: var(--accent); color: #fff; background: rgba(30, 45, 75, 0.8); }
+    .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+    .dot-off { background: #718096; }
+    .dot-on { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+    .dot-busy { background: var(--orange); animation: pulse 1s infinite alternate; }
+    @keyframes pulse { from { opacity: .4; } to { opacity: 1; } }
+
+    .layout { display: grid; grid-template-columns: 290px minmax(0, 1fr); gap: 22px; }
+    .sidebar, .main {
+      background: rgba(20, 28, 48, 0.94); border: 1px solid var(--line); border-radius: 20px; padding: 22px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+    }
+    .sidebar h3 { font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; margin: 0 0 14px; }
+    
+    /* Structure Accordion / Category in Sidebar */
+    .group-category {
+      margin-bottom: 10px; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: rgba(15, 22, 38, 0.4);
+    }
+    .group-cat-header {
+      padding: 10px 13px; font-size: 13.5px; font-weight: 700; color: var(--text); cursor: pointer;
+      display: flex; justify-content: space-between; align-items: center; user-select: none;
+      transition: background .15s;
+    }
+    .group-cat-header:hover { background: rgba(30, 45, 75, 0.7); }
+    .group-cat-header .arrow { font-size: 11px; color: var(--muted); transition: transform .2s; }
+    .group-category.open .group-cat-header .arrow { transform: rotate(90deg); color: var(--accent); }
+    .group-items { display: none; padding: 4px 6px 8px; }
+    .group-category.open .group-items { display: block; }
+    
+    .struct-btn {
+      display: block; width: 100%; text-align: left; background: transparent; border: 1px solid transparent;
+      color: var(--muted); border-radius: 8px; padding: 8px 10px; margin: 3px 0; cursor: pointer; font: inherit;
+      font-size: 13px; transition: all .15s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .struct-btn:hover { background: rgba(28, 40, 64, 0.8); color: var(--text); }
+    .struct-btn.active { background: var(--panel2); border-color: var(--accent); color: var(--accent); font-weight: 700; }
+
+    .sidebar-actions { margin-top: 18px; display: flex; flex-direction: column; gap: 8px; }
+
+    /* Main Content Area */
+    .topline { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+    .tag { font-size: 12px; background: #263c4d; color: var(--accent); padding: 5px 12px; border-radius: 25px; font-weight: 700; }
+    .count { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+    .gen-badge { font-size: 11px; background: rgba(128, 227, 196, 0.15); color: var(--accent); border: 1px solid var(--accent); padding: 2px 7px; border-radius: 10px; font-weight: 600; }
+
+    h2 { font-size: clamp(20px, 3vw, 26px); margin: 0 0 14px; color: #fff; }
+
+    /* Formula & Guide Box */
+    .struct-info-card {
+      background: rgba(28, 40, 64, 0.5); border: 1px solid var(--line); border-left: 4px solid var(--accent);
+      border-radius: 12px; padding: 14px 16px; margin-bottom: 18px;
+    }
+    .struct-formula-title { font-size: 12.5px; text-transform: uppercase; letter-spacing: .08em; color: var(--accent); font-weight: 700; margin-bottom: 4px; }
+    .struct-formula { font-family: ui-monospace, 'Cascadia Code', monospace; font-size: 14.5px; color: #fff; font-weight: 600; margin-bottom: 6px; }
+    .struct-note { font-size: 13.5px; color: var(--muted); margin-bottom: 6px; }
+    .struct-example { font-size: 13px; color: var(--blue); }
+
+    /* Practice Challenge Card */
+    .challenge-card {
+      background: var(--panel2); border: 1px solid var(--line); border-radius: 14px; padding: 18px; margin-bottom: 18px;
+    }
+    .challenge-label {
+      font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 700;
+      display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;
+    }
+    .prompt-text { font-size: clamp(17px, 2.2vw, 20px); font-weight: 600; color: #fff; line-height: 1.45; }
+    .prompt-vocab-hint { margin-top: 10px; font-size: 13px; color: var(--orange); background: rgba(255, 209, 138, 0.08); padding: 6px 12px; border-radius: 8px; border: 1px dashed rgba(255, 209, 138, 0.3); }
+
+    .label { font-size: 13px; color: var(--muted); margin-bottom: 6px; display: block; font-weight: 600; }
+    textarea {
+      width: 100%; min-height: 110px; border-radius: 12px; border: 1px solid var(--line); background: #0f1626;
+      color: var(--text); padding: 14px; font: inherit; resize: vertical; outline: none; transition: border-color .2s;
+    }
+    textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(128, 227, 196, 0.15); }
+
+    .actions { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; align-items: center; }
+    .btn {
+      border: 1px solid var(--line); background: #1c2840; color: var(--text); padding: 9px 16px; border-radius: 10px;
+      font: inherit; font-size: 14px; cursor: pointer; transition: all .15s; display: inline-flex; align-items: center; gap: 6px; user-select: none;
+    }
+    .btn:hover { background: #263654; border-color: #49638c; }
+    .btn.primary { background: var(--accent); color: #0b1020; border-color: var(--accent); font-weight: 700; }
+    .btn.primary:hover { filter: brightness(1.1); }
+    .btn.sparkle { background: linear-gradient(135deg, #1f375a, #234c56); border-color: var(--accent); color: var(--accent); font-weight: 600; }
+    .btn.sparkle:hover { background: linear-gradient(135deg, #254470, #2d5f6b); color: #fff; }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+
+    /* Gemini AI Feedback Card */
+    .ai-feedback {
+      background: #111a2e; border: 1px solid #334668; border-radius: 16px; padding: 20px; margin-top: 20px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3); animation: slideDown .25s ease-out;
+    }
+    @keyframes slideDown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+    .ai-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--line); padding-bottom: 12px; margin-bottom: 14px; }
+    .ai-badge { padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 700; text-transform: uppercase; }
+    .badge-pass { background: rgba(126, 231, 135, 0.2); color: var(--green); border: 1px solid var(--green); }
+    .badge-warn { background: rgba(255, 209, 138, 0.2); color: var(--orange); border: 1px solid var(--orange); }
+    .badge-fail { background: rgba(255, 123, 114, 0.2); color: var(--red); border: 1px solid var(--red); }
+    
+    .ai-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-bottom: 16px; }
+    .crit-box { background: rgba(20, 28, 48, 0.7); border: 1px solid var(--line); border-radius: 10px; padding: 12px; }
+    .crit-title { font-size: 12px; color: var(--muted); font-weight: 700; margin-bottom: 6px; display: flex; justify-content: space-between; }
+    .crit-status-ok { color: var(--green); }
+    .crit-status-fix { color: var(--orange); }
+    .crit-desc { font-size: 13px; color: var(--text); margin: 0; line-height: 1.45; }
+
+    .ai-fixes-table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13.5px; }
+    .ai-fixes-table th { text-align: left; padding: 8px 10px; background: rgba(30, 45, 75, 0.6); color: var(--muted); font-size: 12px; }
+    .ai-fixes-table td { padding: 8px 10px; border-bottom: 1px solid var(--line); }
+    .ai-fixes-table tr:last-child td { border-bottom: none; }
+    .fix-orig { color: var(--red); text-decoration: line-through; }
+    .fix-arrow { color: var(--muted); padding: 0 4px; }
+    .fix-rep { color: var(--green); font-weight: 600; }
+    .fix-why { color: var(--muted); font-size: 12.5px; }
+
+    .ai-corrected-box {
+      background: rgba(126, 231, 135, 0.08); border: 1px solid rgba(126, 231, 135, 0.3); border-radius: 10px;
+      padding: 12px 14px; margin-top: 14px;
+    }
+    .ai-alt-item { background: rgba(255,255,255,0.04); border-radius: 8px; padding: 8px 12px; margin-top: 6px; font-size: 13.5px; color: var(--blue); }
+
+    /* Model answer card */
+    .answer-card { background: rgba(24, 34, 56, 0.9); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; margin-top: 16px; }
+
+    .nav { display: flex; justify-content: space-between; gap: 10px; margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line); }
+    .footer { font-size: 13px; color: var(--muted); margin-top: 20px; line-height: 1.5; }
+    .kbd { background: #1c2840; border: 1px solid var(--line); padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 12px; }
+
+    /* Modals */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(5, 8, 16, 0.75); backdrop-filter: blur(4px);
+      display: none; align-items: center; justify-content: center; z-index: 1000; padding: 16px;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-card {
+      background: #141c30; border: 1px solid #3b5072; border-radius: 18px; padding: 24px; width: 100%;
+      max-width: 540px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); animation: zoomIn .18s ease-out; max-height: 90vh; overflow-y: auto;
+    }
+    @keyframes zoomIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+    .modal-header h3 { margin: 0; font-size: 18px; color: #fff; }
+    .close-btn { background: transparent; border: none; color: var(--muted); font-size: 24px; cursor: pointer; padding: 0 6px; }
+    .close-btn:hover { color: #fff; }
+    .field { margin-bottom: 16px; }
+    .field label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: #dbe4f8; }
+    .field input[type="text"], .field input[type="password"], .field select {
+      width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: #0b1020;
+      color: #fff; font: inherit; font-size: 14px; outline: none;
+    }
+    .field input:focus, .field select:focus { border-color: var(--accent); }
+    .field-hint { font-size: 12px; color: var(--muted); margin-top: 5px; }
+
+    /* Theme Presets */
+    .theme-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-top: 8px; }
+    .theme-card {
+      border: 1px solid var(--line); border-radius: 10px; padding: 10px; cursor: pointer; text-align: center; font-size: 12.5px;
+      transition: all .15s; background: rgba(11, 16, 32, 0.5);
+    }
+    .theme-card:hover { border-color: var(--accent); }
+    .theme-card.active { border-color: var(--accent); background: rgba(128, 227, 196, 0.1); font-weight: 700; color: var(--accent); }
+    .theme-dots { display: flex; justify-content: center; gap: 4px; margin-bottom: 6px; }
+    .theme-dot { width: 14px; height: 14px; border-radius: 50%; }
+
+    .accent-palette { display: flex; gap: 8px; align-items: center; margin-top: 8px; flex-wrap: wrap; }
+    .accent-circle { width: 26px; height: 26px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: transform .15s; }
+    .accent-circle:hover { transform: scale(1.15); }
+    .accent-circle.active { border-color: #fff; transform: scale(1.15); }
+    .custom-color-wrap { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); margin-left: 8px; }
+    .custom-color-input { width: 28px; height: 28px; border-radius: 50%; border: none; cursor: pointer; background: transparent; padding: 0; }
+
+    /* Dictionary Drawer */
+    .dict-drawer-overlay {
+      position: fixed; inset: 0; background: rgba(5, 8, 16, 0.6); backdrop-filter: blur(2px);
+      display: none; z-index: 1500;
+    }
+    .dict-drawer-overlay.open { display: block; }
+    .dict-drawer {
+      position: fixed; top: 0; right: 0; bottom: 0; width: 440px; max-width: 92vw;
+      background: var(--panel); border-left: 1px solid var(--line); z-index: 1501;
+      box-shadow: -10px 0 35px rgba(0,0,0,0.5); display: flex; flex-direction: column;
+      transform: translateX(100%); transition: transform .25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .dict-drawer.open { transform: translateX(0); }
+    
+    .dict-tabs { display: flex; border-bottom: 1px solid var(--line); background: rgba(11, 16, 32, 0.7); }
+    .dict-tab {
+      flex: 1; padding: 12px 14px; text-align: center; font-size: 13.5px; font-weight: 600; color: var(--muted);
+      cursor: pointer; border-bottom: 2px solid transparent; transition: all .15s; user-select: none;
+    }
+    .dict-tab:hover { color: var(--text); }
+    .dict-tab.active { color: var(--accent); border-bottom-color: var(--accent); background: rgba(20, 28, 48, 0.6); }
+
+    .dict-header {
+      padding: 14px 18px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center;
+    }
+    .dict-header-title { font-size: 15px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 8px; }
+    
+    .dict-search-box { padding: 12px 18px; display: flex; gap: 8px; position: relative; border-bottom: 1px solid var(--line); }
+    .dict-input {
+      flex: 1; padding: 9px 12px; border-radius: 10px; border: 1px solid var(--line); background: #0b1020;
+      color: #fff; font: inherit; font-size: 14px; outline: none;
+    }
+    .dict-input:focus { border-color: var(--accent); }
+    .dict-suggestions {
+      position: absolute; top: 52px; left: 18px; right: 18px; background: #1c2840; border: 1px solid var(--line);
+      border-radius: 10px; max-height: 200px; overflow-y: auto; z-index: 10; display: none; box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+    }
+    .dict-sug-item { padding: 8px 12px; cursor: pointer; font-size: 13px; color: var(--text); border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .dict-sug-item:hover { background: rgba(128, 227, 196, 0.15); color: var(--accent); }
+
+    .dict-body { flex: 1; overflow-y: auto; padding: 16px 18px; }
+    
+    .dict-word-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 12px; }
+    .dict-word-title { font-size: 22px; font-weight: 800; color: #fff; }
+    .dict-ipa { font-size: 14px; color: var(--blue); margin-left: 8px; font-family: monospace; }
+    .dict-head-actions { display: flex; gap: 6px; align-items: center; }
+    .dict-icon-btn {
+      background: #1c2840; border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px;
+      cursor: pointer; color: var(--text); font-size: 13px; display: inline-flex; align-items: center; gap: 5px; transition: all .15s;
+    }
+    .dict-icon-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .dict-icon-btn.saved { background: rgba(255, 209, 138, 0.15); border-color: var(--orange); color: var(--orange); font-weight: 700; }
+
+    .dict-pos-tag {
+      display: inline-block; background: rgba(145, 181, 255, 0.15); color: var(--blue); border: 1px solid rgba(145, 181, 255, 0.3);
+      padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; text-transform: uppercase; margin: 12px 0 6px;
+    }
+    .dict-def-item { font-size: 14px; margin-bottom: 10px; line-height: 1.45; color: #dbe4f8; }
+    .dict-example { font-size: 13px; color: var(--muted); font-style: italic; margin-top: 3px; padding-left: 10px; border-left: 2px solid var(--line); }
+
+    /* Saved Vocab Notebook Styles */
+    .vocab-card {
+      background: rgba(16, 24, 42, 0.8); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px;
+      margin-bottom: 10px; transition: border-color .15s; position: relative;
+    }
+    .vocab-card:hover { border-color: #49638c; }
+    .vocab-card-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    .vocab-word { font-size: 16px; font-weight: 700; color: #fff; }
+    .vocab-ipa { font-size: 12.5px; color: var(--blue); font-family: monospace; margin-left: 6px; }
+    .vocab-pos { font-size: 11px; padding: 1px 6px; border-radius: 4px; background: rgba(128, 227, 196, 0.12); color: var(--accent); text-transform: uppercase; font-weight: 700; }
+    .vocab-meaning { font-size: 13px; color: #dbe4f8; margin: 4px 0; }
+    .vocab-date { font-size: 11px; color: var(--muted); }
+    .vocab-del-btn { background: transparent; border: none; color: #718096; cursor: pointer; font-size: 14px; padding: 4px; border-radius: 4px; }
+    .vocab-del-btn:hover { color: var(--red); background: rgba(255, 123, 114, 0.1); }
+
+    /* Floating Universal Selection Tooltip */
+    .selection-tooltip {
+      position: absolute; display: none; z-index: 2500;
+      background: #1c2840; border: 1px solid var(--accent); color: #fff;
+      border-radius: 24px; padding: 6px 14px; font-size: 13px; font-weight: 700;
+      cursor: pointer; box-shadow: 0 8px 24px rgba(0,0,0,0.6); user-select: none;
+      animation: popIn .15s ease-out; white-space: nowrap;
+    }
+    .selection-tooltip:hover { background: #253759; border-color: #fff; }
+    @keyframes popIn { from { transform: scale(0.85); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+    /* Suppression for third-party host banners (Tiiny Host, DropHTML, etc.) */
+    a[href*="tiiny.host"],
+    a[href*="drophtml"],
+    div[class*="drophtml"],
+    div:has(> a[href*="drophtml"]),
+    [id*="drophtml"],
+    .sidebar-container,
+    div[style*="z-index:9999"],
+    div[style*="z-index: 9999"],
+    body > div[style*="height: 55px"] {
+      display: none !important;
+      visibility: hidden !important;
+      height: 0 !important;
+      width: 0 !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
+    }
+    body { margin-bottom: 0 !important; margin-right: 0 !important; }
+
+    @media(max-width:768px) {
+      .layout { grid-template-columns: 1fr; }
+      .sidebar { padding: 16px; }
+      .wrap { padding: 18px 12px 40px; }
+      .main { padding: 16px; }
+      header { flex-direction: column; align-items: flex-start; }
+      .dict-drawer { width: 100%; max-width: 100vw; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div>
+      <div class="brand">Grammar Lab / IELTS Writing</div>
+      <h1>Dịch Việt → Anh & Cấu Trúc Cao Cấp</h1>
+      <p>Luyện tập 25 cấu trúc chuẩn band cao • Tự động tạo đề bài & chấm thông minh với Gemini AI</p>
+    </div>
+    <div class="header-actions">
+      <button class="pill pill-btn" id="openVocabBtn" title="Xem sổ tay từ vựng đã lưu">
+        ⭐ Sổ từ vựng (<span id="savedVocabCountBadge">0</span>)
+      </button>
+      <button class="pill pill-btn" id="openDictBtn" title="Mở nhanh từ điển">
+        📖 Tra từ điển
+      </button>
+      <button class="pill pill-btn" id="openThemeBtn" title="Tùy chỉnh giao diện">
+        🎨 Giao diện
+      </button>
+      <button class="pill pill-btn" id="apiConfigBtn" title="Cấu hình Google Gemini API">
+        🔑 Gemini AI: <span id="apiKeyStatusText">Chưa kết nối</span>
+        <span class="dot dot-off" id="apiKeyStatusDot"></span>
+      </button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <h3>25 Cấu Trúc Ngữ Pháp</h3>
+      <div id="categoryAccordion"></div>
+      
+      <div class="sidebar-actions">
+        <button class="btn" id="randomStructBtn" style="justify-content:center; width:100%;">↝ Cấu trúc ngẫu nhiên</button>
+        <button class="btn" id="sidebarVocabBtn" style="justify-content:center; width:100%;">⭐ Mở sổ từ vựng</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="topline">
+        <span class="tag" id="categoryTag">Mệnh đề phân từ</span>
+        <div class="count">
+          <span id="structCounter">Cấu trúc 1/25</span>
+          <span id="aiGenBadge" class="gen-badge" style="display:none">Đề bài AI</span>
+        </div>
+      </div>
+
+      <h2 id="structName">Having + V3</h2>
+
+      <!-- Structure Guide Card (Formula + Explanation + Sample) -->
+      <div class="struct-info-card">
+        <div class="struct-formula-title">Công thức mục tiêu</div>
+        <div class="struct-formula" id="structFormula">Having + past participle (V3), S + V</div>
+        <div class="struct-note" id="structNote">Dùng khi hai hành động cùng chủ ngữ; hành động ở mệnh đề phân từ hoàn thành trước hành động ở mệnh đề chính.</div>
+        <div class="struct-example" id="structExample">↳ Ví dụ: Having finished my homework, I decided to relax.</div>
+      </div>
+
+      <!-- Challenge / Prompt Card -->
+      <div class="challenge-card">
+        <div class="challenge-label">
+          <span>Đề bài dịch sang tiếng Anh</span>
+          <button class="btn sparkle" id="genNewChallengeBtn" style="padding:4px 10px; font-size:12px;">✨ Đổi đề bài (AI)</button>
+        </div>
+        <div class="prompt-text" id="promptVi">Đang tải đề bài...</div>
+        <div id="promptVocabHint" class="prompt-vocab-hint" style="display:none"></div>
+      </div>
+
+      <!-- User Exercise Input -->
+      <form id="exerciseForm">
+        <label class="label" for="response">Câu trả lời tiếng Anh của bạn (Bôi đen từ bất kỳ để tra nghĩa):</label>
+        <textarea id="response" lang="en" placeholder="Nhập câu tiếng Anh áp dụng cấu trúc mục tiêu trên..."></textarea>
+        
+        <div class="actions">
+          <button class="btn primary" type="submit" id="submitBtn">Chấm bài</button>
+          <button class="btn sparkle" type="button" id="genBtn">✨ Tạo đề bài mới (AI)</button>
+          <button class="btn" type="button" id="quickDictBtn">📖 Từ điển</button>
+          <button class="btn" type="button" id="toggleSampleBtn">Xem gợi ý mẫu</button>
+        </div>
+      </form>
+
+      <!-- Gemini AI Detailed Feedback -->
+      <div id="aiFeedbackCard" class="ai-feedback" style="display:none">
+        <div class="ai-header">
+          <strong id="aiHeaderTitle" style="font-size:16px;">Nhận xét từ Gemini AI</strong>
+          <span class="ai-badge" id="aiStatusBadge">Đạt</span>
+        </div>
+        <div class="ai-grid">
+          <div class="crit-box">
+            <div class="crit-title">
+              <span>🎯 Cấu trúc mục tiêu</span>
+              <span id="critStructStatus" class="crit-status-ok">Đạt</span>
+            </div>
+            <p class="crit-desc" id="critStructComment"></p>
+          </div>
+          <div class="crit-box">
+            <div class="crit-title">
+              <span>✍️ Ngữ pháp & Cú pháp</span>
+              <span id="critGrammarStatus" class="crit-status-ok">Đạt</span>
+            </div>
+            <p class="crit-desc" id="critGrammarComment"></p>
+          </div>
+          <div class="crit-box">
+            <div class="crit-title">
+              <span>💡 Diễn đạt & Độ tự nhiên</span>
+              <span id="critExprStatus" class="crit-status-ok">Đạt</span>
+            </div>
+            <p class="crit-desc" id="critExprComment"></p>
+          </div>
+          <div class="crit-box">
+            <div class="crit-title">
+              <span>📖 Sát nghĩa đề bài</span>
+              <span id="critMeaningStatus" class="crit-status-ok">Đạt</span>
+            </div>
+            <p class="crit-desc" id="critMeaningComment"></p>
+          </div>
+        </div>
+
+        <div id="aiFixesSection" style="display:none">
+          <div class="label">Chi tiết sửa lỗi & góp ý:</div>
+          <table class="ai-fixes-table">
+            <thead>
+              <tr><th>Chỗ chưa chuẩn</th><th>Đề xuất sửa</th><th>Lý do</th></tr>
+            </thead>
+            <tbody id="aiFixesBody"></tbody>
+          </table>
+        </div>
+
+        <div class="ai-corrected-box" id="aiCorrectedBox" style="display:none">
+          <span class="label" style="color:var(--green); margin-bottom:2px">Câu hoàn chỉnh đề xuất:</span>
+          <strong id="aiCorrectedText" style="color:#fff; font-size:15px;"></strong>
+        </div>
+
+        <div id="aiAltSection" style="margin-top:14px; display:none">
+          <div class="label">Cách diễn đạt nâng cao (Band IELTS 7.5 - 8.5+):</div>
+          <div id="aiAltList"></div>
+        </div>
+      </div>
+
+      <!-- Sample / Reference Answer Card -->
+      <div class="answer-card" id="sampleAnswerCard" style="display:none">
+        <div class="label" style="color:var(--accent);">Đáp án / Câu mẫu tham khảo:</div>
+        <strong id="sampleEnText" style="font-size:15px; color:#fff;"></strong>
+        <div class="note" id="sampleNoteText" style="color:var(--muted); font-size:13px; margin-top:4px;"></div>
+      </div>
+
+      <div class="nav">
+        <button class="btn" id="prevBtn">← Cấu trúc trước</button>
+        <button class="btn" id="nextBtn">Cấu trúc tiếp theo →</button>
+      </div>
+
+      <div class="footer">
+        💡 <strong>Mẹo học tập:</strong> Bôi đen bất kỳ từ hoặc cụm từ nào trên màn hình để xem định nghĩa, phát âm IPA và bấm <strong>⭐ Lưu từ</strong> để ôn tập vào sổ tay!
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- Floating Selection Lookup Button -->
+<div id="floatingLookupBtn" class="selection-tooltip">📖 Tra từ: <span id="floatingWordPreview" style="color:var(--accent)">...</span></div>
+
+<!-- Gemini API Modal -->
+<div class="modal-overlay" id="apiModal">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h3>🔑 Cài đặt Google Gemini API</h3>
+      <button class="close-btn" id="closeApiModalBtn">&times;</button>
+    </div>
+    <div class="field">
+      <label for="geminiApiKey">Gemini API Key</label>
+      <input type="password" id="geminiApiKey" placeholder="AIzaSy..." autocomplete="off">
+      <div class="field-hint">
+        Khóa được lưu cục bộ trên trình duyệt (LocalStorage). Chưa có key? 
+        <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener" style="color:var(--accent);">Lấy key miễn phí tại Google AI Studio ↗</a>
+      </div>
+    </div>
+    <div class="field">
+      <label for="geminiModel">Model Gemini</label>
+      <div style="display:flex; gap:8px;">
+        <select id="geminiModel" style="flex:1">
+          <option value="gemini-3.5-flash-lite">gemini-3.5-flash-lite (Mới nhất · Siêu nhanh & Khuyên dùng)</option>
+          <option value="gemini-3.5-flash">gemini-3.5-flash (Mới nhất · Chuẩn xác & Ổn định)</option>
+          <option value="gemini-3.8-flash">gemini-3.8-flash (Reasoning Model)</option>
+        </select>
+        <button type="button" id="scanModelsBtn" class="btn" style="white-space:nowrap; font-size:12px;">🔍 Kiểm tra kết nối</button>
+      </div>
+      <div id="modelScanResult" style="font-size:12px; margin-top:6px; color:var(--muted)"></div>
+    </div>
+    <div class="actions" style="margin-top:20px; justify-content:space-between;">
+      <button class="btn" id="clearApiKeyBtn" type="button">Xóa Key</button>
+      <button class="btn primary" id="saveApiKeyBtn" type="button">Lưu cài đặt</button>
+    </div>
+  </div>
+</div>
+
+<!-- Theme Modal -->
+<div class="modal-overlay" id="themeModal">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h3>🎨 Tùy chỉnh màu sắc & Giao diện</h3>
+      <button class="close-btn" id="closeThemeModalBtn">&times;</button>
+    </div>
+    <div class="field">
+      <label>1. Chọn bộ màu chủ đề (Theme Presets)</label>
+      <div class="theme-grid" id="themePresetGrid"></div>
+    </div>
+    <div class="field">
+      <label>2. Màu điểm nhấn (Accent Color)</label>
+      <div class="accent-palette" id="accentPaletteWrap">
+        <div class="accent-circle active" data-color="#80e3c4" style="background:#80e3c4;" title="Mint Green"></div>
+        <div class="accent-circle" data-color="#38bdf8" style="background:#38bdf8;" title="Sky Blue"></div>
+        <div class="accent-circle" data-color="#c084fc" style="background:#c084fc;" title="Neon Purple"></div>
+        <div class="accent-circle" data-color="#fbbf24" style="background:#fbbf24;" title="Warm Amber"></div>
+        <div class="accent-circle" data-color="#fb7185" style="background:#fb7185;" title="Rose Pink"></div>
+        <div class="accent-circle" data-color="#34d399" style="background:#34d399;" title="Emerald"></div>
+        <div class="custom-color-wrap">
+          <input type="color" id="customAccentInput" class="custom-color-input" value="#80e3c4" title="Chọn màu tự do">
+          <span>Tự chọn</span>
+        </div>
+      </div>
+    </div>
+    <div class="actions" style="margin-top:24px; justify-content:space-between;">
+      <button class="btn" id="resetThemeBtn" type="button">Khôi phục mặc định</button>
+      <button class="btn primary" id="saveThemeBtn" type="button">Đóng</button>
+    </div>
+  </div>
+</div>
+
+<!-- Dictionary & Vocabulary Drawer -->
+<div class="dict-drawer-overlay" id="dictOverlay"></div>
+<div class="dict-drawer" id="dictDrawer">
+  <div class="dict-tabs">
+    <div class="dict-tab active" id="tabDictSearch">🔍 Tra Từ Điển</div>
+    <div class="dict-tab" id="tabSavedVocab">⭐ Sổ Từ Vựng (<span id="drawerVocabCount">0</span>)</div>
+  </div>
+
+  <div class="dict-header">
+    <div class="dict-header-title">
+      <span id="dictTitleText">📖 Từ điển Anh - Việt</span>
+      <span style="font-size:11px; font-weight:normal; color:var(--muted);">(minhqnd/dict)</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:8px;">
+      <button id="dictLangToggle" class="pill pill-btn" style="padding:4px 10px; font-size:12px;">🇬🇧 Anh → 🇻🇳 Việt</button>
+      <button class="close-btn" id="closeDictBtn">&times;</button>
+    </div>
+  </div>
+
+  <!-- Search Panel View -->
+  <div id="dictSearchView">
+    <div class="dict-search-box">
+      <input type="text" id="dictSearchInput" class="dict-input" placeholder="Nhập từ cần tra (e.g. examine, technology, đáng kể)..." autocomplete="off">
+      <button class="btn primary" id="dictSearchBtn" style="padding:8px 14px;">Tra</button>
+      <div class="dict-suggestions" id="dictSuggestions"></div>
+    </div>
+    <div class="dict-body" id="dictBody">
+      <div style="text-align:center; color:var(--muted); padding-top:40px;">
+        <div style="font-size:38px; margin-bottom:10px;">🔍</div>
+        <p style="font-size:14.5px;">Nhập từ khóa phía trên hoặc <strong>bôi đen bất kỳ từ nào</strong> trên màn hình để tra cứu nghĩa và lưu từ vựng!</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Saved Vocab Notebook View -->
+  <div id="dictVocabView" style="display:none; flex-direction:column; flex:1; overflow:hidden;">
+    <div style="padding:12px 18px; border-bottom:1px solid var(--line); display:flex; gap:8px; align-items:center;">
+      <input type="text" id="vocabFilterInput" class="dict-input" placeholder="Tìm kiếm trong sổ từ..." style="font-size:13px;">
+      <button class="btn" id="copyVocabBtn" style="padding:7px 10px; font-size:12px;" title="Sao chép danh sách từ để dán vào Anki/Notes">📋 Sao chép</button>
+    </div>
+    <div class="dict-body" id="vocabListBody"></div>
+  </div>
+</div>
+
+<script>
+// 25 Core Grammar Structures (Structured without rigid offline prompt strings)
+const STRUCTURES = [
+  // Group 1: Participial clauses
+  { group: "Mệnh đề phân tử", name: "Having + V3", formula: "Having + past participle (V3), S + V", note: "Hai hành động cùng chủ ngữ; hành động ở mệnh đề phân từ xảy ra và hoàn thành trước hành động ở mệnh đề chính.", example: "Having finished my homework, I decided to play video games.", defaultVi: "Sau khi hoàn thành nghiên cứu, họ đã công bố kết quả trên tạp chí quốc tế." },
+  { group: "Mệnh đề phân tử", name: "Having been + V3", formula: "Having been + past participle (V3), S + V", note: "Dạng hoàn thành bị động của mệnh đề phân từ, nhấn mạnh hành động bị động đã kết thúc trước.", example: "Having been rejected several times, he lost confidence.", defaultVi: "Sau khi được đào tạo bài bản, các nhân viên mới đã làm việc rất hiệu quả." },
+  { group: "Mệnh đề phân tử", name: "V-ing mở đầu câu", formula: "V-ing ..., S + V", note: "Dùng rút gọn mệnh đề trạng ngữ chỉ nguyên nhân hoặc hai hành động xảy ra đồng thời. Chủ ngữ hai vế phải là một.", example: "Realizing how important English was, I started practising every day.", defaultVi: "Nhận thức được tác hại của ô nhiễm không khí, chính phủ đã ban hành luật mới." },
+  { group: "Mệnh đề phân tử", name: "V3/ed mở đầu câu", formula: "V3/ed ..., S + V", note: "Mệnh đề phân từ mang nghĩa bị động, đóng vai trò giải thích bối cảnh hoặc nguyên nhân.", example: "Surrounded by negative posts, she felt stressed.", defaultVi: "Bị thu hút bởi mức lương hấp dẫn, nhiều bạn trẻ đã nộp đơn vào công ty công nghệ này." },
+  { group: "Mệnh đề phân tử", name: "Not + V-ing", formula: "Not + V-ing ..., S + V", note: "Phủ định trực tiếp của phân từ hiện tại, diễn tả lý do không làm hoặc không biết điều gì.", example: "Not knowing what to do, I asked AI for help.", defaultVi: "Không hiểu rõ các quy định giao thông, anh ấy đã vô tình vi phạm luật." },
+  { group: "Mệnh đề phân tử", name: "By + V-ing", formula: "By + V-ing, S + V", note: "Diễn tả phương pháp, phương tiện hoặc cách thức để đạt được kết quả ở mệnh đề chính.", example: "By practising speaking every day, students can improve their confidence.", defaultVi: "Bằng cách đầu tư vào năng lượng tái tạo, quốc gia này đã giảm đáng kể lượng khí thải." },
+  { group: "Mệnh đề phân tử", name: "With + N + V-ing/V3", formula: "With + N + V-ing/V3, S + V", note: "Cấu trúc tuyệt đối (Absolute phrase) diễn tả tình huống đi kèm, nguyên nhân hoặc điều kiện ngoại cảnh.", example: "With technology developing rapidly, many traditional jobs are changing.", defaultVi: "Với dân số ngày càng già hóa, nhu cầu về dịch vụ chăm sóc sức khỏe đang gia tăng." },
+
+  // Group 2: Cleft sentences
+  { group: "Câu chẻ & nhấn mạnh", name: "It is/was ... that/who", formula: "It + be + [thành phần nhấn mạnh] + that/who + mệnh đề", note: "Nhấn mạnh vào chủ ngữ, tân ngữ hoặc trạng ngữ (thời gian, nơi chốn).", example: "It was during my first year at university that I started using AI tools.", defaultVi: "Chính sự kiên trì đã giúp cô ấy vượt qua mọi thử thách trong sự nghiệp." },
+  { group: "Câu chẻ & nhấn mạnh", name: "What ... is ...", formula: "What + S + V + be + [phần nhấn mạnh]", note: "Mệnh đề danh từ 'What' làm chủ ngữ, dùng để nhấn mạnh điều quan trọng nhất hoặc điều mong muốn.", example: "What I like most about YouTube is its personalized recommendations.", defaultVi: "Điều làm cho khóa học này trở nên đặc biệt là sự tương tác giữa giảng viên và học viên." },
+  { group: "Câu chẻ & nhấn mạnh", name: "All ... is ...", formula: "All + S + V + be + [danh từ / to V]", note: "Nhấn mạnh điều duy nhất mà ai đó cần, muốn hoặc làm.", example: "All I want is a stable job.", defaultVi: "Tất cả những gì chúng ta cần lúc này là một kế hoạch hành động rõ ràng." },
+  { group: "Câu chẻ & nhấn mạnh", name: "The reason why ... is that", formula: "The reason why + S + V + is that + clause", note: "Nhấn mạnh lý do của sự việc. Chú ý dùng 'that' sau 'is', không dùng 'because'.", example: "The reason why I prefer YouTube is that it helps me relax.", defaultVi: "Lý do nhiều người chọn làm việc từ xa là nó giúp họ tiết kiệm thời gian đi lại." },
+  { group: "Câu chẻ & nhấn mạnh", name: "It is not A but B that", formula: "It is not + A + but + B + that + clause", note: "Nhấn mạnh sự đối lập: Không phải yếu tố A mà chính yếu tố B mới tạo ra kết quả.", example: "It is not money but personal satisfaction that makes a job meaningful.", defaultVi: "Không phải tài năng bẩm sinh mà chính sự luyện tập chăm chỉ mới đem lại thành công." },
+
+  // Group 3: Inversion
+  { group: "Đảo ngữ", name: "Not only ... but also", formula: "Not only + auxiliary + S + V, but S + also + V", note: "Đảo trợ động từ lên trước chủ ngữ ở vế 'Not only' để tăng tính trang trọng và nhấn mạnh.", example: "Not only does AI save time, but it also improves productivity.", defaultVi: "Việc đọc sách không chỉ mở rộng kiến thức mà còn rèn luyện tư duy phản biện." },
+  { group: "Đảo ngữ", name: "Only by + V-ing", formula: "Only by + V-ing + auxiliary + S + V", note: "Đảo ngữ ở mệnh đề chính; nhấn mạnh cách duy nhất để đạt được mục tiêu.", example: "Only by practising regularly can we improve our English.", defaultVi: "Chỉ bằng cách hợp tác quốc tế, các nước mới có thể giải quyết được biến đổi khí hậu." },
+  { group: "Đảo ngữ", name: "Not until", formula: "Not until + [thời gian / clause] + auxiliary + S + V", note: "Chỉ đảo ngữ ở mệnh đề chính đứng sau, không đảo ngữ trong mệnh đề 'Not until'.", example: "Not until I entered university did I realize the importance of time management.", defaultVi: "Mãi đến khi gặp thất bại, anh ấy mới học được cách lắng nghe người khác." },
+  { group: "Đảo ngữ", name: "Rarely / Seldom / Never", formula: "Rarely / Seldom / Never + auxiliary + S + V", note: "Đảo ngữ sau trạng từ mang nghĩa phủ định hoặc bán phủ định.", example: "Rarely do I spend an entire day without using the Internet.", defaultVi: "Hiếm khi chúng ta thấy một sự đồng thuận cao như vậy giữa các chuyên gia." },
+  { group: "Đảo ngữ", name: "Hardly ... when", formula: "Hardly + had + S + V3 + when + S + V2", note: "Diễn tả hai hành động nối tiếp nhau ngay tức thì ('Vừa mới... thì đã...').", example: "Hardly had I finished my homework when my friends invited me to play games.", defaultVi: "Anh ấy vừa bước ra khỏi nhà thì cơn mưa lớn ập đến." },
+  { group: "Đảo ngữ", name: "So + adj ... that", formula: "So + adjective + be + S + that + clause", note: "Đảo ngữ nhấn mạnh mức độ của tính từ, thường dùng trong văn phong học thuật IELTS.", example: "So expensive was the computer that I could not afford it.", defaultVi: "Vấn đề nghiêm trọng đến mức chính phủ phải triệu tập một cuộc họp khẩn cấp." },
+
+  // Group 4: Relative & noun clauses
+  { group: "Mệnh đề quan hệ & danh ngữ", name: "Reduced relative (active)", formula: "N + V-ing + ...", note: "Rút gọn mệnh đề quan hệ chủ động bằng V-ing, giúp câu văn cô đọng và học thuật hơn.", example: "Students relying too heavily on AI may struggle to think independently.", defaultVi: "Những người tiêu dùng tìm kiếm các sản phẩm thân thiện với môi trường ngày càng đông đảo." },
+  { group: "Mệnh đề quan hệ & danh ngữ", name: "Reduced relative (passive)", formula: "N + V3/ed + ...", note: "Rút gọn mệnh đề quan hệ bị động bằng V3/ed.", example: "Information provided by AI is not always accurate.", defaultVi: "Dữ liệu được thu thập từ cuộc khảo sát cho thấy một xu hướng rất đáng chú ý." },
+  { group: "Mệnh đề quan hệ & danh ngữ", name: "Which (whole clause)", formula: "[Mệnh đề chính], which + V ...", note: "Đại từ quan hệ 'which' có dấu phẩy đi trước bổ nghĩa cho toàn bộ sự việc ở mệnh đề trước.", example: "Many students rely too heavily on AI, which may reduce their ability to think independently.", defaultVi: "Nhiều bạn trẻ thức khuya để dùng mạng xã hội, điều này ảnh hưởng xấu đến sức khỏe tinh thần." },
+  { group: "Mệnh đề quan hệ & danh ngữ", name: "What + S + V", formula: "What + S + V + be + ...", note: "Mệnh đề danh ngữ bắt đầu bằng 'What' làm chủ ngữ cho động từ to be.", example: "What concerns me most is the growing dependence on technology.", defaultVi: "Điều làm tôi bất ngờ nhất là tốc độ tiếp thu kiến thức của các em học sinh." },
+  { group: "Mệnh đề quan hệ & danh ngữ", name: "The extent to which", formula: "The extent to which + S + V + depends on ...", note: "Cụm danh ngữ chỉ mức độ: 'Mức độ mà... phụ thuộc vào...'. Chú ý không đảo ngữ sau which.", example: "The extent to which AI affects education depends on how students use it.", defaultVi: "Mức độ một người thành công trong công việc phụ thuộc vào khả năng thích ứng của họ." },
+
+  // Group 5: Conditionals & Subjunctive
+  { group: "Điều kiện & giả định", name: "Conditional inversion (Had I...)", formula: "Had + S + past participle (V3), S + would have + V3", note: "Đảo ngữ câu điều kiện loại 3 (bỏ 'if', đảo 'Had' lên trước chủ ngữ), diễn tả giả định trái với quá khứ.", example: "Had I studied harder, I would have achieved better results.", defaultVi: "Nếu tôi chú ý đến lời khuyên của giáo viên, tôi đã không mắc phải sai lầm đó." },
+  { group: "Điều kiện & giả định", name: "But for / Without", formula: "But for / Without + Noun phrase, S + would have + V3", note: "Diễn tả 'Nếu không nhờ có...': Thường dùng để chỉ sự giúp đỡ hoặc yếu tố quyết định trong quá khứ.", example: "But for my parents’ support, I would not have been able to attend university.", defaultVi: "Nếu không có sự hướng dẫn tận tình của người thầy, cậu ấy đã không thể đạt giải nhất." },
+  { group: "Điều kiện & giả định", name: "Subjunctive mood (It is essential that...)", formula: "It is essential / crucial that + S + (should) V-bare", note: "Thể giả định hiện tại sau các tính từ quan trọng: động từ sau 'that + S' luôn ở dạng nguyên mẫu không 'to'.", example: "It is essential that every citizen be aware of environmental protection.", defaultVi: "Điều tối quan trọng là mọi thành viên trong nhóm phải tuân thủ nghiêm ngặt thời hạn đề ra." }
+];
+
+// Helper: DOM Selector
+const $ = id => document.getElementById(id);
+
+// Application State
+let currentStructIndex = 0;
+let generatedExercises = {}; // map index -> { vi, en, vocab_hints, note }
+let currentVocabNotebook = []; // list of saved vocab objects
+
+// Load state from localStorage
+try {
+  const savedIndex = parseInt(localStorage.getItem('gl_struct_idx') || '0', 10);
+  if (!isNaN(savedIndex) && savedIndex >= 0 && savedIndex < STRUCTURES.length) {
+    currentStructIndex = savedIndex;
+  }
+  generatedExercises = JSON.parse(localStorage.getItem('gl_generated_exercises') || '{}');
+  currentVocabNotebook = JSON.parse(localStorage.getItem('gl_saved_vocab') || '[]');
+} catch {}
+
+function saveState() {
+  localStorage.setItem('gl_struct_idx', currentStructIndex);
+  localStorage.setItem('gl_generated_exercises', JSON.stringify(generatedExercises));
+  localStorage.setItem('gl_saved_vocab', JSON.stringify(currentVocabNotebook));
+}
+
+// ----------------------------------------------------
+// THEME SYSTEM
+// ----------------------------------------------------
+const THEMES = {
+  midnight: { name: 'Midnight Slate', bg: '#0b1020', panel: '#141c30', panel2: '#1c2840', text: '#eff4ff', line: '#2c3951', accent: '#80e3c4' },
+  emerald:  { name: 'Emerald Forest', bg: '#091815', panel: '#102722', panel2: '#183832', text: '#ecfdf5', line: '#1f4e45', accent: '#34d399' },
+  cyber:    { name: 'Cyber Neon', bg: '#0f0c1b', panel: '#18132d', panel2: '#241c42', text: '#f3e8ff', line: '#3b2d6b', accent: '#c084fc' },
+  coffee:   { name: 'Warm Amber', bg: '#18120c', panel: '#261c14', panel2: '#382a1d', text: '#fef3c7', line: '#4d3927', accent: '#fbbf24' },
+  ocean:    { name: 'Deep Ocean', bg: '#081325', panel: '#0e203c', panel2: '#142e56', text: '#e0f2fe', line: '#22477a', accent: '#38bdf8' }
+};
+
+let currentTheme = localStorage.getItem('gl_theme_preset') || 'midnight';
+let currentAccent = localStorage.getItem('gl_accent_color') || '#80e3c4';
+
+function applyTheme(themeKey, accentColor) {
+  currentTheme = themeKey;
+  currentAccent = accentColor;
+  localStorage.setItem('gl_theme_preset', themeKey);
+  localStorage.setItem('gl_accent_color', accentColor);
+
+  const t = THEMES[themeKey] || THEMES.midnight;
+  const root = document.documentElement;
+  root.style.setProperty('--bg', t.bg);
+  root.style.setProperty('--panel', t.panel);
+  root.style.setProperty('--panel2', t.panel2);
+  root.style.setProperty('--text', t.text);
+  root.style.setProperty('--line', t.line);
+  root.style.setProperty('--accent', accentColor);
+
+  document.querySelectorAll('.theme-card').forEach(c => {
+    c.classList.toggle('active', c.dataset.theme === themeKey);
+  });
+  document.querySelectorAll('.accent-circle').forEach(c => {
+    c.classList.toggle('active', c.dataset.color === accentColor);
+  });
+  $('customAccentInput').value = accentColor.startsWith('#') && accentColor.length === 7 ? accentColor : '#80e3c4';
+}
+
+function initThemeUi() {
+  const grid = $('themePresetGrid');
+  grid.innerHTML = Object.entries(THEMES).map(([k, t]) => `
+    <div class="theme-card ${k === currentTheme ? 'active' : ''}" data-theme="${k}">
+      <div class="theme-dots">
+        <span class="theme-dot" style="background:${t.bg}"></span>
+        <span class="theme-dot" style="background:${t.panel}"></span>
+        <span class="theme-dot" style="background:${t.accent}"></span>
+      </div>
+      <div>${t.name}</div>
+    </div>
+  `).join('');
+
+  grid.querySelectorAll('.theme-card').forEach(c => {
+    c.onclick = () => {
+      const k = c.dataset.theme;
+      applyTheme(k, THEMES[k].accent);
+    };
+  });
+
+  document.querySelectorAll('.accent-circle').forEach(c => {
+    c.onclick = () => applyTheme(currentTheme, c.dataset.color);
+  });
+
+  $('customAccentInput').oninput = e => applyTheme(currentTheme, e.target.value);
+  $('openThemeBtn').onclick = () => $('themeModal').classList.add('open');
+  $('closeThemeModalBtn').onclick = () => $('themeModal').classList.remove('open');
+  $('saveThemeBtn').onclick = () => $('themeModal').classList.remove('open');
+  $('resetThemeBtn').onclick = () => applyTheme('midnight', '#80e3c4');
+}
+
+// ----------------------------------------------------
+// GEMINI API CALL WITH MULTI-MODEL FALLBACK
+// ----------------------------------------------------
+function getApiKey() {
+  return (localStorage.getItem('gl_gemini_key') || '').trim();
+}
+function getModel() {
+  let m = localStorage.getItem('gl_gemini_model') || 'gemini-3.5-flash-lite';
+  // Auto-migrate retired models (2.0, 1.5, 2.5) to gemini-3.5-flash-lite
+  if (!m || m.includes('2.0') || m.includes('1.5') || m.includes('2.5')) {
+    m = 'gemini-3.5-flash-lite';
+    localStorage.setItem('gl_gemini_model', m);
+  }
+  return m;
+}
+
+function updateApiStatusUi() {
+  const key = getApiKey();
+  const statusText = $('apiKeyStatusText');
+  const dot = $('apiKeyStatusDot');
+  if (key) {
+    statusText.textContent = getModel().replace('gemini-', '');
+    dot.className = 'dot dot-on';
+  } else {
+    statusText.textContent = 'Chưa kết nối';
+    dot.className = 'dot dot-off';
+  }
+}
+
+// Call Gemini API with automatic fallback models to avoid 503 "High Demand" or 404
+async function callGeminiApiWithFallback(prompt, systemInstruction = '', onAttempt = null) {
+  const apiKey = getApiKey();
+  if (!apiKey) throw new Error('Chưa cấu hình Gemini API Key. Vui lòng bấm "🔑 Gemini AI" để nhập key!');
+
+  const preferredModel = getModel();
+  // Candidate fallback chain (latest Gemini 3.5 & 3.8 models)
+  const candidateModels = Array.from(new Set([
+    preferredModel,
+    'gemini-3.5-flash-lite',
+    'gemini-3.5-flash',
+    'gemini-3.8-flash'
+  ]));
+
+  let lastError = null;
+
+  for (let i = 0; i < candidateModels.length; i++) {
+    const model = candidateModels[i];
+    if (onAttempt) onAttempt(model, i + 1, candidateModels.length);
+
+    try {
+      const result = await executeSingleGeminiRequest(apiKey, model, prompt, systemInstruction);
+      return result;
+    } catch (err) {
+      lastError = err;
+      const msg = (err.message || '').toLowerCase();
+      const isDeprecationOrBusy = err.status === 503 || err.status === 429 || err.status === 404 || err.status === 400 ||
+        msg.includes('high demand') ||
+        msg.includes('no longer available') ||
+        msg.includes('not found') ||
+        msg.includes('deprecated') ||
+        msg.includes('update your code') ||
+        msg.includes('resource_exhausted');
+
+      if (!isDeprecationOrBusy && i === 0 && err.status === 400 && msg.includes('api_key_invalid')) {
+        throw new Error('API Key không hợp lệ. Vui lòng kiểm tra lại tại Google AI Studio!');
+      }
+      console.warn(`Model ${model} failed (${err.message}). Trying next fallback...`);
+    }
+  }
+
+  throw new Error(lastError ? lastError.message : 'Tất cả các model Gemini đều tạm thời bận. Hãy thử lại sau vài giây!');
+}
+
+async function executeSingleGeminiRequest(apiKey, model, prompt, systemInstruction) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
+  const fullPrompt = (systemInstruction ? systemInstruction + '\n\n' : '') + prompt;
+  
+  const body = {
+    contents: [{ role: 'user', parts: [{ text: fullPrompt }] }],
+    generationConfig: {
+      temperature: 0.25,
+      maxOutputTokens: 900
+    }
+  };
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 20000); // 20s per model
+
+  let res;
+  try {
+    res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      signal: controller.signal
+    });
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      const e = new Error(`Model ${model} quá thời gian phản hồi (20s).`);
+      e.status = 504;
+      throw e;
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+
+  if (!res.ok) {
+    const errData = await res.json().catch(() => null);
+    const msg = errData?.error?.message || `HTTP ${res.status}`;
+    const err = new Error(msg);
+    err.status = res.status;
+    throw err;
+  }
+
+  const json = await res.json();
+  const parts = json.candidates?.[0]?.content?.parts || [];
+  const text = parts.filter(p => !p.thought && typeof p.text === 'string').map(p => p.text).join('') || '';
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    const match = text.match(/\{[\s\S]*\}/);
+    if (match) {
+      try { return JSON.parse(match[0]); } catch {}
+    }
+    throw new Error('Phản hồi không đúng định dạng JSON: ' + text.slice(0, 100));
+  }
+}
+
+// ----------------------------------------------------
+// UI RENDERING & STRUCTURE NAVIGATION
+// ----------------------------------------------------
+function renderCategoryAccordion() {
+  const container = $('categoryAccordion');
+  // Group structures by group name
+  const grouped = {};
+  STRUCTURES.forEach((s, idx) => {
+    if (!grouped[s.group]) grouped[s.group] = [];
+    grouped[s.group].push({ ...s, idx });
+  });
+
+  const activeGroup = STRUCTURES[currentStructIndex].group;
+
+  let html = '';
+  for (const [groupName, items] of Object.entries(grouped)) {
+    const isOpen = groupName === activeGroup;
+    html += `
+      <div class="group-category ${isOpen ? 'open' : ''}" data-group="${escapeHtml(groupName)}">
+        <div class="group-cat-header">
+          <span>${escapeHtml(groupName)}</span>
+          <span class="arrow">▶</span>
+        </div>
+        <div class="group-items">
+          ${items.map(it => `
+            <button class="struct-btn ${it.idx === currentStructIndex ? 'active' : ''}" data-idx="${it.idx}">
+              ${escapeHtml(it.name)}
+            </button>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }
+  container.innerHTML = html;
+
+  // Toggle accordion categories
+  container.querySelectorAll('.group-cat-header').forEach(header => {
+    header.onclick = () => {
+      const parent = header.closest('.group-category');
+      parent.classList.toggle('open');
+    };
+  });
+
+  // Select structure item
+  container.querySelectorAll('.struct-btn').forEach(btn => {
+    btn.onclick = () => {
+      const idx = parseInt(btn.dataset.idx, 10);
+      selectStructure(idx);
+    };
+  });
+}
+
+function selectStructure(idx) {
+  currentStructIndex = idx;
+  saveState();
+  renderCurrentStructure();
+  renderCategoryAccordion();
+  // Clear previous response and AI feedback
+  $('response').value = '';
+  $('aiFeedbackCard').style.display = 'none';
+  $('sampleAnswerCard').style.display = 'none';
+  $('toggleSampleBtn').textContent = 'Xem gợi ý mẫu';
+}
+
+function renderCurrentStructure() {
+  const cur = STRUCTURES[currentStructIndex];
+  $('categoryTag').textContent = cur.group;
+  $('structCounter').textContent = `Cấu trúc ${currentStructIndex + 1} / ${STRUCTURES.length}`;
+  $('structName').textContent = cur.name;
+  $('structFormula').textContent = cur.formula;
+  $('structNote').textContent = cur.note;
+  $('structExample').textContent = `↳ Ví dụ: ${cur.example}`;
+
+  // Check if there is an AI-generated exercise for this structure
+  const genEx = generatedExercises[currentStructIndex];
+  if (genEx && genEx.vi) {
+    $('promptVi').textContent = genEx.vi;
+    $('aiGenBadge').style.display = 'inline-block';
+    if (genEx.vocab_hints) {
+      $('promptVocabHint').textContent = `💡 Gợi ý từ vựng: ${genEx.vocab_hints}`;
+      $('promptVocabHint').style.display = 'block';
+    } else {
+      $('promptVocabHint').style.display = 'none';
+    }
+    $('sampleEnText').textContent = genEx.en || cur.example;
+    $('sampleNoteText').textContent = genEx.note || cur.note;
+  } else {
+    // Show default initial practice sentence for this structure
+    $('promptVi').textContent = cur.defaultVi;
+    $('aiGenBadge').style.display = 'none';
+    $('promptVocabHint').style.display = 'none';
+    $('sampleEnText').textContent = cur.example;
+    $('sampleNoteText').textContent = cur.note;
+  }
+}
+
+// ----------------------------------------------------
+// AI GENERATE NEW CHALLENGE
+// ----------------------------------------------------
+async function generateNewChallenge() {
+  const apiKey = getApiKey();
+  if (!apiKey) {
+    $('apiModal').classList.add('open');
+    alert('Vui lòng nhập API Key Gemini để AI tự động sinh đề bài luyện tập.');
+    return;
+  }
+
+  const cur = STRUCTURES[currentStructIndex];
+  const genBtn = $('genNewChallengeBtn');
+  const actionGenBtn = $('genBtn');
+  const origText = genBtn.textContent;
+
+  genBtn.disabled = true;
+  actionGenBtn.disabled = true;
+  genBtn.textContent = '✨ Đang tạo đề...';
+  actionGenBtn.textContent = '✨ Đang tạo...';
+
+  const prompt = `Bạn là chuyên gia luyện thi IELTS Writing. Hãy tạo 1 câu bài tập dịch tiếng Việt sang tiếng Anh cho học viên:
+Cấu trúc mục tiêu: "${cur.name}" (Công thức: ${cur.formula})
+Chủ đề IELTS: (Học thuật, công nghệ, môi trường, xã hội, giáo dục, hoặc công việc).
+
+Yêu cầu trả về DUY NHẤT một chuỗi JSON hợp lệ (không kèm markdown):
+{
+  "vi": "Câu tiếng Việt tự nhiên, phù hợp để dịch dùng đúng cấu trúc trên",
+  "en": "Câu tiếng Anh mẫu chuẩn xác sử dụng đúng cấu trúc trên",
+  "vocab_hints": "1-3 từ vựng IELTS hay liên quan (VD: accelerate (v), substantial (adj))",
+  "note": "Giải thích ngắn gọn cách áp dụng công thức vào câu này"
+}`;
+
+  try {
+    const res = await callGeminiApiWithFallback(prompt, 'Chỉ trả về JSON hợp lệ.');
+    if (res && res.vi && res.en) {
+      generatedExercises[currentStructIndex] = res;
+      saveState();
+      renderCurrentStructure();
+      $('response').value = '';
+      $('aiFeedbackCard').style.display = 'none';
+      $('sampleAnswerCard').style.display = 'none';
+    }
+  } catch (err) {
+    alert('Không thể tạo đề bài: ' + err.message);
+  } finally {
+    genBtn.disabled = false;
+    actionGenBtn.disabled = false;
+    genBtn.textContent = origText;
+    actionGenBtn.textContent = '✨ Tạo đề bài mới (AI)';
+  }
+}
+
+// ----------------------------------------------------
+// AI GRADING
+// ----------------------------------------------------
+$('exerciseForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const resp = $('response').value.trim();
+  if (!resp) {
+    alert('Vui lòng nhập câu tiếng Anh của bạn trước khi chấm bài.');
+    $('response').focus();
+    return;
+  }
+
+  const apiKey = getApiKey();
+  if (!apiKey) {
+    $('apiModal').classList.add('open');
+    alert('Vui lòng nhập API Key Gemini ở nút góc trên để được chấm bài chi tiết và sửa lỗi thông minh!');
+    return;
+  }
+
+  const cur = STRUCTURES[currentStructIndex];
+  const promptVi = $('promptVi').textContent;
+  const submitBtn = $('submitBtn');
+
+  submitBtn.disabled = true;
+  let elapsed = 1;
+  submitBtn.innerHTML = `Đang chấm (${elapsed}s)...`;
+  const timer = setInterval(() => {
+    elapsed += 1;
+    submitBtn.innerHTML = `Đang chấm (${elapsed}s)...`;
+  }, 1000);
+  $('apiKeyStatusDot').className = 'dot dot-busy';
+
+  const prompt = `Chấm bài dịch IELTS tiếng Việt sang tiếng Anh:
+Cấu trúc mục tiêu cần dùng: "${cur.name}" (Công thức: ${cur.formula})
+Đề bài tiếng Việt: "${promptVi}"
+Câu của học viên: "${resp}"
+
+Hãy phân tích kỹ lưỡng và trả về DUY NHẤT một đối tượng JSON hợp lệ (không kèm Markdown block):
+{
+  "correct": true hoặc false (true nếu đã sử dụng đúng cấu trúc mục tiêu và câu diễn đạt hiểu được),
+  "score_title": "Nhận xét tổng quan ngắn gọn (VD: Xuất sắc / Áp dụng đúng cấu trúc / Cần sửa ngữ pháp)",
+  "structure": { "ok": true hoặc false, "comment": "Nhận xét chi tiết học viên đã dùng đúng công thức ${cur.name} chưa" },
+  "grammar": { "ok": true hoặc false, "comment": "Nhận xét về thì, mạo từ, giới từ, hòa hợp chủ vị" },
+  "expression": { "ok": true hoặc false, "comment": "Nhận xét về độ tự nhiên, collocations, tránh dịch thô" },
+  "meaning": { "ok": true hoặc false, "comment": "Nhận xét về độ sát nghĩa với câu tiếng Việt" },
+  "fixes": [
+    { "original": "từ hoặc cụm từ học viên viết chưa chuẩn", "replacement": "từ/cụm từ chuẩn", "why": "giải thích ngắn" }
+  ],
+  "corrected": "Câu hoàn chỉnh chuẩn mực nhất",
+  "better_alternatives": ["1-2 câu nâng cao band 8.0+ diễn đạt học thuật hơn"]
+}`;
+
+  try {
+    const aiResult = await callGeminiApiWithFallback(
+      prompt,
+      'Bạn là giám khảo tiếng Anh IELTS chấm bài công tâm, sâu sắc và chi tiết. Chỉ trả về một đối tượng JSON hợp lệ.',
+      (m, currentAttempt, totalAttempts) => {
+        submitBtn.innerHTML = `Đang chấm [${m.replace('gemini-', '')}] (${elapsed}s)...`;
+      }
+    );
+
+    renderAiFeedback(aiResult);
+  } catch (err) {
+    alert('Không thể chấm bài: ' + err.message);
+  } finally {
+    clearInterval(timer);
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = 'Chấm bài';
+    updateApiStatusUi();
+  }
+});
+
+function renderAiFeedback(res) {
+  const card = $('aiFeedbackCard');
+  card.style.display = 'block';
+
+  $('aiHeaderTitle').textContent = res.score_title || (res.correct ? 'Rất tốt! Đạt yêu cầu' : 'Cần điều chỉnh thêm');
+
+  const badge = $('aiStatusBadge');
+  if (res.correct && (!res.fixes || res.fixes.length === 0)) {
+    badge.className = 'ai-badge badge-pass';
+    badge.textContent = 'Xuất sắc · Đạt';
+  } else if (res.correct) {
+    badge.className = 'ai-badge badge-warn';
+    badge.textContent = 'Đạt · Cần chỉnh sửa nhỏ';
+  } else {
+    badge.className = 'ai-badge badge-fail';
+    badge.textContent = 'Chưa đạt · Cần xem lại';
+  }
+
+  // Criteria
+  const setCrit = (crit, statusId, descId) => {
+    const statusEl = $(statusId);
+    const descEl = $(descId);
+    if (!crit) return;
+    statusEl.textContent = crit.ok ? '✓ Đạt' : '✗ Cần sửa';
+    statusEl.className = crit.ok ? 'crit-status-ok' : 'crit-status-fix';
+    descEl.textContent = crit.comment || '';
+  };
+
+  setCrit(res.structure, 'critStructStatus', 'critStructComment');
+  setCrit(res.grammar, 'critGrammarStatus', 'critGrammarComment');
+  setCrit(res.expression, 'critExprStatus', 'critExprComment');
+  setCrit(res.meaning, 'critMeaningStatus', 'critMeaningComment');
+
+  // Fixes table
+  const fixesSec = $('aiFixesSection');
+  const fixesBody = $('aiFixesBody');
+  if (res.fixes && res.fixes.length > 0) {
+    fixesSec.style.display = 'block';
+    fixesBody.innerHTML = res.fixes.map(f => `
+      <tr>
+        <td class="fix-orig">${escapeHtml(f.original)}</td>
+        <td><span class="fix-arrow">➜</span> <span class="fix-rep">${escapeHtml(f.replacement)}</span></td>
+        <td class="fix-why">${escapeHtml(f.why)}</td>
+      </tr>
+    `).join('');
+  } else {
+    fixesSec.style.display = 'none';
+  }
+
+  // Corrected version
+  if (res.corrected) {
+    $('aiCorrectedBox').style.display = 'block';
+    $('aiCorrectedText').textContent = res.corrected;
+  } else {
+    $('aiCorrectedBox').style.display = 'none';
+  }
+
+  // Alternatives
+  const altSec = $('aiAltSection');
+  const altList = $('aiAltList');
+  if (res.better_alternatives && res.better_alternatives.length > 0) {
+    altSec.style.display = 'block';
+    altList.innerHTML = res.better_alternatives.map(alt => `
+      <div class="ai-alt-item">↳ "${escapeHtml(alt)}"</div>
+    `).join('');
+  } else {
+    altSec.style.display = 'none';
+  }
+
+  card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+// ----------------------------------------------------
+// UNIVERSAL TEXT SELECTION LOOKUP TOOLTIP
+// ----------------------------------------------------
+let currentSelectedText = '';
+
+function setupUniversalSelection() {
+  const tooltip = $('floatingLookupBtn');
+
+  const checkSelection = (e) => {
+    // If clicking inside the tooltip itself, do not hide
+    if (tooltip.contains(e.target)) return;
+
+    let text = '';
+    let clientRect = null;
+
+    // 1. Check selection inside active input/textarea
+    const activeEl = document.activeElement;
+    if (activeEl && (activeEl.tagName === 'TEXTAREA' || activeEl.tagName === 'INPUT')) {
+      const start = activeEl.selectionStart;
+      const end = activeEl.selectionEnd;
+      if (typeof start === 'number' && typeof end === 'number' && end > start) {
+        text = activeEl.value.substring(start, end).trim();
+        const rect = activeEl.getBoundingClientRect();
+        clientRect = {
+          left: rect.left + 20,
+          top: rect.top - 36
+        };
+      }
+    }
+
+    // 2. Check standard window selection if textarea had none
+    if (!text) {
+      const sel = window.getSelection();
+      if (sel && sel.rangeCount > 0 && !sel.isCollapsed) {
+        const raw = sel.toString().trim();
+        if (raw) {
+          text = raw;
+          const range = sel.getRangeAt(0);
+          const rect = range.getBoundingClientRect();
+          if (rect && (rect.width > 0 || rect.height > 0)) {
+            clientRect = {
+              left: rect.left,
+              top: rect.top - 38
+            };
+          }
+        }
+      }
+    }
+
+    // Filter valid words (1 to 6 words, reasonable length)
+    if (text && text.length >= 1 && text.length <= 60 && clientRect) {
+      currentSelectedText = text;
+      $('floatingWordPreview').textContent = `"${text.length > 15 ? text.slice(0, 15) + '...' : text}"`;
+      
+      const topPos = Math.max(10, window.scrollY + clientRect.top);
+      const leftPos = Math.max(10, Math.min(window.innerWidth - 180, window.scrollX + clientRect.left));
+
+      tooltip.style.top = topPos + 'px';
+      tooltip.style.left = leftPos + 'px';
+      tooltip.style.display = 'block';
+    } else {
+      tooltip.style.display = 'none';
+    }
+  };
+
+  document.addEventListener('mouseup', (e) => setTimeout(() => checkSelection(e), 60));
+  document.addEventListener('keyup', (e) => setTimeout(() => checkSelection(e), 60));
+  document.addEventListener('selectionchange', () => {
+    // Hide if collapsed
+    const sel = window.getSelection();
+    if (sel && sel.isCollapsed && document.activeElement?.selectionStart === document.activeElement?.selectionEnd) {
+      tooltip.style.display = 'none';
+    }
+  });
+
+  tooltip.onclick = (e) => {
+    e.stopPropagation();
+    tooltip.style.display = 'none';
+    if (currentSelectedText) {
+      openDict(currentSelectedText);
+    }
+  };
+}
+
+// ----------------------------------------------------
+// DICTIONARY DRAWER & MINHQND REST API
+// ----------------------------------------------------
+let dictLang = 'en'; // 'en' (EN -> VI) or 'vi' (VI -> EN)
+let currentWordLookupResult = null;
+
+function openDict(initialWord = '') {
+  $('dictOverlay').classList.add('open');
+  $('dictDrawer').classList.add('open');
+  switchDictTab('search');
+  if (initialWord) {
+    // Auto detect language
+    if (/^[a-zA-Z\s'-]+$/.test(initialWord.trim())) {
+      dictLang = 'en';
+    } else {
+      dictLang = 'vi';
+    }
+    updateDictLangButton();
+    $('dictSearchInput').value = initialWord.trim();
+    doLookup(initialWord.trim());
+  } else {
+    $('dictSearchInput').focus();
+  }
+}
+
+function closeDict() {
+  $('dictOverlay').classList.remove('open');
+  $('dictDrawer').classList.remove('open');
+  $('dictSuggestions').style.display = 'none';
+}
+
+function updateDictLangButton() {
+  $('dictLangToggle').textContent = dictLang === 'en' ? '🇬🇧 Anh → 🇻🇳 Việt' : '🇻🇳 Việt → 🇬🇧 Anh';
+}
+
+function switchDictTab(tab) {
+  if (tab === 'search') {
+    $('tabDictSearch').classList.add('active');
+    $('tabSavedVocab').classList.remove('active');
+    $('dictSearchView').style.display = 'block';
+    $('dictVocabView').style.display = 'none';
+    $('dictTitleText').textContent = '📖 Tra Từ Điển';
+  } else {
+    $('tabSavedVocab').classList.add('active');
+    $('tabDictSearch').classList.remove('active');
+    $('dictSearchView').style.display = 'none';
+    $('dictVocabView').style.display = 'flex';
+    $('dictTitleText').textContent = '⭐ Sổ Từ Vựng';
+    renderVocabNotebook();
+  }
+}
+
+async function doLookup(wordToLookup) {
+  const word = (wordToLookup || $('dictSearchInput').value).trim();
+  if (!word) return;
+
+  const bodyEl = $('dictBody');
+  bodyEl.innerHTML = `
+    <div style="text-align:center; padding:50px 10px; color:var(--muted);">
+      <div class="dot dot-busy" style="width:16px; height:16px; margin-bottom:12px;"></div>
+      <div>Đang tra cứu từ điển "<strong>${escapeHtml(word)}</strong>"...</div>
+    </div>
+  `;
+  $('dictSuggestions').style.display = 'none';
+
+  const defLang = dictLang === 'en' ? 'vi' : 'en';
+  const url = `https://dict.minhqnd.com/api/v1/lookup?word=${encodeURIComponent(word)}&lang=${dictLang}&def_lang=${defLang}`;
+
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    if (!data.exists || !data.results || data.results.length === 0) {
+      bodyEl.innerHTML = `
+        <div style="text-align:center; padding:40px 10px; color:var(--muted);">
+          <div style="font-size:32px; margin-bottom:8px;">😕</div>
+          <strong style="color:var(--text); font-size:16px;">Không tìm thấy "${escapeHtml(word)}"</strong>
+          <p style="font-size:13.5px; margin-top:8px;">Hãy kiểm tra chính tả hoặc đổi chiều dịch [${dictLang === 'en' ? 'Anh → Việt' : 'Việt → Anh'}].</p>
+        </div>
+      `;
+      return;
+    }
+    currentWordLookupResult = { word, data };
+    renderDictResult(data, word);
+  } catch (err) {
+    bodyEl.innerHTML = `
+      <div style="text-align:center; padding:30px 10px; color:var(--orange);">
+        <strong style="font-size:15px;">Lỗi kết nối từ điển</strong>
+        <p style="font-size:13px; color:var(--muted); margin-top:6px;">${escapeHtml(err.message)}</p>
+        <button class="btn" onclick="doLookup('${escapeHtml(word)}')">Thử lại</button>
+      </div>
+    `;
+  }
+}
+
+function renderDictResult(data, word) {
+  const result = data.results[0] || {};
+  const meanings = result.meanings || [];
+  const pronunciations = result.pronunciations || [];
+  const primaryIpa = pronunciations[0]?.ipa || '';
+  const audioEndpoint = result.audio ? `https://dict.minhqnd.com${result.audio}` : null;
+  const isSaved = isWordSaved(data.word || word);
+
+  const grouped = {};
+  meanings.forEach(m => {
+    const pos = m.pos || 'Nghĩa chung';
+    if (!grouped[pos]) grouped[pos] = [];
+    grouped[pos].push(m);
+  });
+
+  let html = `
+    <div class="dict-word-head">
+      <div>
+        <span class="dict-word-title">${escapeHtml(data.word || word)}</span>
+        ${primaryIpa ? `<span class="dict-ipa">${escapeHtml(primaryIpa)}</span>` : ''}
+      </div>
+      <div class="dict-head-actions">
+        <button class="dict-icon-btn ${isSaved ? 'saved' : ''}" id="saveVocabBtn" title="Lưu từ vào sổ tay">
+          ${isSaved ? '★ Đã lưu' : '⭐ Lưu từ'}
+        </button>
+        <button class="dict-icon-btn" id="dictAudioPlayBtn" title="Nghe phát âm">🔊</button>
+      </div>
+    </div>
+  `;
+
+  for (const [pos, items] of Object.entries(grouped)) {
+    html += `<div class="dict-pos-tag">${escapeHtml(pos)}</div>`;
+    items.forEach((item, idx) => {
+      html += `
+        <div class="dict-def-item">
+          <strong>${idx + 1}.</strong> ${escapeHtml(item.definition)}
+          ${item.example ? `<div class="dict-example">↳ "${escapeHtml(item.example)}"</div>` : ''}
+        </div>
+      `;
+    });
+  }
+
+  html += `
+    <div style="font-size:11.5px; color:var(--muted); margin-top:20px; border-top:1px solid var(--line); padding-top:10px; text-align:center;">
+      Nguồn: <a href="https://github.com/minhqnd/dictionary" target="_blank" rel="noopener" style="color:var(--accent); text-decoration:none;">minhqnd/dictionary</a> (Dữ liệu Wiktionary mở)
+    </div>
+  `;
+
+  $('dictBody').innerHTML = html;
+
+  // Bind actions
+  $('dictAudioPlayBtn').onclick = () => playWordAudio(audioEndpoint, word, dictLang);
+  $('saveVocabBtn').onclick = () => toggleSaveWord(data.word || word, primaryIpa, grouped, audioEndpoint);
+}
+
+function playWordAudio(endpoint, word, lang) {
+  if (endpoint) {
+    const audio = new Audio(endpoint);
+    audio.play().catch(() => playSpeech(word, lang));
+  } else {
+    playSpeech(word, lang);
+  }
+}
+
+function playSpeech(word, lang) {
+  if ('speechSynthesis' in window) {
+    const utter = new SpeechSynthesisUtterance(word);
+    utter.lang = lang === 'en' ? 'en-US' : 'vi-VN';
+    window.speechSynthesis.speak(utter);
+  }
+}
+
+// ----------------------------------------------------
+// VOCABULARY NOTEBOOK (SỔ TỪ VỰNG)
+// ----------------------------------------------------
+function isWordSaved(word) {
+  return currentVocabNotebook.some(v => v.word.toLowerCase() === word.toLowerCase());
+}
+
+function toggleSaveWord(word, ipa, groupedMeanings, audioUrl) {
+  const existingIdx = currentVocabNotebook.findIndex(v => v.word.toLowerCase() === word.toLowerCase());
+  if (existingIdx >= 0) {
+    currentVocabNotebook.splice(existingIdx, 1);
+  } else {
+    // Extract first 2 meanings
+    const sampleMeanings = [];
+    let firstPos = '';
+    for (const [pos, items] of Object.entries(groupedMeanings)) {
+      if (!firstPos) firstPos = pos;
+      items.forEach(it => sampleMeanings.push(it.definition));
+      if (sampleMeanings.length >= 3) break;
+    }
+    currentVocabNotebook.unshift({
+      word,
+      ipa: ipa || '',
+      pos: firstPos || 'Từ vựng',
+      meaning: sampleMeanings.join('; ') || 'Từ vựng đã lưu',
+      audio: audioUrl || null,
+      savedAt: Date.now()
+    });
+  }
+  saveState();
+  updateVocabCountUi();
+
+  // Update button in dict drawer if open
+  const btn = $('saveVocabBtn');
+  if (btn) {
+    const saved = isWordSaved(word);
+    btn.className = `dict-icon-btn ${saved ? 'saved' : ''}`;
+    btn.innerHTML = saved ? '★ Đã lưu' : '⭐ Lưu từ';
+  }
+}
+
+function updateVocabCountUi() {
+  const count = currentVocabNotebook.length;
+  $('savedVocabCountBadge').textContent = count;
+  $('drawerVocabCount').textContent = count;
+}
+
+function renderVocabNotebook(filterText = '') {
+  const container = $('vocabListBody');
+  const query = (filterText || $('vocabFilterInput').value).trim().toLowerCase();
+  const list = query 
+    ? currentVocabNotebook.filter(v => v.word.toLowerCase().includes(query) || v.meaning.toLowerCase().includes(query))
+    : currentVocabNotebook;
+
+  if (list.length === 0) {
+    container.innerHTML = `
+      <div style="text-align:center; padding:45px 10px; color:var(--muted);">
+        <div style="font-size:36px; margin-bottom:10px;">⭐</div>
+        <strong style="font-size:15px; color:var(--text);">Sổ từ vựng đang trống</strong>
+        <p style="font-size:13px; margin-top:6px;">Khi tra từ điển hoặc bôi đen từ trên màn hình, hãy bấm <strong>⭐ Lưu từ</strong> để lưu lại và ôn tập tại đây!</p>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = list.map(item => `
+    <div class="vocab-card" data-word="${escapeHtml(item.word)}">
+      <div class="vocab-card-head">
+        <div>
+          <span class="vocab-word">${escapeHtml(item.word)}</span>
+          ${item.ipa ? `<span class="vocab-ipa">${escapeHtml(item.ipa)}</span>` : ''}
+          <span class="vocab-pos">${escapeHtml(item.pos)}</span>
+        </div>
+        <div style="display:flex; gap:6px; align-items:center;">
+          <button class="vocab-del-btn vocab-audio-play" title="Nghe phát âm">🔊</button>
+          <button class="vocab-del-btn vocab-delete-btn" title="Xóa khỏi sổ từ">🗑️</button>
+        </div>
+      </div>
+      <div class="vocab-meaning">${escapeHtml(item.meaning)}</div>
+      <div class="vocab-date">Lưu ngày: ${new Date(item.savedAt || Date.now()).toLocaleDateString('vi-VN')}</div>
+    </div>
+  `).join('');
+
+  // Bind actions in notebook
+  container.querySelectorAll('.vocab-card').forEach(card => {
+    const word = card.dataset.word;
+    const item = currentVocabNotebook.find(v => v.word.toLowerCase() === word.toLowerCase());
+    
+    card.querySelector('.vocab-audio-play').onclick = () => {
+      playWordAudio(item?.audio, word, 'en');
+    };
+
+    card.querySelector('.vocab-delete-btn').onclick = () => {
+      currentVocabNotebook = currentVocabNotebook.filter(v => v.word.toLowerCase() !== word.toLowerCase());
+      saveState();
+      updateVocabCountUi();
+      renderVocabNotebook();
+    };
+  });
+}
+
+// ----------------------------------------------------
+// EVENT LISTENERS & INITIALIZATION
+// ----------------------------------------------------
+function initEvents() {
+  // Navigation
+  $('prevBtn').onclick = () => {
+    const nextIdx = (currentStructIndex - 1 + STRUCTURES.length) % STRUCTURES.length;
+    selectStructure(nextIdx);
+  };
+  $('nextBtn').onclick = () => {
+    const nextIdx = (currentStructIndex + 1) % STRUCTURES.length;
+    selectStructure(nextIdx);
+  };
+  $('randomStructBtn').onclick = () => {
+    let rand;
+    do { rand = Math.floor(Math.random() * STRUCTURES.length); } while (rand === currentStructIndex && STRUCTURES.length > 1);
+    selectStructure(rand);
+  };
+
+  // Challenge Generators
+  $('genNewChallengeBtn').onclick = generateNewChallenge;
+  $('genBtn').onclick = generateNewChallenge;
+
+  // Toggle sample answer
+  $('toggleSampleBtn').onclick = () => {
+    const card = $('sampleAnswerCard');
+    if (card.style.display === 'none') {
+      card.style.display = 'block';
+      $('toggleSampleBtn').textContent = 'Ẩn đáp án mẫu';
+    } else {
+      card.style.display = 'none';
+      $('toggleSampleBtn').textContent = 'Xem gợi ý mẫu';
+    }
+  };
+
+  // Keyboard shortcut for grading: Ctrl+Enter
+  $('response').addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      e.preventDefault();
+      $('submitBtn').click();
+    }
+  });
+
+  // Dictionary drawer triggers
+  $('openDictBtn').onclick = () => openDict();
+  $('quickDictBtn').onclick = () => openDict();
+  $('closeDictBtn').onclick = closeDict;
+  $('dictOverlay').onclick = closeDict;
+  $('tabDictSearch').onclick = () => switchDictTab('search');
+  $('tabSavedVocab').onclick = () => switchDictTab('vocab');
+  $('openVocabBtn').onclick = () => { openDict(); switchDictTab('vocab'); };
+  $('sidebarVocabBtn').onclick = () => { openDict(); switchDictTab('vocab'); };
+
+  // Dict language toggle
+  $('dictLangToggle').onclick = () => {
+    dictLang = dictLang === 'en' ? 'vi' : 'en';
+    updateDictLangButton();
+    const curVal = $('dictSearchInput').value.trim();
+    if (curVal) doLookup(curVal);
+  };
+
+  // Dict search
+  $('dictSearchBtn').onclick = () => doLookup();
+  $('dictSearchInput').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      doLookup();
+    }
+  });
+
+  // Dict suggestions
+  let suggestTimeout = null;
+  $('dictSearchInput').addEventListener('input', (e) => {
+    const val = e.target.value.trim();
+    clearTimeout(suggestTimeout);
+    if (val.length < 2) {
+      $('dictSuggestions').style.display = 'none';
+      return;
+    }
+    suggestTimeout = setTimeout(async () => {
+      try {
+        const res = await fetch(`https://dict.minhqnd.com/api/v1/suggest?q=${encodeURIComponent(val)}&limit=6`);
+        if (!res.ok) return;
+        const data = await res.json();
+        const list = data.suggestions || [];
+        if (list.length > 0) {
+          $('dictSuggestions').style.display = 'block';
+          $('dictSuggestions').innerHTML = list.map(item => `
+            <div class="dict-sug-item" data-word="${escapeHtml(item)}">${escapeHtml(item)}</div>
+          `).join('');
+          $('dictSuggestions').querySelectorAll('.dict-sug-item').forEach(el => {
+            el.onclick = () => {
+              $('dictSearchInput').value = el.dataset.word;
+              doLookup(el.dataset.word);
+            };
+          });
+        } else {
+          $('dictSuggestions').style.display = 'none';
+        }
+      } catch {}
+    }, 200);
+  });
+
+  // Vocab notebook filter
+  $('vocabFilterInput').addEventListener('input', (e) => {
+    renderVocabNotebook(e.target.value);
+  });
+
+  // Copy vocab list
+  $('copyVocabBtn').onclick = () => {
+    if (currentVocabNotebook.length === 0) {
+      alert('Sổ từ vựng đang trống.');
+      return;
+    }
+    const text = currentVocabNotebook.map(v => `${v.word} (${v.ipa}) [${v.pos}]: ${v.meaning}`).join('\n');
+    navigator.clipboard.writeText(text).then(() => {
+      alert('Đã sao chép toàn bộ danh sách từ vựng vào Clipboard!');
+    }).catch(() => {
+      prompt('Sao chép danh sách từ vựng:', text);
+    });
+  };
+
+  // Gemini API Modal
+  $('apiConfigBtn').onclick = () => {
+    $('geminiApiKey').value = getApiKey();
+    $('geminiModel').value = getModel();
+    $('modelScanResult').textContent = '';
+    $('apiModal').classList.add('open');
+  };
+  $('closeApiModalBtn').onclick = () => $('apiModal').classList.remove('open');
+  $('saveApiKeyBtn').onclick = () => {
+    const key = $('geminiApiKey').value.trim();
+    const model = $('geminiModel').value;
+    localStorage.setItem('gl_gemini_key', key);
+    localStorage.setItem('gl_gemini_model', model);
+    updateApiStatusUi();
+    $('apiModal').classList.remove('open');
+  };
+  $('clearApiKeyBtn').onclick = () => {
+    localStorage.removeItem('gl_gemini_key');
+    $('geminiApiKey').value = '';
+    updateApiStatusUi();
+    $('modelScanResult').textContent = 'Đã xóa API Key.';
+  };
+
+  // Scan & Test model
+  $('scanModelsBtn').onclick = async () => {
+    const key = $('geminiApiKey').value.trim();
+    if (!key) {
+      alert('Vui lòng nhập API Key trước khi kiểm tra.');
+      return;
+    }
+    const resultEl = $('modelScanResult');
+    resultEl.textContent = '⏳ Đang kiểm tra kết nối với Google AI Studio...';
+    try {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(key)}`);
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => null);
+        throw new Error(errJson?.error?.message || `HTTP ${res.status}`);
+      }
+      const data = await res.json();
+      const models = (data.models || []).map(m => m.name.replace('models/', ''));
+      resultEl.innerHTML = `<span style="color:var(--green)">✓ Kết nối thành công!</span> Tài khoản hỗ trợ ${models.length} models.`;
+    } catch (err) {
+      resultEl.innerHTML = `<span style="color:var(--red)">✗ Lỗi kết nối:</span> ${escapeHtml(err.message)}`;
+    }
+  };
+}
+
+// Helper to escape HTML characters
+function escapeHtml(str) {
+  if (typeof str !== 'string') return '';
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+}
+
+// Anti-Watermark script cleaner for tiiny.host, drophtml, and similar third-party injection
+function removeWatermarkBanners() {
+  const badSelectors = [
+    'a[href*="tiiny.host"]',
+    'a[href*="drophtml"]',
+    '.sidebar-container',
+    'div[style*="z-index:9999"]',
+    'div[style*="z-index: 9999"]',
+    'div[style*="height: 55px"]',
+    'div:has(> a[href*="drophtml"])',
+    'div:has(> a[href*="tiiny"])'
+  ];
+  document.querySelectorAll(badSelectors.join(',')).forEach(el => {
+    el.style.display = 'none';
+    el.remove();
+  });
+  // Also remove elements with "Hosted on DropHTML" or "DropHTML"
+  document.querySelectorAll('div, a, span').forEach(el => {
+    if (el.textContent && (el.textContent.includes('Hosted on DropHTML') || el.textContent.includes('Hide this on my drops'))) {
+      el.style.display = 'none';
+      el.remove();
+    }
+  });
+  if (document.body) {
+    document.body.style.marginBottom = '0px';
+    document.body.style.marginRight = '0px';
+  }
+}
+
+// Initial Boot
+window.addEventListener('DOMContentLoaded', () => {
+  initThemeUi();
+  applyTheme(currentTheme, currentAccent);
+  initEvents();
+  setupUniversalSelection();
+  updateApiStatusUi();
+  updateVocabCountUi();
+  renderCategoryAccordion();
+  renderCurrentStructure();
+  removeWatermarkBanners();
+  setInterval(removeWatermarkBanners, 400);
+});
+</script>
+</body>
+</html>
