@@ -911,7 +911,7 @@
           <div style="font-size:12.5px; font-weight:700; color:var(--sp-subtext); margin-bottom:8px;">Bảng đối chiếu sửa lỗi chi tiết:</div>
           <table class="sp-fixes-table">
             <thead>
-              <tr><th>Phân loại</th><th>Chỗ chưa chuẩn</th><th>Đề xuất sửa</th><th>Giải thích</th></tr>
+              <tr><th>Phân loại</th><th>Chỗ chưa chuẩn</th><th>Đề xuất sửa</th><th>Giải thích chi tiết (Vì sao sai &amp; Quy tắc chuẩn)</th></tr>
             </thead>
             <tbody id="aiFixesBody"></tbody>
           </table>
@@ -2116,7 +2116,9 @@ function evaluateOffline(cur, promptVi, resp) {
       original: userWords.slice(0, 4).join(' ') || 'Đầu câu',
       replacement: rep,
       error_type: 'Cấu trúc mục tiêu',
-      why: structComment,
+      why_wrong: `Bạn chưa áp dụng đúng công thức mục tiêu "${cur.formula}" vào câu làm bài.`,
+      why_correct: `Cần sử dụng cấu trúc chuẩn: ${structComment}`,
+      why: `Chưa dùng đúng công thức "${cur.formula}". Cần dùng: ${structComment}`,
       drill: {
         question: `Áp dụng công thức "${cur.formula}": Hãy hoàn thành câu dịch chuẩn xác cho đề bài này.`,
         hint: cur.formula,
@@ -2131,7 +2133,11 @@ function evaluateOffline(cur, promptVi, resp) {
       original: 'ability of',
       replacement: 'ability to',
       error_type: 'Từ vựng & Diễn đạt',
-      why: "Danh từ 'ability' đi với động từ nguyên mẫu có 'to' (ability to do something).",
+      why_wrong: "Bạn dùng 'ability of' là lỗi dịch word-by-word từ tiếng Việt 'khả năng của...'. Ngoài ra, sau giới từ 'of' không đi liền với động từ nguyên mẫu.",
+      why_correct: "Trong tiếng Anh học thuật, danh từ 'ability' luôn đi với động từ nguyên mẫu có to: 'ability to do something'.",
+      why: "Sai vì 'ability of' là dịch gượng ép và sai giới từ; Cần dùng 'ability to do something'.",
+      target_pattern: "ability to do sth",
+      pattern_formula: "ability + to-V (không dùng 'ability of')",
       drill: {
         question: 'Chọn dạng động từ đúng sau "ability": "Humans possess the unique ability _______ (adapt / of adapting / to adapt) to changing conditions."',
         hint: 'ability + to-V',
@@ -2145,7 +2151,11 @@ function evaluateOffline(cur, promptVi, resp) {
       original: 'success',
       replacement: 'succeeds',
       error_type: 'Ngữ pháp',
-      why: "Sau chủ ngữ số ít cần động từ chia 'succeeds' (success là danh từ).",
+      why_wrong: "Bạn dùng 'success' là danh từ (sự thành công), khiến câu bị thiếu vị ngữ (động từ chính) sau chủ ngữ.",
+      why_correct: "Cần dùng động từ 'succeed' và chia thì hiện tại đơn theo chủ ngữ số ít (one/someone) thành 'succeeds'.",
+      why: "Sai vì 'success' là danh từ; Cần dùng động từ 'succeeds' sau chủ ngữ số ít.",
+      target_pattern: "succeed in sth",
+      pattern_formula: "S (số ít) + succeeds in sth",
       drill: {
         question: 'Điền dạng từ thích hợp (success / succeed / succeeds): "The extent to which someone _______ in their career depends on diligence."',
         hint: 'Động từ thì hiện tại đơn ngôi thứ ba số ít',
@@ -2159,7 +2169,9 @@ function evaluateOffline(cur, promptVi, resp) {
       original: 'a + từ bắt đầu bằng nguyên âm',
       replacement: 'an',
       error_type: 'Mạo từ',
-      why: 'Trước danh từ/tính từ bắt đầu bằng nguyên âm cần dùng "an" thay vì "a".',
+      why_wrong: "Dùng mạo từ 'a' trước từ bắt đầu bằng nguyên âm phát âm là sai quy tắc ngữ âm tiếng Anh.",
+      why_correct: "Cần dùng mạo từ 'an' trước các danh từ/tính từ bắt đầu bằng âm nguyên âm [a, e, i, o, u].",
+      why: "Sai vì từ bắt đầu bằng nguyên âm; Cần đổi 'a' thành 'an'.",
       drill: {
         question: 'Điền mạo từ chính xác (a / an): "She achieved _______ extraordinary result."',
         hint: 'Trước từ bắt đầu bằng nguyên âm [e]',
@@ -2843,12 +2855,15 @@ function autoAddMistakesToAlbum(fixes, cur, promptVi, userSentence) {
       patternFormula = `${patternName} (thay vì '${fix.original}')`;
     }
 
+    const whyDetail = (fix.why_wrong && fix.why_correct) 
+      ? `Vì sao sai: ${fix.why_wrong} · Quy tắc chuẩn: ${fix.why_correct}`
+      : (fix.why || '');
     const newTrack = {
       id: 'mistake_struct_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
       name: patternName,
       group: fix.error_type || 'Phrasal Verbs & Cấu Trúc',
       formula: patternFormula,
-      note: `Tự động lưu từ lỗi thực tế: Bạn đã dùng "${fix.original}" ➜ Cần dùng "${fix.replacement}". ${fix.why || ''}`,
+      note: `Tự động lưu từ lỗi thực tế: Bạn đã dùng "${fix.original}" ➜ Cần dùng "${fix.replacement}". ${whyDetail}`,
       example: userSentence ? userSentence.replace(fix.original, fix.replacement) : fix.replacement,
       defaultVi: `Hãy đặt một câu tiếng Anh áp dụng đúng cụm từ/cấu trúc "${patternName}".`
     };
@@ -2919,14 +2934,19 @@ Cấu trúc: "${cur.name}" (${cur.formula})
 Bài làm: "${resp}"
 Lưu ý: Bỏ qua hoa/thường hoặc thiếu dấu câu. Bắt lỗi thực chất (thì, mạo từ a/an/the, giới từ, hòa hợp S-V, cấu trúc, phrasal verbs, collocations).
 Gán error_type trong fixes: "Mạo từ" | "Cách dùng thì" | "Giới từ" | "Hòa hợp chủ vị" | "Cấu trúc mục tiêu" | "Từ vựng & Diễn đạt".
-ĐẶC BIỆT QUAN TRỌNG:
-Học viên muốn LUYỆN TẬP CHỦ ĐỘNG thay vì chỉ nhìn đáp án sửa sai thụ động.
+
+YÊU CẦU GIẢI THÍCH LỖI SAI (CỰC KỲ QUAN TRỌNG CHO HỌC VIÊN):
+Người học muốn biết rõ cả 2 mặt của mỗi lỗi sai:
+1. "why_wrong": TẠI SAO NGƯỜI HỌC SAI — Phân tích lỗi tư duy hoặc quy tắc ngữ pháp mà học viên đã vi phạm (VD: "Bạn nhầm 'success' là danh từ nên thiếu vị ngữ sau chủ ngữ", hoặc "Bạn dịch word-by-word từ tiếng Việt 'khả năng của' thành 'ability of', sau giới từ 'of' lại đi kèm động từ nguyên mẫu là sai ngữ pháp").
+2. "why_correct": TẠI SAO DÙNG CÁCH CHUẨN — Quy tắc hoặc collocation bản xứ đúng (VD: "Cần dùng động từ 'succeeds' chia ở ngôi thứ 3 số ít", hoặc "Danh từ 'ability' luôn đi với động từ có to: 'ability to do sth'").
+3. "why": Tóm tắt ngắn gọn: "Sai vì ...; Cần dùng ... vì ...".
+
 Với MỖI lỗi sai trong 'fixes':
-1. Nếu là phrasal verb/collocation: trích xuất 'target_pattern' (vd: "ability to do sth"), 'pattern_formula' (vd: "ability + to-V (không dùng 'ability of')").
-2. BẮT BUỘC tạo 1 bài tập thực hành ngắn 'drill' LIÊN QUAN THẬT SÁT ĐẾN CHÍNH LỖI ĐÓ:
-   - "question": Câu bài tập có chỗ trống _______ hoặc câu ngắn cần điền/dịch để vận dụng chuẩn xác điểm sai (VD: "Humans have the unique _______ (khả năng thích ứng) to environmental changes.")
+- Trích xuất 'target_pattern' (vd: "ability to do sth"), 'pattern_formula' (vd: "ability + to-V (không dùng 'ability of')").
+- Tạo 1 bài tập thực hành ngắn 'drill' LIÊN QUAN THẬT SÁT ĐẾN CHÍNH LỖI ĐÓ:
+   - "question": Câu bài tập có chỗ trống _______ hoặc câu ngắn cần điền/dịch để vận dụng chuẩn xác điểm sai
    - "hint": Gợi ý ngắn gọn
-   - "answer": Đáp án chính xác cần điền (VD: "ability to adapt")
+   - "answer": Đáp án chính xác cần điền
 
 Chỉ trả về JSON thuần:
 {
@@ -2941,7 +2961,9 @@ Chỉ trả về JSON thuần:
       "original": "chỗ viết sai (vd: ability of adapt)",
       "replacement": "chỗ sửa đúng (vd: ability to adapt)",
       "error_type": "Từ vựng & Diễn đạt",
-      "why": "giải thích ngắn",
+      "why_wrong": "Giải thích rõ tại sao viết như thế lại sai (phân tích lỗi tư duy/ngữ pháp)",
+      "why_correct": "Giải thích tại sao cách sửa đúng là quy tắc chuẩn",
+      "why": "Tóm tắt: Sai vì ...; Cần dùng ... vì ...",
       "target_pattern": "tên cụm chuẩn nếu có",
       "pattern_formula": "công thức ngắn",
       "drill": {
@@ -3010,6 +3032,30 @@ $('response').addEventListener('keydown', e => {
 $('response').addEventListener('input', () => {
   updateShortcutHint();
 });
+
+function formatWhyExplanation(f) {
+  let wrong = (f.why_wrong || '').trim();
+  let correct = (f.why_correct || '').trim();
+
+  if (!wrong && f.why) {
+    if (f.why.includes(';') || f.why.includes('->') || f.why.includes('➜') || /sai vì|thay vì|thay cho/i.test(f.why)) {
+      const parts = f.why.split(/;\s*|➜\s*|(?=Cần dùng|Nên dùng|Quy tắc:)/i);
+      if (parts.length >= 2) {
+        wrong = parts[0].trim();
+        correct = parts.slice(1).join(' ').trim();
+      }
+    }
+  }
+
+  if (!wrong) {
+    wrong = `Bạn dùng "${f.original}" là chưa chuẩn xác theo quy tắc ngữ pháp hoặc ngữ cảnh tự nhiên.`;
+  }
+  if (!correct) {
+    correct = f.why || `Nên sửa thành "${f.replacement}" để câu văn đúng chuẩn học thuật IELTS.`;
+  }
+
+  return { wrong, correct };
+}
 
 function renderAiFeedback(res) {
   const card = $('aiFeedbackCard');
@@ -3091,6 +3137,7 @@ function renderAiFeedback(res) {
           hint: f.why,
           answer: f.replacement
         };
+        const whyInfo = formatWhyExplanation(f);
 
         return `
           <div class="sp-drill-card" style="background:#181818; border:1px solid rgba(255, 164, 43, 0.35); border-left:4px solid var(--sp-orange); border-radius:10px; padding:14px 16px; margin-bottom:12px;">
@@ -3106,8 +3153,22 @@ function renderAiFeedback(res) {
               ` : ''}
             </div>
 
-            <div style="font-size:12.5px; color:#ccc; margin-bottom:10px; line-height:1.45;">
-              💡 <strong>Bản chất lỗi:</strong> ${escapeHtml(f.why)}
+            <!-- Detailed Explanation: Why Wrong + Why Correct -->
+            <div class="sp-drill-explain-box" style="background:#131313; border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:10px 14px; margin-bottom:12px; font-size:12.5px; line-height:1.5;">
+              <div style="margin-bottom:6px; display:flex; align-items:flex-start; gap:8px;">
+                <span style="font-size:13px; line-height:1.2;">❌</span>
+                <div>
+                  <strong style="color:#ff8787;">Tại sao bạn sai:</strong>
+                  <span style="color:#ffc9c9; margin-left:4px;">${escapeHtml(whyInfo.wrong)}</span>
+                </div>
+              </div>
+              <div style="display:flex; align-items:flex-start; gap:8px;">
+                <span style="font-size:13px; line-height:1.2;">💡</span>
+                <div>
+                  <strong style="color:#8ce99a;">Lý do dùng cách chuẩn:</strong>
+                  <span style="color:#d3f9d8; margin-left:4px;">${escapeHtml(whyInfo.correct)}</span>
+                </div>
+              </div>
             </div>
 
             <div style="background:#121212; border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:12px 14px;">
@@ -3203,15 +3264,24 @@ function renderAiFeedback(res) {
       });
     }
 
-    // 2. Secondary Table: Hidden by default so user focuses on targeted drills
-    fixesSec.style.display = 'none';
-    fixesBody.innerHTML = realFixes.map(f => `
+    // 2. Full Table of Fixes
+    fixesSec.style.display = 'block';
+    fixesBody.innerHTML = realFixes.map(f => {
+      const whyInfo = formatWhyExplanation(f);
+      return `
       <tr>
         <td><span class="sp-err-tag">${escapeHtml(f.error_type || 'Ngữ pháp')}</span></td>
         <td class="sp-fix-orig">${escapeHtml(f.original)}</td>
         <td class="sp-fix-rep">${escapeHtml(f.replacement)}</td>
-        <td style="color:var(--sp-subtext); font-size:12.5px;">
-          ${escapeHtml(f.why)}
+        <td style="font-size:12.5px; line-height:1.5;">
+          <div style="margin-bottom:6px;">
+            <span style="color:#ff8787; font-weight:700;">❌ Vì sao bạn sai:</span>
+            <span style="color:#ffc9c9; margin-left:4px;">${escapeHtml(whyInfo.wrong)}</span>
+          </div>
+          <div>
+            <span style="color:#8ce99a; font-weight:700;">💡 Cách dùng chuẩn:</span>
+            <span style="color:#d3f9d8; margin-left:4px;">${escapeHtml(whyInfo.correct)}</span>
+          </div>
           ${f.added_to_album ? `
             <div style="margin-top:6px; display:inline-flex; align-items:center; gap:6px; background:rgba(29, 185, 84, 0.12); border:1px solid rgba(29, 185, 84, 0.4); color:#fff; padding:4px 9px; border-radius:12px; font-size:11.5px; flex-wrap:wrap;">
               <span>🎯 Đã tự lưu vào Album: <strong>${escapeHtml(f.added_to_album)}</strong></span>
@@ -3220,11 +3290,12 @@ function renderAiFeedback(res) {
           ` : ''}
         </td>
       </tr>
-    `).join('');
+      `;
+    }).join('');
 
     const toggleBtn = $('toggleFixTableBtn');
     if (toggleBtn) {
-      toggleBtn.textContent = '👁️ Xem bảng đối chiếu sửa lỗi';
+      toggleBtn.textContent = 'Ẩn bảng đối chiếu sửa lỗi';
       toggleBtn.onclick = () => {
         if (fixesSec.style.display === 'none') {
           fixesSec.style.display = 'block';
