@@ -4,6 +4,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Grammar Lab — Luyện Dịch Việt → Anh (Spotify Style, Album & AI Vocab)</title>
+  <!-- Spotify Style Favicons -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 168 168'%3E%3Ccircle cx='84' cy='84' r='84' fill='%231DB954'/%3E%3Cpath fill='%23000000' d='M125.7 122.9c-1.8 0-3.3-.6-4.6-1.5-23.4-14.3-52.9-17.5-87.6-9.6-3.6.8-7.2-1.4-8-5-.8-3.6 1.4-7.2 5-8 38.3-8.8 71.1-5.1 97.4 11 3.1 1.9 4.1 6 2.2 9.2-1.1 2.5-3.6 3.9-6.4 3.9zm10.7-23.8c-2.3 0-4.3-.8-5.9-2-26.8-16.5-67.6-21.2-99.3-11.6-4.6 1.4-9.6-1.2-11-5.8-1.4-4.6 1.2-9.6 5.8-11 36.3-11 81.4-5.7 112.5 13.4 3.9 2.4 5.2 7.6 2.7 11.6-1.5 3.3-4.8 5.4-8.8 5.4zm1.1-25.1c-2.7 0-5.1-.9-7.1-2.4-32.1-19.1-85.3-20.9-116.1-11.5-5.5 1.7-11.3-1.4-13-6.9-1.7-5.5 1.4-11.3 6.9-13 35.6-10.8 94.3-8.7 131.5 13.4 4.8 2.8 6.4 9 3.5 13.8-1.9 4.1-5.8 6.6-10.7 6.6z'/%3E%3C/svg%3E">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="alternate icon" type="image/png" href="favicon.png">
+  <link rel="alternate icon" type="image/x-icon" href="favicon.ico">
+  <link rel="apple-touch-icon" href="favicon.png">
   <style>
     /* =========================================================
        SPOTIFY WEB PLAYER DESIGN SYSTEM
@@ -62,7 +68,12 @@
     }
     .sp-logo-badge {
       width: 32px; height: 32px; border-radius: 50%; background: var(--sp-green);
-      display: flex; align-items: center; justify-content: center; font-size: 18px; color: #000; font-weight: 900;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; transition: transform .2s ease, background-color .2s ease;
+    }
+    .sp-brand:hover .sp-logo-badge {
+      transform: scale(1.08);
+      background: var(--sp-green-hover);
     }
     .sp-top-pills { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
     
@@ -581,7 +592,11 @@
 <!-- Top Navigation Bar -->
 <header class="sp-topbar">
   <div class="sp-brand" id="brandHomeBtn" style="cursor:pointer;" title="Về Trang Chủ Grammar Lab">
-    <div class="sp-logo-badge">GL</div>
+    <div class="sp-logo-badge" title="Grammar Lab Spotify Edition">
+      <svg viewBox="0 0 168 168" width="20" height="20" style="display:block;">
+        <path fill="#000000" d="M125.7 122.9c-1.8 0-3.3-.6-4.6-1.5-23.4-14.3-52.9-17.5-87.6-9.6-3.6.8-7.2-1.4-8-5-.8-3.6 1.4-7.2 5-8 38.3-8.8 71.1-5.1 97.4 11 3.1 1.9 4.1 6 2.2 9.2-1.1 2.5-3.6 3.9-6.4 3.9zm10.7-23.8c-2.3 0-4.3-.8-5.9-2-26.8-16.5-67.6-21.2-99.3-11.6-4.6 1.4-9.6-1.2-11-5.8-1.4-4.6 1.2-9.6 5.8-11 36.3-11 81.4-5.7 112.5 13.4 3.9 2.4 5.2 7.6 2.7 11.6-1.5 3.3-4.8 5.4-8.8 5.4zm1.1-25.1c-2.7 0-5.1-.9-7.1-2.4-32.1-19.1-85.3-20.9-116.1-11.5-5.5 1.7-11.3-1.4-13-6.9-1.7-5.5 1.4-11.3 6.9-13 35.6-10.8 94.3-8.7 131.5 13.4 4.8 2.8 6.4 9 3.5 13.8-1.9 4.1-5.8 6.6-10.7 6.6z"/>
+      </svg>
+    </div>
     <div>Grammar Lab <span style="color:var(--sp-green); font-size:12px; font-weight:700;">IELTS</span></div>
   </div>
 
