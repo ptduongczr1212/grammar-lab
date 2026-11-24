@@ -541,11 +541,26 @@
         </div>
         <textarea id="response" class="sp-textarea" lang="en" placeholder="Nhập câu tiếng Anh của bạn áp dụng cấu trúc trên... (Nhấn Enter để chấm)"></textarea>
         
-        <div class="sp-shortcut-hint">
+        <div class="sp-shortcut-hint" id="shortcutHintContainer">
           <span>💡 Phím tắt:</span>
-          <span>Nhấn <span class="sp-kbd">Enter</span> để chấm bài • Nhấn <span class="sp-kbd">Shift + Enter</span> để xuống dòng.</span>
+          <span id="shortcutHintText">Nhấn <span class="sp-kbd">Enter</span> để chấm bài • Nhấn <span class="sp-kbd">Shift + Enter</span> để xuống dòng.</span>
         </div>
       </form>
+
+      <!-- Personal Note Card for Current Structure -->
+      <div class="sp-card" id="userNoteCard" style="margin-top:16px; border:1px solid rgba(255,255,255,0.08); background:#161616; padding:16px 18px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-wrap:wrap; gap:8px;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span style="font-size:16px;">📝</span>
+            <strong style="font-size:13px; color:#fff;">Ghi chú cá nhân cho cấu trúc này:</strong>
+          </div>
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span id="userNoteSavedBadge" style="font-size:11.5px; color:var(--sp-subtext);">Tự động lưu</span>
+            <button type="button" id="openAllNotesBtn" class="sp-pill" style="padding:3px 10px; font-size:11px; background:rgba(255,255,255,0.08); color:var(--sp-subtext); border:none; cursor:pointer;">Xem tất cả sổ ghi chú ↗</button>
+          </div>
+        </div>
+        <textarea id="userNoteInput" class="sp-textarea" style="min-height:68px; height:68px; resize:vertical; font-size:13px; background:#111; padding:10px 12px; border-radius:8px;" placeholder="Viết những gì bạn cần nhớ cho cấu trúc này (mẹo nhớ, cụm phrasal verb hay đi kèm, lưu ý ngữ pháp khi thi IELTS Task 2, v.v.)..."></textarea>
+      </div>
 
       <!-- Gemini AI Detailed Feedback -->
       <div id="aiFeedbackCard" class="sp-feedback-card" style="display:none">
@@ -655,6 +670,7 @@
     <div class="sp-drawer-tab active" id="tabDict">🔍 Tra Từ</div>
     <div class="sp-drawer-tab" id="tabVocab">⭐ Sổ Từ (<span id="drawerVocabCount">0</span>)</div>
     <div class="sp-drawer-tab" id="tabMistakes">⚠️ Sổ Lỗi (<span id="drawerMistakesCount">0</span>)</div>
+    <div class="sp-drawer-tab" id="tabNotes">📝 Ghi Chú (<span id="drawerNotesCount">0</span>)</div>
     <button class="sp-close-btn" id="closeDrawerBtn" style="padding:0 14px;">&times;</button>
   </div>
 
@@ -705,6 +721,19 @@
       <div style="font-size:14px; font-weight:800; color:#fff;">Phân tích lỗi sai & Chẩn đoán AI:</div>
       <button class="sp-btn-secondary" id="clearAllMistakesBtn" style="padding:4px 10px; font-size:11.5px; border-color:var(--sp-red); color:var(--sp-red);">Xóa tất cả</button>
     </div>
+
+    <!-- Album Lỗi Cần Khắc Phục Shortcut Banner -->
+    <div style="background:rgba(29, 185, 84, 0.08); border:1px solid rgba(29, 185, 84, 0.28); border-radius:10px; padding:12px 14px; margin-bottom:14px; display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+      <div>
+        <div style="font-weight:700; color:#fff; font-size:13px; display:flex; align-items:center; gap:6px;">
+          <span>🎯 Album Lỗi Cần Khắc Phục</span>
+        </div>
+        <div style="font-size:12px; color:var(--sp-subtext);" id="mistakesAlbumTrackCountDesc">0 cấu trúc tự động tổng hợp từ bài làm</div>
+      </div>
+      <button id="openMistakesAlbumBtn" class="sp-pill" type="button" style="background:var(--sp-green); color:#000; font-weight:700; font-size:11.5px; padding:6px 14px; border:none; cursor:pointer;">
+        Luyện tập ngay ↗
+      </button>
+    </div>
     
     <!-- Hero Spotlight: Lỗi mắc phải nhiều nhất -->
     <div id="topMistakeHeroContainer"></div>
@@ -714,6 +743,16 @@
     </div>
     <div class="sp-mistake-stats" id="mistakeCategoryFilters"></div>
     <div id="mistakesListBody"></div>
+  </div>
+
+  <!-- View 4: Personal Notes Notebook -->
+  <div id="viewNotes" class="sp-drawer-body" style="display:none;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+      <div style="font-size:14px; font-weight:800; color:#fff;">📝 Sổ Ghi Chú Cá Nhân:</div>
+      <span style="font-size:12px; color:var(--sp-subtext);">Tự động đồng bộ</span>
+    </div>
+    <input type="text" id="notesFilterInput" style="width:100%; padding:8px 12px; border-radius:6px; border:1px solid var(--sp-border); background:#121212; color:#fff; font-size:13px; outline:none; margin-bottom:12px;" placeholder="Tìm kiếm trong các ghi chú của bạn...">
+    <div id="notesListBody"></div>
   </div>
 </div>
 
@@ -939,14 +978,36 @@ if (!albums || albums.length === 0) {
   ];
 }
 
+// Ensure dedicated Mistakes Album exists for automated phrasal verb & grammar error collection
+function getOrCreateMistakesAlbum() {
+  let alb = albums.find(a => a.id === "album_mistakes_practice");
+  if (!alb) {
+    alb = {
+      id: "album_mistakes_practice",
+      title: "🎯 Lỗi Cần Khắc Phục (Phrasal Verbs & Cấu Trúc)",
+      icon: "🎯",
+      desc: "Album tự động tổng hợp từ các phrasal verbs, collocations & cấu trúc bạn đã dùng sai trong lúc làm bài",
+      tracks: []
+    };
+    albums.push(alb);
+  }
+  return alb;
+}
+getOrCreateMistakesAlbum();
+
 currentAlbumId = localStorage.getItem('gl_cur_album_id') || albums[0].id;
 if (!albums.some(a => a.id === currentAlbumId)) currentAlbumId = albums[0].id;
+
+let userPersonalNotes = {};
+let lastGradedResponse = null;
+let lastGradedTrackKey = null;
 
 try {
   currentTrackIndex = parseInt(localStorage.getItem('gl_cur_track_idx') || '0', 10);
   generatedExercises = JSON.parse(localStorage.getItem('gl_generated_exercises_v2') || '{}');
   currentVocabNotebook = JSON.parse(localStorage.getItem('gl_saved_vocab_srs') || '[]');
   currentMistakesLog = JSON.parse(localStorage.getItem('gl_mistakes_log') || '[]');
+  userPersonalNotes = JSON.parse(localStorage.getItem('gl_user_notes') || '{}');
 } catch {}
 
 let saveStateTimer = null;
@@ -961,6 +1022,7 @@ function saveState(immediate = false) {
       localStorage.setItem('gl_generated_exercises_v2', JSON.stringify(generatedExercises));
       localStorage.setItem('gl_saved_vocab_srs', JSON.stringify(currentVocabNotebook));
       localStorage.setItem('gl_mistakes_log', JSON.stringify(currentMistakesLog));
+      localStorage.setItem('gl_user_notes', JSON.stringify(userPersonalNotes));
     } catch (e) {
       console.warn('Storage sync error:', e);
     }
@@ -975,12 +1037,50 @@ function saveState(immediate = false) {
   }
 }
 
+function getNoteKey(cur) {
+  if (!cur) return 'unknown';
+  return cur.id || cur.name || 'unknown';
+}
+
+function updateNotesCountUi() {
+  const count = Object.keys(userPersonalNotes).length;
+  const countEl = $('drawerNotesCount');
+  if (countEl) countEl.textContent = count;
+}
+
+function jumpToStructure(albumId, trackIdx) {
+  if (albumId && albums.some(a => a.id === albumId)) {
+    currentAlbumId = albumId;
+  }
+  const album = getCurrentAlbum();
+  if (trackIdx >= 0 && trackIdx < album.tracks.length) {
+    currentTrackIndex = trackIdx;
+  } else {
+    currentTrackIndex = 0;
+  }
+  saveState();
+  renderAll();
+  selectStructure(currentTrackIndex);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+window.jumpToStructure = jumpToStructure;
+
 function getCurrentAlbum() {
   return albums.find(a => a.id === currentAlbumId) || albums[0];
 }
 
 function getCurrentTrack() {
   const album = getCurrentAlbum();
+  if (album.id === "album_mistakes_practice" && (!album.tracks || album.tracks.length === 0)) {
+    return {
+      name: "Chưa có cấu trúc lỗi sai nào",
+      group: "Tự động tổng hợp",
+      formula: "Khi làm bài dịch nếu bạn mắc lỗi phrasal verbs hoặc cấu trúc, AI sẽ tự động lưu vào album này!",
+      note: "Hãy tiếp tục luyện dịch ở Album chính. Mọi điểm ngữ pháp hoặc cụm từ bạn dùng sai sẽ được chuyển thành bài tập riêng tại đây.",
+      example: "",
+      defaultVi: "Hãy sang Album '25 Cấu Trúc IELTS 8.0+' để bắt đầu luyện tập, hệ thống sẽ tự động bắt lỗi và lưu vào đây."
+    };
+  }
   if (currentTrackIndex < 0 || currentTrackIndex >= album.tracks.length) {
     currentTrackIndex = 0;
   }
@@ -1378,10 +1478,29 @@ function updateActiveTrackUi(idx) {
   });
 }
 
+function updateShortcutHint() {
+  const hintEl = $('shortcutHintText');
+  if (!hintEl) return;
+  const currentVal = ($('response') ? $('response').value : '').trim();
+  const currentKey = `${currentAlbumId}_${currentTrackIndex}`;
+  const feedbackVisible = $('aiFeedbackCard') && $('aiFeedbackCard').style.display !== 'none';
+
+  if (feedbackVisible && currentKey === lastGradedTrackKey && currentVal === (lastGradedResponse || '')) {
+    hintEl.innerHTML = '⚡ Nhấn <span class="sp-kbd">Enter</span> lần nữa để đổi đề bài mới (AI) • Hoặc sửa câu để chấm lại.';
+    hintEl.style.color = 'var(--sp-green)';
+  } else {
+    hintEl.innerHTML = 'Nhấn <span class="sp-kbd">Enter</span> để chấm bài • Nhấn <span class="sp-kbd">Shift + Enter</span> để xuống dòng.';
+    hintEl.style.color = 'var(--sp-subtext)';
+  }
+}
+
 function selectStructure(idx) {
   const album = getCurrentAlbum();
   if (idx < 0 || idx >= album.tracks.length) return;
   currentTrackIndex = idx;
+  lastGradedResponse = null;
+  lastGradedTrackKey = null;
+  updateShortcutHint();
   saveState();
   renderCurrentStructure();
   updateActiveTrackUi(idx);
@@ -1450,6 +1569,18 @@ function renderCurrentStructure() {
     $('promptVocabHint').style.display = 'none';
     $('sampleEnText').textContent = cur.example || cur.formula;
     $('sampleNoteText').textContent = cur.note;
+  }
+
+  // Personal Notes
+  const curNoteKey = getNoteKey(cur);
+  const existingNote = userPersonalNotes[curNoteKey];
+  const noteText = typeof existingNote === 'string' ? existingNote : (existingNote ? (existingNote.text || '') : '');
+  if ($('userNoteInput')) {
+    $('userNoteInput').value = noteText;
+  }
+  if ($('userNoteSavedBadge')) {
+    $('userNoteSavedBadge').textContent = noteText ? 'Đã lưu ✓' : 'Tự động lưu';
+    $('userNoteSavedBadge').style.color = noteText ? 'var(--sp-green)' : 'var(--sp-subtext)';
   }
 }
 
@@ -1639,6 +1770,9 @@ Yêu cầu trả về DUY NHẤT một chuỗi JSON hợp lệ (không kèm Mark
       $('response').value = '';
       $('aiFeedbackCard').style.display = 'none';
       $('sampleAnswerCard').style.display = 'none';
+      lastGradedResponse = null;
+      lastGradedTrackKey = null;
+      updateShortcutHint();
     }
   } catch (err) {
     const isBusy = (err.message || '').toLowerCase().includes('high demand') || (err.message || '').toLowerCase().includes('bận');
@@ -1647,6 +1781,99 @@ Yêu cầu trả về DUY NHẤT một chuỗi JSON hợp lệ (không kèm Mark
   } finally {
     btn.disabled = false;
     btn.textContent = origText;
+  }
+}
+
+// ----------------------------------------------------
+// AUTO AGGREGATE PHRASAL VERBS & MISTAKES INTO DEDICATED ALBUM
+// ----------------------------------------------------
+function autoAddMistakesToAlbum(fixes, cur, promptVi, userSentence) {
+  if (!Array.isArray(fixes) || fixes.length === 0) return;
+  const album = getOrCreateMistakesAlbum();
+
+  // Helper to normalize structure/phrase for duplicate detection
+  const normalizeKey = str => (str || '')
+    .toLowerCase()
+    .replace(/\b(something|somethings)\b/g, 'sth')
+    .replace(/\b(somebody|somebodies|someone)\b/g, 'sb')
+    .replace(/\bone\'s\b/g, "sb's")
+    .replace(/[^a-z0-9]/g, '');
+
+  // Collect all known structure keys across all albums to prevent duplicates
+  const existingKeys = new Set();
+  albums.forEach(a => {
+    (a.tracks || []).forEach(t => {
+      if (t.name) existingKeys.add(normalizeKey(t.name));
+    });
+  });
+
+  let anyAdded = false;
+
+  fixes.forEach(fix => {
+    if (!fix.original || !fix.replacement) return;
+    if (fix.original.toLowerCase().trim() === fix.replacement.toLowerCase().trim()) return;
+
+    // Determine target pattern name
+    let patternName = '';
+    let patternFormula = fix.pattern_formula || '';
+
+    if (fix.target_pattern && fix.target_pattern.trim().length >= 3) {
+      patternName = fix.target_pattern.trim();
+    } else {
+      // Check if why contains something in parentheses, e.g. "(ability to do something)"
+      const parenMatch = (fix.why || '').match(/\(([a-zA-Z\s\+\-\/\']+)\)/);
+      if (parenMatch && parenMatch[1] && parenMatch[1].trim().split(/\s+/).length >= 2) {
+        patternName = parenMatch[1].trim();
+      } else if (fix.replacement && fix.replacement.trim().split(/\s+/).length >= 2) {
+        patternName = fix.replacement.trim();
+      } else if (['Từ vựng & Diễn đạt', 'Giới từ', 'Cấu trúc mục tiêu'].includes(fix.error_type)) {
+        patternName = fix.replacement.trim();
+      }
+    }
+
+    if (!patternName || patternName.length < 3) return;
+
+    const normKey = normalizeKey(patternName);
+
+    // If already in mistakes album, link to it without creating duplicate
+    const existingIdx = album.tracks.findIndex(t => normalizeKey(t.name) === normKey);
+    if (existingIdx !== -1) {
+      fix.added_to_album = album.tracks[existingIdx].name;
+      fix.added_track_idx = existingIdx;
+      return;
+    }
+
+    // "không bao gồm những cấu trúc đã có": If already in another album (core structures), do not add
+    if (existingKeys.has(normKey)) {
+      return;
+    }
+
+    if (!patternFormula) {
+      patternFormula = `${patternName} (thay vì '${fix.original}')`;
+    }
+
+    const newTrack = {
+      id: 'mistake_struct_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+      name: patternName,
+      group: fix.error_type || 'Phrasal Verbs & Cấu Trúc',
+      formula: patternFormula,
+      note: `Tự động lưu từ lỗi thực tế: Bạn đã dùng "${fix.original}" ➜ Cần dùng "${fix.replacement}". ${fix.why || ''}`,
+      example: userSentence ? userSentence.replace(fix.original, fix.replacement) : fix.replacement,
+      defaultVi: `Hãy đặt một câu tiếng Anh áp dụng đúng cụm từ/cấu trúc "${patternName}".`
+    };
+
+    album.tracks.push(newTrack);
+    existingKeys.add(normKey);
+    anyAdded = true;
+
+    fix.added_to_album = patternName;
+    fix.added_track_idx = album.tracks.length - 1;
+  });
+
+  if (anyAdded) {
+    saveState(true);
+    renderAlbumSelector();
+    updateMistakesCountUi();
   }
 }
 
@@ -1676,10 +1903,14 @@ async function submitExercise(forceRetryAi = false) {
   // If no API key configured, evaluate immediately with Smart Offline Evaluator
   if (!apiKey) {
     const offlineRes = evaluateOffline(cur, promptVi, resp);
+    autoAddMistakesToAlbum(offlineRes.fixes, cur, promptVi, resp);
     renderAiFeedback(offlineRes);
     logMistakes(offlineRes.fixes, cur.name, resp);
     $('sampleAnswerCard').style.display = 'block';
     $('toggleSampleBtn').textContent = 'Ẩn đáp án mẫu';
+    lastGradedResponse = resp;
+    lastGradedTrackKey = `${currentAlbumId}_${currentTrackIndex}`;
+    updateShortcutHint();
     mainBtn.disabled = false;
     dockBtn.disabled = false;
     mainBtn.innerHTML = '✓';
@@ -1694,6 +1925,8 @@ Cấu trúc: "${cur.name}" (${cur.formula})
 Bài làm: "${resp}"
 Lưu ý: Bỏ qua hoa/thường hoặc thiếu dấu câu. Bắt lỗi thực chất (thì, mạo từ a/an/the, giới từ, hòa hợp S-V, cấu trúc).
 Gán error_type trong fixes: "Mạo từ" | "Cách dùng thì" | "Giới từ" | "Hòa hợp chủ vị" | "Cấu trúc mục tiêu" | "Từ vựng & Diễn đạt".
+Đặc biệt: Nếu bài làm dùng sai phrasal verb, collocation, hoặc dạng từ/giới từ đi kèm (ví dụ: 'ability of adapt' -> đúng là 'ability to adapt'), hãy trích xuất thêm 'target_pattern' (tên cụm chuẩn, vd: "ability to do sth") và 'pattern_formula' (công thức, vd: "ability + to-V (không dùng 'ability of')").
+
 Chỉ trả về JSON thuần:
 {
   "correct": true,
@@ -1702,7 +1935,7 @@ Chỉ trả về JSON thuần:
   "grammar": { "ok": true, "comment": "Ngắn" },
   "expression": { "ok": true, "comment": "Ngắn" },
   "meaning": { "ok": true, "comment": "Ngắn" },
-  "fixes": [{"original": "...", "replacement": "...", "error_type": "...", "why": "..."}],
+  "fixes": [{"original": "...", "replacement": "...", "error_type": "...", "why": "...", "target_pattern": "...", "pattern_formula": "..."}],
   "corrected": "Câu tiếng Anh chuẩn",
   "better_alternatives": ["1 câu band cao"]
 }`;
@@ -1725,10 +1958,14 @@ Chỉ trả về JSON thuần:
   }
 
   if (finalResult) {
+    autoAddMistakesToAlbum(finalResult.fixes, cur, promptVi, resp);
     renderAiFeedback(finalResult);
     logMistakes(finalResult.fixes, cur.name, resp);
     $('sampleAnswerCard').style.display = 'block';
     $('toggleSampleBtn').textContent = 'Ẩn đáp án mẫu';
+    lastGradedResponse = resp;
+    lastGradedTrackKey = `${currentAlbumId}_${currentTrackIndex}`;
+    updateShortcutHint();
   }
 }
 
@@ -1736,11 +1973,26 @@ $('exerciseForm').addEventListener('submit', e => { e.preventDefault(); submitEx
 $('mainSubmitBtn').onclick = () => submitExercise();
 $('dockPlayBtn').onclick = () => submitExercise();
 
+// Double-Enter handler: Enter once to grade, Enter again if unchanged to generate new challenge!
 $('response').addEventListener('keydown', e => {
   if (e.key === 'Enter' && !e.shiftKey) {
     e.preventDefault();
+    const currentVal = $('response').value.trim();
+    const currentKey = `${currentAlbumId}_${currentTrackIndex}`;
+    const feedbackVisible = $('aiFeedbackCard') && $('aiFeedbackCard').style.display !== 'none';
+
+    // If feedback is currently shown, on the same track, and user has not modified the graded response:
+    if (feedbackVisible && currentKey === lastGradedTrackKey && currentVal === (lastGradedResponse || '')) {
+      generateNewChallenge();
+      return;
+    }
+
     submitExercise();
   }
+});
+
+$('response').addEventListener('input', () => {
+  updateShortcutHint();
 });
 
 function renderAiFeedback(res) {
@@ -1817,7 +2069,15 @@ function renderAiFeedback(res) {
         <td><span class="sp-err-tag">${escapeHtml(f.error_type || 'Ngữ pháp')}</span></td>
         <td class="sp-fix-orig">${escapeHtml(f.original)}</td>
         <td class="sp-fix-rep">${escapeHtml(f.replacement)}</td>
-        <td style="color:var(--sp-subtext); font-size:12.5px;">${escapeHtml(f.why)}</td>
+        <td style="color:var(--sp-subtext); font-size:12.5px;">
+          ${escapeHtml(f.why)}
+          ${f.added_to_album ? `
+            <div style="margin-top:6px; display:inline-flex; align-items:center; gap:6px; background:rgba(29, 185, 84, 0.12); border:1px solid rgba(29, 185, 84, 0.4); color:#fff; padding:4px 9px; border-radius:12px; font-size:11.5px; flex-wrap:wrap;">
+              <span>🎯 Đã tự lưu vào Album: <strong>${escapeHtml(f.added_to_album)}</strong></span>
+              <button type="button" class="sp-pill" onclick="jumpToStructure('album_mistakes_practice', ${f.added_track_idx})" style="padding:2px 8px; font-size:11px; background:var(--sp-green); color:#000; font-weight:700; border:none; cursor:pointer;">Luyện tập ngay ↗</button>
+            </div>
+          ` : ''}
+        </td>
       </tr>
     `).join('');
   } else {
@@ -1878,6 +2138,9 @@ function updateMistakesCountUi() {
   $('topMistakeCount').textContent = count;
   $('dockMistakeCount').textContent = count;
   $('drawerMistakesCount').textContent = count;
+  const alb = getOrCreateMistakesAlbum();
+  const descEl = $('mistakesAlbumTrackCountDesc');
+  if (descEl) descEl.textContent = `${alb.tracks.length} cấu trúc phrasal verb & ngữ pháp tự động tổng hợp`;
 }
 
 let activeMistakeFilter = 'all';
@@ -2780,13 +3043,101 @@ function switchDrawerTab(tab) {
   $('tabDict').classList.toggle('active', tab === 'dict');
   $('tabVocab').classList.toggle('active', tab === 'vocab');
   $('tabMistakes').classList.toggle('active', tab === 'mistakes');
+  $('tabNotes').classList.toggle('active', tab === 'notes');
 
   $('viewDict').style.display = tab === 'dict' ? 'block' : 'none';
   $('viewVocab').style.display = tab === 'vocab' ? 'block' : 'none';
   $('viewMistakes').style.display = tab === 'mistakes' ? 'block' : 'none';
+  $('viewNotes').style.display = tab === 'notes' ? 'block' : 'none';
 
   if (tab === 'vocab') renderVocabNotebook();
   if (tab === 'mistakes') renderMistakesNotebook();
+  if (tab === 'notes') renderNotesNotebook();
+}
+
+function renderNotesNotebook() {
+  const container = $('notesListBody');
+  const query = ($('notesFilterInput') ? $('notesFilterInput').value : '').toLowerCase().trim();
+  const entries = Object.entries(userPersonalNotes);
+
+  const filtered = entries.filter(([key, item]) => {
+    const text = typeof item === 'string' ? item : (item.text || '');
+    const title = typeof item === 'object' && item.structName ? item.structName : key;
+    return !query || text.toLowerCase().includes(query) || title.toLowerCase().includes(query);
+  });
+
+  if (filtered.length === 0) {
+    container.innerHTML = `
+      <div style="text-align:center; padding:35px 15px; color:var(--sp-subtext);">
+        <div style="font-size:32px; margin-bottom:8px;">📝</div>
+        <p style="font-size:13px; margin:0;">${query ? 'Không tìm thấy ghi chú phù hợp.' : 'Bạn chưa có ghi chú nào. Hãy viết ghi chú ở khung dưới câu trả lời để lưu mẹo cần nhớ!'}</p>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = filtered.map(([key, item]) => {
+    const text = typeof item === 'string' ? item : (item.text || '');
+    const structName = (typeof item === 'object' && item.structName) ? item.structName : key;
+    const albumTitle = (typeof item === 'object' && item.albumTitle) ? item.albumTitle : '';
+    const albumId = (typeof item === 'object' && item.albumId) ? item.albumId : '';
+    const trackIdx = (typeof item === 'object' && typeof item.trackIdx === 'number') ? item.trackIdx : 0;
+
+    return `
+      <div class="sp-mistake-item" style="border-left: 3px solid var(--sp-green); padding: 12px 14px; margin-bottom: 12px;">
+        <div class="sp-mistake-item-head" style="margin-bottom:6px;">
+          <div>
+            <strong style="color:#fff; font-size:13.5px;">${escapeHtml(structName)}</strong>
+            ${albumTitle ? `<span style="font-size:11px; color:var(--sp-subtext); margin-left:6px;">(${escapeHtml(albumTitle)})</span>` : ''}
+          </div>
+          <div style="display:flex; align-items:center; gap:6px;">
+            <button class="sp-pill note-jump-btn" data-key="${escapeHtml(key)}" data-album="${escapeHtml(albumId)}" data-track="${trackIdx}" style="padding:2px 8px; font-size:11px; background:rgba(255,255,255,0.1); color:#fff; border:none; cursor:pointer;">Mở ↗</button>
+            <button class="sp-close-btn note-del-btn" data-key="${escapeHtml(key)}" title="Xóa ghi chú">&times;</button>
+          </div>
+        </div>
+        <div style="white-space:pre-wrap; font-size:13px; color:#e0e0e0; line-height:1.5; background:rgba(0,0,0,0.25); padding:8px 10px; border-radius:6px;">${escapeHtml(text)}</div>
+      </div>
+    `;
+  }).join('');
+
+  container.querySelectorAll('.note-jump-btn').forEach(btn => {
+    btn.onclick = () => {
+      const albId = btn.dataset.album;
+      const tIdx = parseInt(btn.dataset.track, 10);
+      const k = btn.dataset.key;
+      closeDrawer();
+      if (albId && albums.some(a => a.id === albId)) {
+        jumpToStructure(albId, isNaN(tIdx) ? 0 : tIdx);
+      } else {
+        // Fallback: search across all albums for track name matching k
+        for (const a of albums) {
+          const idx = (a.tracks || []).findIndex(t => (t.id || t.name) === k || t.name === k);
+          if (idx !== -1) {
+            jumpToStructure(a.id, idx);
+            return;
+          }
+        }
+      }
+    };
+  });
+
+  container.querySelectorAll('.note-del-btn').forEach(btn => {
+    btn.onclick = () => {
+      const k = btn.dataset.key;
+      if (confirm('Bạn có chắc muốn xóa ghi chú này?')) {
+        delete userPersonalNotes[k];
+        localStorage.setItem('gl_user_notes', JSON.stringify(userPersonalNotes));
+        updateNotesCountUi();
+        renderNotesNotebook();
+        const cur = getCurrentTrack();
+        if (getNoteKey(cur) === k) {
+          $('userNoteInput').value = '';
+          $('userNoteSavedBadge').textContent = 'Đã xóa';
+          $('userNoteSavedBadge').style.color = 'var(--sp-subtext)';
+        }
+      }
+    };
+  });
 }
 
 // ----------------------------------------------------
@@ -2842,6 +3193,57 @@ function initEvents() {
   $('tabDict').onclick = () => switchDrawerTab('dict');
   $('tabVocab').onclick = () => switchDrawerTab('vocab');
   $('tabMistakes').onclick = () => switchDrawerTab('mistakes');
+  $('tabNotes').onclick = () => switchDrawerTab('notes');
+
+  const notesFilter = $('notesFilterInput');
+  if (notesFilter) {
+    notesFilter.addEventListener('input', () => renderNotesNotebook());
+  }
+
+  const openAllNotesBtn = $('openAllNotesBtn');
+  if (openAllNotesBtn) {
+    openAllNotesBtn.onclick = () => openDrawer('notes');
+  }
+
+  const openMistakesAlb = $('openMistakesAlbumBtn');
+  if (openMistakesAlb) {
+    openMistakesAlb.onclick = () => {
+      closeDrawer();
+      jumpToStructure('album_mistakes_practice', 0);
+    };
+  }
+
+  // Personal Notes Auto-save Listener
+  let noteSaveTimer = null;
+  const userNoteEl = $('userNoteInput');
+  if (userNoteEl) {
+    userNoteEl.addEventListener('input', () => {
+      $('userNoteSavedBadge').textContent = 'Đang lưu...';
+      $('userNoteSavedBadge').style.color = 'var(--sp-orange)';
+      if (noteSaveTimer) clearTimeout(noteSaveTimer);
+      noteSaveTimer = setTimeout(() => {
+        const cur = getCurrentTrack();
+        const k = getNoteKey(cur);
+        const val = userNoteEl.value.trim();
+        if (val) {
+          userPersonalNotes[k] = {
+            text: val,
+            structName: cur.name,
+            albumId: currentAlbumId,
+            albumTitle: getCurrentAlbum().title,
+            trackIdx: currentTrackIndex,
+            updatedAt: Date.now()
+          };
+        } else {
+          delete userPersonalNotes[k];
+        }
+        localStorage.setItem('gl_user_notes', JSON.stringify(userPersonalNotes));
+        $('userNoteSavedBadge').textContent = 'Đã lưu ✓';
+        $('userNoteSavedBadge').style.color = 'var(--sp-green)';
+        updateNotesCountUi();
+      }, 250);
+    });
+  }
 
   $('dictLangToggle').onclick = () => {
     dictLang = dictLang === 'en' ? 'vi' : 'en';
@@ -2924,6 +3326,7 @@ window.addEventListener('DOMContentLoaded', () => {
   updateApiStatusUi();
   updateVocabCountUi();
   updateMistakesCountUi();
+  updateNotesCountUi();
   updateNotificationButton();
   // Auto-discover valid models in background if key is present
   const key = getApiKey();
