@@ -600,8 +600,22 @@
           </div>
         </div>
 
+        <!-- Interactive Targeted Drills Section (Active Practice instead of passive correction) -->
+        <div id="aiDrillsSection" style="display:none; margin-top:16px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
+            <div style="font-size:13.5px; font-weight:800; color:#fff; display:flex; align-items:center; gap:6px;">
+              <span>🎯 Bài tập thực hành sát lỗi sai vừa mắc:</span>
+              <span style="font-size:11px; background:rgba(29, 185, 84, 0.15); border:1px solid var(--sp-green); color:var(--sp-green); padding:2px 8px; border-radius:10px; font-weight:700;">Tự làm để nhớ lâu</span>
+            </div>
+            <button type="button" id="toggleFixTableBtn" class="sp-pill" style="font-size:11px; padding:3px 10px; background:rgba(255,255,255,0.08); color:var(--sp-subtext); border:none; cursor:pointer;">
+              👁️ Xem bảng đối chiếu sửa lỗi
+            </button>
+          </div>
+          <div id="aiDrillsList"></div>
+        </div>
+
         <div id="aiFixesSection" style="display:none">
-          <div style="font-size:13px; font-weight:700; color:#fff; margin-bottom:8px;">Chi tiết sửa lỗi & Góp ý:</div>
+          <div style="font-size:12.5px; font-weight:700; color:var(--sp-subtext); margin-bottom:8px;">Bảng đối chiếu sửa lỗi chi tiết:</div>
           <table class="sp-fixes-table">
             <thead>
               <tr><th>Phân loại</th><th>Chỗ chưa chuẩn</th><th>Đề xuất sửa</th><th>Giải thích</th></tr>
@@ -1333,11 +1347,17 @@ function evaluateOffline(cur, promptVi, resp) {
 
   const fixes = [];
   if (!structMatch) {
+    const rep = cur.formula || cur.en.split(' ').slice(0, 4).join(' ');
     fixes.push({
       original: userWords.slice(0, 4).join(' ') || 'Đầu câu',
-      replacement: cur.formula || cur.en.split(' ').slice(0, 4).join(' '),
+      replacement: rep,
       error_type: 'Cấu trúc mục tiêu',
-      why: structComment
+      why: structComment,
+      drill: {
+        question: `Áp dụng công thức "${cur.formula}": Hãy hoàn thành câu dịch chuẩn xác cho đề bài này.`,
+        hint: cur.formula,
+        answer: cur.example || cur.en
+      }
     });
   }
 
@@ -1346,7 +1366,12 @@ function evaluateOffline(cur, promptVi, resp) {
       original: 'a + từ bắt đầu bằng nguyên âm',
       replacement: 'an',
       error_type: 'Mạo từ',
-      why: 'Trước danh từ/tính từ bắt đầu bằng nguyên âm cần dùng "an" thay vì "a".'
+      why: 'Trước danh từ/tính từ bắt đầu bằng nguyên âm cần dùng "an" thay vì "a".',
+      drill: {
+        question: 'Điền mạo từ chính xác (a / an): "She achieved _______ extraordinary result."',
+        hint: 'Trước từ bắt đầu bằng nguyên âm [e]',
+        answer: 'an'
+      }
     });
   }
 
@@ -1923,9 +1948,16 @@ async function submitExercise(forceRetryAi = false) {
 Cấu trúc: "${cur.name}" (${cur.formula})
 Đề: "${promptVi}"
 Bài làm: "${resp}"
-Lưu ý: Bỏ qua hoa/thường hoặc thiếu dấu câu. Bắt lỗi thực chất (thì, mạo từ a/an/the, giới từ, hòa hợp S-V, cấu trúc).
+Lưu ý: Bỏ qua hoa/thường hoặc thiếu dấu câu. Bắt lỗi thực chất (thì, mạo từ a/an/the, giới từ, hòa hợp S-V, cấu trúc, phrasal verbs, collocations).
 Gán error_type trong fixes: "Mạo từ" | "Cách dùng thì" | "Giới từ" | "Hòa hợp chủ vị" | "Cấu trúc mục tiêu" | "Từ vựng & Diễn đạt".
-Đặc biệt: Nếu bài làm dùng sai phrasal verb, collocation, hoặc dạng từ/giới từ đi kèm (ví dụ: 'ability of adapt' -> đúng là 'ability to adapt'), hãy trích xuất thêm 'target_pattern' (tên cụm chuẩn, vd: "ability to do sth") và 'pattern_formula' (công thức, vd: "ability + to-V (không dùng 'ability of')").
+ĐẶC BIỆT QUAN TRỌNG:
+Học viên muốn LUYỆN TẬP CHỦ ĐỘNG thay vì chỉ nhìn đáp án sửa sai thụ động.
+Với MỖI lỗi sai trong 'fixes':
+1. Nếu là phrasal verb/collocation: trích xuất 'target_pattern' (vd: "ability to do sth"), 'pattern_formula' (vd: "ability + to-V (không dùng 'ability of')").
+2. BẮT BUỘC tạo 1 bài tập thực hành ngắn 'drill' LIÊN QUAN THẬT SÁT ĐẾN CHÍNH LỖI ĐÓ:
+   - "question": Câu bài tập có chỗ trống _______ hoặc câu ngắn cần điền/dịch để vận dụng chuẩn xác điểm sai (VD: "Humans have the unique _______ (khả năng thích ứng) to environmental changes.")
+   - "hint": Gợi ý ngắn gọn
+   - "answer": Đáp án chính xác cần điền (VD: "ability to adapt")
 
 Chỉ trả về JSON thuần:
 {
@@ -1935,7 +1967,21 @@ Chỉ trả về JSON thuần:
   "grammar": { "ok": true, "comment": "Ngắn" },
   "expression": { "ok": true, "comment": "Ngắn" },
   "meaning": { "ok": true, "comment": "Ngắn" },
-  "fixes": [{"original": "...", "replacement": "...", "error_type": "...", "why": "...", "target_pattern": "...", "pattern_formula": "..."}],
+  "fixes": [
+    {
+      "original": "chỗ viết sai (vd: ability of adapt)",
+      "replacement": "chỗ sửa đúng (vd: ability to adapt)",
+      "error_type": "Từ vựng & Diễn đạt",
+      "why": "giải thích ngắn",
+      "target_pattern": "tên cụm chuẩn nếu có",
+      "pattern_formula": "công thức ngắn",
+      "drill": {
+        "question": "Câu bài tập ngắn thật sát lỗi đó",
+        "hint": "Gợi ý",
+        "answer": "Đáp án chuẩn"
+      }
+    }
+  ],
   "corrected": "Câu tiếng Anh chuẩn",
   "better_alternatives": ["1 câu band cao"]
 }`;
@@ -2060,10 +2106,135 @@ function renderAiFeedback(res) {
     return !(f.original && f.replacement && f.original.toLowerCase() === f.replacement.toLowerCase());
   });
 
+  const drillsSec = $('aiDrillsSection');
+  const drillsList = $('aiDrillsList');
   const fixesSec = $('aiFixesSection');
   const fixesBody = $('aiFixesBody');
+
   if (realFixes.length > 0) {
-    fixesSec.style.display = 'block';
+    // 1. Render Interactive Targeted Practice Drills (ACTIVE LEARNING)
+    if (drillsSec && drillsList) {
+      drillsSec.style.display = 'block';
+      drillsList.innerHTML = realFixes.map((f, i) => {
+        const d = f.drill || {
+          question: `Điền dạng đúng chuẩn thay thế cho "${f.original}":`,
+          hint: f.why,
+          answer: f.replacement
+        };
+
+        return `
+          <div class="sp-drill-card" style="background:#181818; border:1px solid rgba(255, 164, 43, 0.35); border-left:4px solid var(--sp-orange); border-radius:10px; padding:14px 16px; margin-bottom:12px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-wrap:wrap; gap:6px;">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span class="sp-err-tag" style="background:rgba(255, 164, 43, 0.18); color:var(--sp-orange); border:none; font-weight:700;">${escapeHtml(f.error_type || 'Ngữ pháp')}</span>
+                <span style="font-size:12px; color:var(--sp-subtext);">Lỗi mắc phải: <span class="sp-fix-orig">${escapeHtml(f.original)}</span></span>
+              </div>
+              ${f.added_to_album ? `
+                <button type="button" class="sp-pill" onclick="jumpToStructure('album_mistakes_practice', ${f.added_track_idx})" style="padding:3px 9px; font-size:11px; background:rgba(29, 185, 84, 0.15); border:1px solid var(--sp-green); color:#fff; cursor:pointer;">
+                  🎯 Luyện sâu trong Album Lỗi Sai ↗
+                </button>
+              ` : ''}
+            </div>
+
+            <div style="font-size:12.5px; color:#ccc; margin-bottom:10px; line-height:1.45;">
+              💡 <strong>Bản chất lỗi:</strong> ${escapeHtml(f.why)}
+            </div>
+
+            <div style="background:#121212; border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:12px 14px;">
+              <div style="font-size:11.5px; font-weight:800; color:var(--sp-green); text-transform:uppercase; letter-spacing:0.04em; margin-bottom:5px;">
+                ✏️ Bài tập khắc phục sát lỗi:
+              </div>
+              <div style="font-size:13.5px; font-weight:600; color:#fff; line-height:1.5;">
+                ${escapeHtml(d.question)}
+              </div>
+              ${d.hint ? `
+                <div style="font-size:11.5px; color:var(--sp-muted); margin-top:4px;">
+                  💡 Gợi ý: ${escapeHtml(d.hint)}
+                </div>
+              ` : ''}
+
+              <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">
+                <input type="text" class="sp-drill-input" data-idx="${i}" placeholder="Nhập câu trả lời của bạn vào đây..." style="flex:1; min-width:200px; padding:8px 12px; border-radius:6px; border:1px solid var(--sp-border); background:#202020; color:#fff; font-size:13.5px; outline:none;" />
+                <button type="button" class="sp-pill green sp-drill-check-btn" data-idx="${i}" style="padding:8px 16px; font-size:12.5px; font-weight:700; white-space:nowrap; cursor:pointer;">Kiểm tra</button>
+                <button type="button" class="sp-pill sp-drill-reveal-btn" data-idx="${i}" style="padding:8px 12px; font-size:12px; background:rgba(255,255,255,0.08); color:var(--sp-subtext); border:none; white-space:nowrap; cursor:pointer;">Xem đáp án</button>
+              </div>
+              <div class="sp-drill-feedback" id="drillFeedback_${i}" style="display:none; font-size:12.5px; margin-top:8px; padding-top:6px; border-top:1px dashed rgba(255,255,255,0.1);"></div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // Wire events for drills
+      drillsList.querySelectorAll('.sp-drill-check-btn').forEach(btn => {
+        btn.onclick = () => {
+          const idx = parseInt(btn.dataset.idx, 10);
+          const input = drillsList.querySelector(`.sp-drill-input[data-idx="${idx}"]`);
+          const fb = drillsList.querySelector(`#drillFeedback_${idx}`);
+          const f = realFixes[idx];
+          const d = f.drill || { answer: f.replacement };
+          if (!input || !fb) return;
+
+          const val = input.value.trim();
+          if (!val) {
+            fb.style.display = 'block';
+            fb.innerHTML = '<span style="color:var(--sp-orange);">Vui lòng nhập câu trả lời trước khi kiểm tra.</span>';
+            return;
+          }
+
+          const normUser = val.toLowerCase().replace(/[.,!?'"’]/g, '').trim();
+          const normAns = (d.answer || f.replacement || '').toLowerCase().replace(/[.,!?'"’]/g, '').trim();
+          const isCorrect = normUser === normAns || 
+            normUser.includes(normAns) || 
+            (normAns.length > 5 && normAns.includes(normUser) && normUser.length >= normAns.length * 0.7);
+
+          fb.style.display = 'block';
+          if (isCorrect) {
+            fb.innerHTML = `
+              <div style="color:var(--sp-green); font-weight:700; font-size:13px;">✓ Chính xác! Bạn đã áp dụng chuẩn xác điểm này.</div>
+              <div style="color:var(--sp-subtext); margin-top:2px;">Đáp án chuẩn: <strong style="color:#fff;">${escapeHtml(d.answer || f.replacement)}</strong></div>
+            `;
+            input.style.borderColor = 'var(--sp-green)';
+          } else {
+            fb.innerHTML = `
+              <div style="color:var(--sp-red); font-weight:700;">✗ Chưa hoàn toàn chuẩn xác.</div>
+              <div style="color:var(--sp-subtext); margin-top:2px;">Gợi ý: ${escapeHtml(d.hint || f.why)}. Bạn có thể thử lại hoặc bấm "Xem đáp án".</div>
+            `;
+            input.style.borderColor = 'var(--sp-red)';
+          }
+        };
+      });
+
+      drillsList.querySelectorAll('.sp-drill-input').forEach(input => {
+        input.addEventListener('keydown', e => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            const idx = input.dataset.idx;
+            const btn = drillsList.querySelector(`.sp-drill-check-btn[data-idx="${idx}"]`);
+            if (btn) btn.click();
+          }
+        });
+      });
+
+      drillsList.querySelectorAll('.sp-drill-reveal-btn').forEach(btn => {
+        btn.onclick = () => {
+          const idx = parseInt(btn.dataset.idx, 10);
+          const fb = drillsList.querySelector(`#drillFeedback_${idx}`);
+          const f = realFixes[idx];
+          const d = f.drill || { answer: f.replacement };
+          if (!fb) return;
+          fb.style.display = 'block';
+          fb.innerHTML = `
+            <div style="color:#fde68a; font-size:12.5px;">
+              💡 Đáp án chuẩn: <strong style="color:#fff; font-size:13px;">${escapeHtml(d.answer || f.replacement)}</strong>
+              <span style="color:var(--sp-subtext); margin-left:6px;">(Thay thế cho "${escapeHtml(f.original)}")</span>
+            </div>
+          `;
+        };
+      });
+    }
+
+    // 2. Secondary Table: Hidden by default so user focuses on targeted drills
+    fixesSec.style.display = 'none';
     fixesBody.innerHTML = realFixes.map(f => `
       <tr>
         <td><span class="sp-err-tag">${escapeHtml(f.error_type || 'Ngữ pháp')}</span></td>
@@ -2080,7 +2251,22 @@ function renderAiFeedback(res) {
         </td>
       </tr>
     `).join('');
+
+    const toggleBtn = $('toggleFixTableBtn');
+    if (toggleBtn) {
+      toggleBtn.textContent = '👁️ Xem bảng đối chiếu sửa lỗi';
+      toggleBtn.onclick = () => {
+        if (fixesSec.style.display === 'none') {
+          fixesSec.style.display = 'block';
+          toggleBtn.textContent = 'Ẩn bảng đối chiếu sửa lỗi';
+        } else {
+          fixesSec.style.display = 'none';
+          toggleBtn.textContent = '👁️ Xem bảng đối chiếu sửa lỗi';
+        }
+      };
+    }
   } else {
+    if (drillsSec) drillsSec.style.display = 'none';
     fixesSec.style.display = 'none';
   }
 
@@ -2120,6 +2306,8 @@ function logMistakes(fixes, structName, userSentence) {
       replacement: fix.replacement || '',
       errorType: fix.error_type || 'Ngữ pháp chung',
       why: fix.why || '',
+      drill: fix.drill || null,
+      targetPattern: fix.target_pattern || null,
       sentence: userSentence,
       timestamp: Date.now()
     });
@@ -2183,24 +2371,102 @@ function renderMistakesNotebook() {
     return;
   }
 
-  container.innerHTML = filtered.map(item => `
-    <div class="sp-mistake-item" data-id="${item.id}">
-      <div class="sp-mistake-item-head">
-        <span class="sp-mistake-struct">${escapeHtml(item.structure)}</span>
-        <div style="display:flex; align-items:center; gap:6px;">
-          <span class="sp-mistake-type">${escapeHtml(item.errorType)}</span>
-          <button class="sp-close-btn mistake-del-btn" title="Đã khắc phục / Xóa" style="font-size:16px;">&times;</button>
+  container.innerHTML = filtered.map(item => {
+    const drillQuestion = (item.drill && item.drill.question) ? item.drill.question : `Điền dạng chuẩn thay thế cho "${item.original}":`;
+    return `
+      <div class="sp-mistake-item" data-id="${item.id}">
+        <div class="sp-mistake-item-head">
+          <span class="sp-mistake-struct">${escapeHtml(item.structure)}</span>
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span class="sp-mistake-type">${escapeHtml(item.errorType)}</span>
+            <button class="sp-close-btn mistake-del-btn" title="Đã khắc phục / Xóa" style="font-size:16px;">&times;</button>
+          </div>
+        </div>
+        <div class="sp-mistake-sentence">"${escapeHtml(item.sentence)}"</div>
+        <div class="sp-mistake-why">💡 ${escapeHtml(item.why)}</div>
+
+        <!-- Interactive Targeted Practice Drill -->
+        <div style="background:#121212; border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:10px 12px; margin-top:8px;">
+          <div style="font-size:11px; font-weight:700; color:var(--sp-green); text-transform:uppercase; margin-bottom:4px; display:flex; justify-content:space-between; align-items:center;">
+            <span>🎯 Bài tập khắc phục:</span>
+            <span style="font-size:10.5px; color:var(--sp-muted);">Luyện phản xạ</span>
+          </div>
+          <div style="font-size:13px; font-weight:600; color:#fff; line-height:1.45;">
+            ${escapeHtml(drillQuestion)}
+          </div>
+          ${item.drill && item.drill.hint ? `<div style="font-size:11px; color:var(--sp-muted); margin-top:3px;">Gợi ý: ${escapeHtml(item.drill.hint)}</div>` : ''}
+          <div style="display:flex; gap:6px; margin-top:8px;">
+            <input type="text" class="nb-drill-input" data-id="${item.id}" placeholder="Gõ câu trả lời của bạn..." style="flex:1; padding:6px 10px; border-radius:6px; border:1px solid var(--sp-border); background:#1e1e1e; color:#fff; font-size:12.5px; outline:none;" />
+            <button type="button" class="sp-pill green nb-drill-check" data-id="${item.id}" style="padding:5px 12px; font-size:11.5px; font-weight:700; cursor:pointer;">Kiểm tra</button>
+            <button type="button" class="sp-pill nb-drill-reveal" data-id="${item.id}" style="padding:5px 10px; font-size:11px; background:rgba(255,255,255,0.08); color:var(--sp-subtext); border:none; cursor:pointer;">Đáp án</button>
+          </div>
+          <div class="nb-drill-fb" id="nbFb_${item.id}" style="display:none; font-size:12px; margin-top:6px;"></div>
         </div>
       </div>
-      <div class="sp-mistake-sentence">"${escapeHtml(item.sentence)}"</div>
-      <div class="sp-mistake-change">
-        <span class="sp-fix-orig">${escapeHtml(item.original)}</span>
-        <span style="color:var(--sp-subtext); padding:0 4px;">➜</span>
-        <span class="sp-fix-rep">${escapeHtml(item.replacement)}</span>
-      </div>
-      <div class="sp-mistake-why">💡 ${escapeHtml(item.why)}</div>
-    </div>
-  `).join('');
+    `;
+  }).join('');
+
+  container.querySelectorAll('.nb-drill-check').forEach(btn => {
+    btn.onclick = () => {
+      const id = btn.dataset.id;
+      const input = container.querySelector(`.nb-drill-input[data-id="${id}"]`);
+      const fb = container.querySelector(`#nbFb_${id}`);
+      const item = currentMistakesLog.find(m => m.id === id);
+      if (!input || !fb || !item) return;
+
+      const val = input.value.trim();
+      if (!val) {
+        fb.style.display = 'block';
+        fb.innerHTML = '<span style="color:var(--sp-orange);">Vui lòng nhập câu trả lời.</span>';
+        return;
+      }
+
+      const targetAns = (item.drill && item.drill.answer) ? item.drill.answer : item.replacement;
+      const normVal = val.toLowerCase().replace(/[.,!?'"’]/g, '').trim();
+      const normAns = targetAns.toLowerCase().replace(/[.,!?'"’]/g, '').trim();
+
+      const isPass = normVal === normAns || 
+        normVal.includes(normAns) || 
+        (normAns.length > 5 && normAns.includes(normVal) && normVal.length >= normAns.length * 0.7);
+
+      fb.style.display = 'block';
+      if (isPass) {
+        fb.innerHTML = `<span style="color:var(--sp-green); font-weight:700;">✓ Rất chính xác! Bạn đã ghi nhớ cách dùng đúng: "${escapeHtml(targetAns)}".</span>`;
+        input.style.borderColor = 'var(--sp-green)';
+      } else {
+        fb.innerHTML = `<span style="color:var(--sp-red);">✗ Chưa đúng. Hãy thử lại hoặc bấm "Đáp án".</span>`;
+        input.style.borderColor = 'var(--sp-red)';
+      }
+    };
+  });
+
+  container.querySelectorAll('.nb-drill-input').forEach(input => {
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const id = input.dataset.id;
+        const btn = container.querySelector(`.nb-drill-check[data-id="${id}"]`);
+        if (btn) btn.click();
+      }
+    });
+  });
+
+  container.querySelectorAll('.nb-drill-reveal').forEach(btn => {
+    btn.onclick = () => {
+      const id = btn.dataset.id;
+      const fb = container.querySelector(`#nbFb_${id}`);
+      const item = currentMistakesLog.find(m => m.id === id);
+      if (!fb || !item) return;
+      const targetAns = (item.drill && item.drill.answer) ? item.drill.answer : item.replacement;
+      fb.style.display = 'block';
+      fb.innerHTML = `
+        <div style="color:#fde68a;">
+          💡 Đáp án chuẩn: <strong style="color:#fff;">${escapeHtml(targetAns)}</strong>
+          <span style="color:var(--sp-subtext); margin-left:6px;">(Thay cho "${escapeHtml(item.original)}")</span>
+        </div>
+      `;
+    };
+  });
 
   container.querySelectorAll('.mistake-del-btn').forEach(btn => {
     btn.onclick = () => {
