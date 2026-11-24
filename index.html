@@ -100,33 +100,163 @@
     .sp-dot-busy { background: var(--sp-orange); animation: spPulse 1s infinite alternate; }
     @keyframes spPulse { from { opacity: .4; } to { opacity: 1; } }
 
-    /* Layout */
+    /* Layout: Persistent 2-Column Desktop Grid */
     .sp-layout {
-      display: grid; grid-template-columns: 330px minmax(0, 1fr); gap: 12px; padding: 12px 16px;
-      max-width: 1540px; margin: auto;
+      display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 12px; padding: 12px 16px;
+      max-width: 1680px; margin: auto; min-height: calc(100vh - 160px);
+    }
+    @media (min-width: 1440px) {
+      .sp-layout { grid-template-columns: 360px minmax(0, 1fr); }
+    }
+    @media (max-width: 960px) {
+      .sp-layout { grid-template-columns: 1fr; padding: 8px 10px; }
     }
 
-    /* Spotify Left Sidebar */
+    /* Spotify Left Sidebar ("Thư viện") */
     .sp-sidebar {
-      background: var(--sp-card); border-radius: 12px; padding: 16px; height: calc(100vh - 170px);
-      position: sticky; top: 72px; display: flex; flex-direction: column; overflow: hidden;
+      background: #121212; border-radius: 8px; padding: 12px 8px 12px 12px;
+      height: calc(100vh - 165px); min-height: 580px; position: sticky; top: 72px;
+      display: flex; flex-direction: column; overflow: hidden;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
     }
     .sp-sidebar-header {
-      display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 4px 6px 12px; user-select: none;
     }
-    .sp-sidebar-title {
-      font-size: 13.5px; font-weight: 800; color: var(--sp-subtext); text-transform: uppercase; letter-spacing: 0.05em;
-      display: flex; align-items: center; gap: 6px;
+    .sp-sidebar-title-btn {
+      display: inline-flex; align-items: center; gap: 10px; color: var(--sp-subtext);
+      font-size: 15px; font-weight: 700; cursor: pointer; transition: color .2s;
+      background: transparent; border: none; padding: 0;
     }
-    .sp-album-selector-wrap { margin-bottom: 10px; }
+    .sp-sidebar-title-btn:hover { color: #fff; }
+    .sp-sidebar-title-btn svg { fill: currentColor; }
+    .sp-sidebar-header-actions { display: flex; align-items: center; gap: 6px; }
+    
+    .sp-sb-action-btn {
+      background: rgba(255,255,255,0.08); border: none; color: #fff;
+      padding: 5px 12px; border-radius: 500px; font-size: 12px; font-weight: 700;
+      cursor: pointer; display: inline-flex; align-items: center; gap: 4px;
+      transition: background .15s, transform .15s;
+    }
+    .sp-sb-action-btn:hover { background: rgba(255,255,255,0.18); transform: scale(1.04); }
+    
+    .sp-sb-icon-btn {
+      width: 30px; height: 30px; border-radius: 50%; background: transparent; border: none;
+      color: var(--sp-subtext); font-size: 15px; cursor: pointer; display: flex;
+      align-items: center; justify-content: center; transition: background .15s, color .15s;
+    }
+    .sp-sb-icon-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+
+    /* Sidebar Filter Pills */
+    .sp-sidebar-pills {
+      display: flex; gap: 6px; padding: 0 4px 10px; overflow-x: auto; scrollbar-width: none;
+    }
+    .sp-sidebar-pills::-webkit-scrollbar { display: none; }
+    .sp-sb-pill {
+      background: rgba(255, 255, 255, 0.08); border: none; color: #fff;
+      padding: 5px 12px; border-radius: 500px; font-size: 12px; font-weight: 700;
+      cursor: pointer; white-space: nowrap; transition: background-color .15s, color .15s;
+    }
+    .sp-sb-pill:hover { background: rgba(255, 255, 255, 0.16); }
+    .sp-sb-pill.active { background: #ffffff; color: #000000; }
+
+    /* Sidebar Search & Sort Row */
+    .sp-sidebar-search-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 4px 6px 10px; gap: 8px;
+    }
+    .sp-sb-search-box {
+      flex: 1; display: flex; align-items: center; background: rgba(255,255,255,0.06);
+      border-radius: 4px; padding: 4px 8px; gap: 6px; transition: background .15s;
+    }
+    .sp-sb-search-box:focus-within { background: rgba(255,255,255,0.12); }
+    .sp-sb-search-box input {
+      background: transparent; border: none; color: #fff; font-size: 12px;
+      outline: none; width: 100%;
+    }
+    .sp-sb-search-box input::placeholder { color: var(--sp-muted); }
+    .sp-sb-sort-label {
+      display: inline-flex; align-items: center; gap: 4px; font-size: 12px;
+      font-weight: 600; color: var(--sp-subtext); cursor: pointer; user-select: none;
+      white-space: nowrap; transition: color .15s;
+    }
+    .sp-sb-sort-label:hover { color: #fff; }
+
+    /* Sidebar Scrollable Library List */
+    .sp-sidebar-list {
+      flex: 1; overflow-y: auto; overflow-x: hidden; display: flex; flex-direction: column;
+      gap: 3px; padding-right: 4px;
+    }
+    .sp-sidebar-list::-webkit-scrollbar { width: 6px; }
+    .sp-sidebar-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 6px; }
+    .sp-sidebar-list::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.35); }
+
+    /* Library Item Row (Matches Spotify Library exactly) */
+    .sp-sb-item {
+      display: flex; align-items: center; gap: 12px; padding: 7px 8px; border-radius: 6px;
+      cursor: pointer; user-select: none; transition: background-color .15s ease;
+      position: relative; text-align: left; background: transparent; border: none; width: 100%;
+    }
+    .sp-sb-item:hover { background: rgba(255, 255, 255, 0.08); }
+    .sp-sb-item.active { background: rgba(255, 255, 255, 0.16); }
+    .sp-sb-item-cover {
+      width: 48px; height: 48px; min-width: 48px; border-radius: 4px;
+      display: flex; align-items: center; justify-content: center; font-size: 20px;
+      position: relative; overflow: hidden; box-shadow: 0 4px 8px rgba(0,0,0,0.3); flex-shrink: 0;
+    }
+    .sp-sb-item-cover .sp-sb-item-play-btn {
+      position: absolute; inset: 0; background: rgba(0,0,0,0.5);
+      display: flex; align-items: center; justify-content: center; font-size: 16px;
+      color: #fff; opacity: 0; transition: opacity .15s;
+    }
+    .sp-sb-item:hover .sp-sb-item-play-btn { opacity: 1; }
+    .sp-sb-item.playing .sp-sb-item-play-btn { opacity: 1; color: var(--sp-green); }
+    
+    .sp-sb-item-meta { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+    .sp-sb-item-title {
+      font-size: 13.5px; font-weight: 700; color: #ffffff;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 3px;
+    }
+    .sp-sb-item.active .sp-sb-item-title { color: var(--sp-green); }
+    .sp-sb-item-sub {
+      font-size: 12px; color: var(--sp-subtext);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      display: flex; align-items: center; gap: 4px;
+    }
+    .sp-sb-pin-icon { color: var(--sp-green); font-size: 11px; transform: rotate(45deg); display: inline-block; }
+    .sp-sb-eq-bars {
+      width: 14px; height: 14px; display: flex; align-items: flex-end; gap: 2px;
+    }
+    .sp-sb-eq-bar {
+      width: 3px; background: var(--sp-green); border-radius: 1px; animation: spEqualize 0.8s infinite alternate ease-in-out;
+    }
+    .sp-sb-eq-bar:nth-child(2) { animation-delay: 0.2s; }
+    .sp-sb-eq-bar:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes spEqualize {
+      0% { height: 3px; }
+      100% { height: 14px; }
+    }
+
+    /* Sub-section: Tracks in active album */
+    .sp-sb-tracks-wrap {
+      border-top: 1px solid rgba(255,255,255,0.08); margin-top: 8px; padding-top: 8px;
+      display: flex; flex-direction: column; max-height: 240px; overflow-y: auto;
+    }
+    .sp-sb-tracks-head {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 4px 6px 6px; font-size: 11.5px; font-weight: 800; color: var(--sp-subtext);
+      text-transform: uppercase; letter-spacing: 0.05em;
+    }
+
+    .sp-album-selector-wrap { margin-bottom: 8px; }
     .sp-album-select {
       width: 100%; background: #222222; border: 1px solid var(--sp-border); color: #fff;
-      padding: 8px 12px; border-radius: 8px; font-weight: 700; font-size: 13.5px; outline: none; cursor: pointer;
+      padding: 8px 12px; border-radius: 8px; font-weight: 700; font-size: 13px; outline: none; cursor: pointer;
     }
     .sp-album-select:focus { border-color: var(--sp-green); }
 
     .sp-sidebar-actions-row {
-      display: flex; gap: 6px; margin-bottom: 12px;
+      display: flex; gap: 6px; margin-bottom: 10px;
     }
     .sp-btn-sm {
       flex: 1; background: #282828; border: none; color: #fff; padding: 6px 10px; border-radius: 6px;
@@ -139,7 +269,7 @@
 
     /* Category filter chips */
     .sp-filter-row {
-      display: flex; gap: 6px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 6px; scrollbar-width: none;
+      display: flex; gap: 6px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 6px; scrollbar-width: none;
     }
     .sp-filter-row::-webkit-scrollbar { display: none; }
     .sp-chip {
@@ -168,9 +298,14 @@
     .sp-track-del-btn { background: transparent; border: none; color: var(--sp-subtext); cursor: pointer; font-size: 14px; padding: 2px 4px; }
     .sp-track-del-btn:hover { color: var(--sp-red); }
 
+    /* Main Container wrapping views */
+    .sp-main-view-container {
+      min-width: 0; overflow: hidden;
+    }
+
     /* Main Stage */
     .sp-main {
-      background: var(--sp-base); border-radius: 12px; overflow: hidden; position: relative;
+      background: var(--sp-base); border-radius: 8px; overflow: hidden; position: relative;
     }
     
     /* Spotify Hero Header */
@@ -683,100 +818,132 @@
   </div>
 </header>
 
-<!-- View 1: Home Dashboard (Authentic Spotify Web Player Layout) -->
-<div id="homeView" class="sp-home-container" style="display:none;">
-  <!-- Filter Pills -->
-  <div class="sp-home-filter-row">
-    <button class="sp-home-filter-pill active" id="pillAll">Tất cả</button>
-    <button class="sp-home-filter-pill" id="pillAlbums">Album Cấu Trúc</button>
-    <button class="sp-home-filter-pill" id="pillVocab">Sổ Từ Vựng (SRS)</button>
-    <button class="sp-home-filter-pill" id="pillMistakes">Lỗi Cần Ôn</button>
-    <button class="sp-home-filter-pill" id="pillNotes">Ghi Chú</button>
-  </div>
-
-  <!-- Greeting -->
-  <div class="sp-home-greeting-wrap">
-    <h1 class="sp-home-greeting" id="homeGreetingTitle">Chào buổi chiều</h1>
-  </div>
-
-  <!-- 8-Pack Quick Access Grid -->
-  <div class="sp-quick-grid" id="homeQuickGrid">
-    <!-- Dynamically rendered Spotify quick tiles -->
-  </div>
-
-  <!-- Section 1: Dành cho bạn (Spotify Daily Mixes) -->
-  <div class="sp-home-sec-head">
-    <div class="sp-home-sec-title">Dành cho bạn</div>
-    <div class="sp-home-sec-action" id="homeSeeAllMixes">Hiện tất cả</div>
-  </div>
-  <div class="sp-album-grid" id="homeMixesGrid">
-    <!-- Dynamically rendered Daily Mixes -->
-  </div>
-
-  <!-- Section 2: Tuyển tập album của bạn -->
-  <div class="sp-home-sec-head" style="margin-top:36px;">
-    <div class="sp-home-sec-title">Tuyển tập album của bạn</div>
-    <div class="sp-home-sec-action" id="homeSeeAllAlbums">Hiện tất cả</div>
-  </div>
-  <div class="sp-album-grid" id="homeAlbumGrid">
-    <!-- Dynamically rendered albums -->
-  </div>
-</div>
-
-<!-- View 2: Practice Lab (Phòng Luyện Dịch Cấu Trúc) -->
-<div class="sp-layout" id="practiceView">
-  <!-- Spotify Left Sidebar: "Your Library" & Albums -->
-  <aside class="sp-sidebar">
+<!-- Global 2-Column App Layout (Persistent Left Sidebar + Main View) -->
+<div class="sp-layout">
+  <!-- Persistent Spotify Left Sidebar: "Your Library" -->
+  <aside class="sp-sidebar" id="appSidebar">
+    <!-- Header: Thư viện + Tạo -->
     <div class="sp-sidebar-header">
-      <div class="sp-sidebar-title">
-        <span>💿 Thư Viện Album</span>
+      <button class="sp-sidebar-title-btn" id="sbTitleBtn" title="Thư viện của bạn">
+        <svg viewBox="0 0 24 24" width="22" height="22">
+          <path d="M3 22a1 1 0 0 1-1-1V3a1 1 0 0 1 2 0v18a1 1 0 0 1-1 1zM15.5 2.1a1 1 0 0 1 .5.9v18a1 1 0 0 1-1.6.8l-5.4-4.05V3a1 1 0 0 1 1.5-.86l5 3.01zM7 3a1 1 0 0 1 2 0v18a1 1 0 0 1-2 0V3z"/>
+        </svg>
+        <span>Thư viện</span>
+      </button>
+      <div class="sp-sidebar-header-actions">
+        <button class="sp-sb-action-btn" id="createAlbumModalBtn" title="Tạo album cấu trúc mới">
+          <span>➕</span> Tạo
+        </button>
+        <button class="sp-sb-icon-btn" id="randomStructBtn" title="Chọn cấu trúc ngẫu nhiên">
+          <span>↝</span>
+        </button>
       </div>
-      <button class="sp-pill" id="randomStructBtn" style="padding:3px 9px; font-size:11px;" title="Chọn cấu trúc ngẫu nhiên">↝ Ngẫu nhiên</button>
     </div>
 
-    <!-- Album Selector -->
-    <div class="sp-album-selector-wrap">
-      <select id="albumSelect" class="sp-album-select"></select>
+    <!-- Filter Pills Row inside Sidebar -->
+    <div class="sp-sidebar-pills" id="sbFilterPillsRow">
+      <button class="sp-sb-pill active" data-filter="all">Tất cả</button>
+      <button class="sp-sb-pill" data-filter="albums">Album</button>
+      <button class="sp-sb-pill" data-filter="vocab">Sổ từ</button>
+      <button class="sp-sb-pill" data-filter="mistakes">Lỗi sai</button>
+      <button class="sp-sb-pill" data-filter="notes">Ghi chú</button>
     </div>
 
-    <!-- Album Action Buttons -->
-    <div class="sp-sidebar-actions-row">
-      <button class="sp-btn-sm green" id="addStructModalBtn" title="Dùng AI thêm cấu trúc mới vào album">
-        ➕ Thêm cấu trúc (AI)
-      </button>
-      <button class="sp-btn-sm" id="createAlbumModalBtn" title="Tạo album cấu trúc mới">
-        📁 Tạo album
-      </button>
-      <button class="sp-btn-sm" id="editAlbumBtn" title="Đổi tên / Xóa album">
-        ⚙️
-      </button>
-    </div>
-
-    <!-- Category Filter Chips -->
-    <div class="sp-filter-row" id="categoryChips"></div>
-
-    <!-- Track List (Cấu trúc trong Album) -->
-    <div class="sp-track-list" id="trackList"></div>
-  </aside>
-
-  <!-- Spotify Main Canvas -->
-  <main class="sp-main">
-    <!-- Hero Section -->
-    <div class="sp-hero">
-      <div class="sp-cover-art" id="heroCoverArt">
-        <div class="sp-cover-icon" id="heroCoverIcon">⚡</div>
-        <div class="sp-cover-text" id="heroCoverText">ALBUM</div>
+    <!-- Search & Sort Row -->
+    <div class="sp-sidebar-search-row">
+      <div class="sp-sb-search-box">
+        <span style="font-size:12px; color:var(--sp-subtext);">🔍</span>
+        <input type="text" id="sbSearchInput" placeholder="Tìm kiếm trong Thư viện..." />
       </div>
-      <div class="sp-hero-info">
-        <div class="sp-hero-tag" id="heroCategoryTag">MỆNH ĐỀ PHÂN TỪ</div>
-        <h1 class="sp-hero-title" id="heroStructName">Having + V3</h1>
-        <div class="sp-hero-meta">
-          <strong id="heroAlbumTitleMeta">Album</strong> • 
-          <span id="heroIndexMeta">Cấu trúc 1 / 25</span> • 
-          <span>Nhấn <strong>Enter</strong> để chấm bài</span>
+      <div class="sp-sb-sort-label" id="sbSortBtn" title="Sắp xếp danh sách">
+        <span>Gần đây</span>
+        <svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor"><path d="M15 14.5H5V13h10v1.5zm0-5.75H1V7.25h14v1.5zM15 3H9V1.5h6V3z"/></svg>
+      </div>
+    </div>
+
+    <!-- Scrollable Library List (Albums, SRS Vocab, Mistakes, Notes) -->
+    <div class="sp-sidebar-list" id="sidebarLibraryList">
+      <!-- Dynamically populated Spotify Library items -->
+    </div>
+
+    <!-- Sub-section: Tracks in active album -->
+    <div class="sp-sb-tracks-wrap" id="sbTracksWrap">
+      <div class="sp-sb-tracks-head">
+        <span id="sbActiveAlbumTitle" style="color:#fff; font-size:12px;">Cấu trúc trong Album</span>
+        <div style="display:flex; gap:4px;">
+          <button class="sp-btn-sm green" id="addStructModalBtn" title="Thêm cấu trúc bằng AI" style="padding:2px 7px; font-size:11px;">➕ AI</button>
+          <button class="sp-btn-sm" id="editAlbumBtn" title="Cài đặt album" style="padding:2px 6px; font-size:11px;">⚙️</button>
         </div>
       </div>
+      <!-- Album Select element kept for backward compatibility -->
+      <select id="albumSelect" style="display:none;"></select>
+      <!-- Category Filter Chips -->
+      <div class="sp-filter-row" id="categoryChips"></div>
+      <!-- Track List (Cấu trúc trong Album) -->
+      <div class="sp-track-list" id="trackList"></div>
     </div>
+  </aside>
+
+  <!-- Right Column: Main View Container -->
+  <div class="sp-main-view-container" id="mainViewContainer">
+    <!-- View 1: Home Dashboard (Authentic Spotify Web Player Layout) -->
+    <div id="homeView" class="sp-home-container" style="display:none;">
+      <!-- Filter Pills -->
+      <div class="sp-home-filter-row">
+        <button class="sp-home-filter-pill active" id="pillAll">Tất cả</button>
+        <button class="sp-home-filter-pill" id="pillAlbums">Album Cấu Trúc</button>
+        <button class="sp-home-filter-pill" id="pillVocab">Sổ Từ Vựng (SRS)</button>
+        <button class="sp-home-filter-pill" id="pillMistakes">Lỗi Cần Ôn</button>
+        <button class="sp-home-filter-pill" id="pillNotes">Ghi Chú</button>
+      </div>
+
+      <!-- Greeting -->
+      <div class="sp-home-greeting-wrap">
+        <h1 class="sp-home-greeting" id="homeGreetingTitle">Chào buổi chiều</h1>
+      </div>
+
+      <!-- 8-Pack Quick Access Grid -->
+      <div class="sp-quick-grid" id="homeQuickGrid">
+        <!-- Dynamically rendered Spotify quick tiles -->
+      </div>
+
+      <!-- Section 1: Dành cho bạn (Spotify Daily Mixes) -->
+      <div class="sp-home-sec-head">
+        <div class="sp-home-sec-title">Dành cho bạn</div>
+        <div class="sp-home-sec-action" id="homeSeeAllMixes">Hiện tất cả</div>
+      </div>
+      <div class="sp-album-grid" id="homeMixesGrid">
+        <!-- Dynamically rendered Daily Mixes -->
+      </div>
+
+      <!-- Section 2: Tuyển tập album của bạn -->
+      <div class="sp-home-sec-head" style="margin-top:36px;">
+        <div class="sp-home-sec-title">Tuyển tập album của bạn</div>
+        <div class="sp-home-sec-action" id="homeSeeAllAlbums">Hiện tất cả</div>
+      </div>
+      <div class="sp-album-grid" id="homeAlbumGrid">
+        <!-- Dynamically rendered albums -->
+      </div>
+    </div>
+
+    <!-- View 2: Practice Lab (Phòng Luyện Dịch Cấu Trúc) -->
+    <main class="sp-main" id="practiceView" style="display:block;">
+      <!-- Hero Section -->
+      <div class="sp-hero">
+        <div class="sp-cover-art" id="heroCoverArt">
+          <div class="sp-cover-icon" id="heroCoverIcon">⚡</div>
+          <div class="sp-cover-text" id="heroCoverText">ALBUM</div>
+        </div>
+        <div class="sp-hero-info">
+          <div class="sp-hero-tag" id="heroCategoryTag">MỆNH ĐỀ PHÂN TỪ</div>
+          <h1 class="sp-hero-title" id="heroStructName">Having + V3</h1>
+          <div class="sp-hero-meta">
+            <strong id="heroAlbumTitleMeta">Album</strong> • 
+            <span id="heroIndexMeta">Cấu trúc 1 / 25</span> • 
+            <span>Nhấn <strong>Enter</strong> để chấm bài</span>
+          </div>
+        </div>
+      </div>
 
     <!-- Action Bar -->
     <div class="sp-action-bar">
@@ -944,7 +1111,8 @@
       </div>
     </div>
   </main>
-</div>
+  </div> <!-- Close #mainViewContainer -->
+</div> <!-- Close .sp-layout -->
 
 <!-- Bottom Player Bar -->
 <footer class="sp-player-dock">
@@ -1722,14 +1890,16 @@ function navigateTo(view, updateHash = true) {
     if (navHomeBtn) navHomeBtn.classList.add('active');
     if (navPracticeBtn) navPracticeBtn.classList.remove('active');
     renderHomePage();
+    renderSidebarLibrary();
     if (updateHash) window.location.hash = '#/home';
     window.scrollTo({ top: 0, behavior: 'smooth' });
   } else {
     if (homeView) homeView.style.display = 'none';
-    if (practiceView) practiceView.style.display = 'grid';
+    if (practiceView) practiceView.style.display = 'block';
     if (navHomeBtn) navHomeBtn.classList.remove('active');
     if (navPracticeBtn) navPracticeBtn.classList.add('active');
     renderAll();
+    renderSidebarLibrary();
     if (updateHash) window.location.hash = '#/practice';
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -2403,10 +2573,179 @@ function evaluateOffline(cur, promptVi, resp) {
 }
 
 // ----------------------------------------------------
-// ALBUMS & TRACK RENDERING
+// AUTHENTIC SPOTIFY SIDEBAR ("Thư viện") & ALBUMS
 // ----------------------------------------------------
+let currentSbFilter = 'all';
+let currentSbSearch = '';
+
+function renderSidebarLibrary() {
+  const container = $('sidebarLibraryList');
+  if (!container) return;
+
+  const curAlbum = getCurrentAlbum();
+  const curTrack = getCurrentTrack();
+  if ($('sbActiveAlbumTitle')) {
+    $('sbActiveAlbumTitle').textContent = curAlbum ? curAlbum.title : 'Cấu trúc trong Album';
+  }
+
+  // Define Library Items matching Spotify screenshot
+  const libraryItems = [
+    // 1. Liked / Saved Vocab (SRS)
+    {
+      id: 'item_vocab',
+      type: 'vocab',
+      title: 'Sổ từ vựng đã lưu',
+      sub: `Danh sách phát • ${currentVocabNotebook.length} từ vựng`,
+      pinned: true,
+      icon: '⭐',
+      grad: 'linear-gradient(135deg, #450af5 0%, #8e2de2 100%)',
+      action: () => openDrawer('vocab')
+    },
+    // 2. Mistakes Practice (AI)
+    {
+      id: 'item_mistakes',
+      type: 'mistakes',
+      title: 'Lỗi Cần Khắc Phục (AI)',
+      sub: `Danh sách phát • ${currentMistakesLog.length} lỗi sai`,
+      pinned: true,
+      icon: '🎯',
+      grad: 'linear-gradient(135deg, #eb3349 0%, #f45c43 100%)',
+      action: () => {
+        openAlbumFromHome('album_mistakes_practice');
+      }
+    },
+    // 3. Personal Notes
+    {
+      id: 'item_notes',
+      type: 'notes',
+      title: 'Sổ Ghi Chú Cá Nhân',
+      sub: `Danh sách phát • ${Object.keys(userPersonalNotes).length} ghi chú`,
+      pinned: false,
+      icon: '📝',
+      grad: 'linear-gradient(135deg, #1e3c72 0%, #2a5298 100%)',
+      action: () => openDrawer('notes')
+    }
+  ];
+
+  // Add all albums
+  albums.forEach(alb => {
+    let bgGrad = 'linear-gradient(135deg, #282828 0%, #161616 100%)';
+    if (alb.id === 'album_core_ielts') {
+      bgGrad = 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)';
+    } else if (alb.id === 'album_mistakes_practice') {
+      bgGrad = 'linear-gradient(135deg, #e52d27 0%, #b31217 100%)';
+    }
+    libraryItems.push({
+      id: alb.id,
+      type: 'album',
+      title: alb.title,
+      sub: `Album • ${(alb.tracks || []).length} cấu trúc`,
+      pinned: alb.id === 'album_core_ielts',
+      icon: alb.icon || '📁',
+      grad: bgGrad,
+      isAlbum: true,
+      isActive: alb.id === currentAlbumId,
+      action: () => {
+        currentAlbumId = alb.id;
+        currentTrackIndex = 0;
+        saveState();
+        navigateTo('practice');
+        selectStructure(0);
+      }
+    });
+  });
+
+  // Filter items
+  let filtered = libraryItems.filter(item => {
+    if (currentSbFilter === 'albums' && item.type !== 'album') return false;
+    if (currentSbFilter === 'vocab' && item.type !== 'vocab') return false;
+    if (currentSbFilter === 'mistakes' && item.type !== 'mistakes') return false;
+    if (currentSbFilter === 'notes' && item.type !== 'notes') return false;
+    if (currentSbSearch) {
+      const q = currentSbSearch.toLowerCase();
+      return item.title.toLowerCase().includes(q) || item.sub.toLowerCase().includes(q);
+    }
+    return true;
+  });
+
+  container.innerHTML = filtered.map(item => {
+    const isActive = item.isActive ? 'active' : '';
+    const pinBadge = item.pinned ? '<span class="sp-sb-pin-icon">📌</span>' : '';
+    const eqBars = item.isActive ? `
+      <div class="sp-sb-eq-bars" title="Đang học">
+        <div class="sp-sb-eq-bar"></div>
+        <div class="sp-sb-eq-bar"></div>
+        <div class="sp-sb-eq-bar"></div>
+      </div>
+    ` : '';
+
+    return `
+      <div class="sp-sb-item ${isActive}" data-item-id="${item.id}">
+        <div class="sp-sb-item-cover" style="background:${item.grad};">
+          <span>${item.icon}</span>
+          <div class="sp-sb-item-play-btn">▶</div>
+        </div>
+        <div class="sp-sb-item-meta">
+          <div class="sp-sb-item-title">${escapeHtml(item.title)}</div>
+          <div class="sp-sb-item-sub">
+            ${pinBadge}
+            <span>${escapeHtml(item.sub)}</span>
+          </div>
+        </div>
+        ${eqBars}
+      </div>
+    `;
+  }).join('');
+
+  // Attach click handlers
+  container.querySelectorAll('.sp-sb-item').forEach(el => {
+    el.onclick = () => {
+      const id = el.dataset.itemId;
+      const target = libraryItems.find(it => it.id === id);
+      if (target && target.action) {
+        target.action();
+      }
+    };
+  });
+}
+
+let sbEventsInitialized = false;
+function initSidebarEvents() {
+  if (sbEventsInitialized) return;
+  sbEventsInitialized = true;
+
+  const filterPillRow = $('sbFilterPillsRow');
+  if (filterPillRow) {
+    filterPillRow.querySelectorAll('.sp-sb-pill').forEach(pill => {
+      pill.onclick = () => {
+        filterPillRow.querySelectorAll('.sp-sb-pill').forEach(p => p.classList.remove('active'));
+        pill.classList.add('active');
+        currentSbFilter = pill.dataset.filter || 'all';
+        renderSidebarLibrary();
+      };
+    });
+  }
+
+  const searchInput = $('sbSearchInput');
+  if (searchInput) {
+    searchInput.oninput = () => {
+      currentSbSearch = searchInput.value.trim();
+      renderSidebarLibrary();
+    };
+  }
+
+  const titleBtn = $('sbTitleBtn');
+  if (titleBtn) {
+    titleBtn.onclick = () => {
+      const list = $('sidebarLibraryList');
+      if (list) list.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+  }
+}
+
 function renderAlbumSelector() {
   const select = $('albumSelect');
+  if (!select) return;
   select.innerHTML = albums.map(a => `
     <option value="${a.id}" ${a.id === currentAlbumId ? 'selected' : ''}>
       ${a.icon || '📁'} ${escapeHtml(a.title)} (${a.tracks.length})
@@ -2782,6 +3121,7 @@ function renderCurrentStructure() {
 
 function renderAll() {
   renderAlbumSelector();
+  renderSidebarLibrary();
   renderCategoryChips();
   renderTrackList();
   renderCurrentStructure();
@@ -4661,6 +5001,7 @@ function renderNotesNotebook() {
 // BOOTSTRAP & EVENT LISTENERS
 // ----------------------------------------------------
 function initEvents() {
+  initSidebarEvents();
   $('prevTrackBtn').onclick = () => {
     const album = getCurrentAlbum();
     const nextIdx = (currentTrackIndex - 1 + album.tracks.length) % album.tracks.length;
