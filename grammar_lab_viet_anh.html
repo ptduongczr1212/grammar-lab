@@ -225,6 +225,76 @@
       margin-top: 10px; font-size: 13px; color: var(--sp-orange); background: rgba(255, 164, 43, 0.08);
       padding: 7px 12px; border-radius: 8px; border: 1px dashed rgba(255, 164, 43, 0.3);
     }
+    .sp-vocab-hints-box {
+      margin-top: 14px;
+      padding: 12px 14px;
+      background: rgba(255, 164, 43, 0.06);
+      border: 1px solid rgba(255, 164, 43, 0.25);
+      border-radius: 10px;
+      transition: all 0.2s ease;
+    }
+    .sp-hint-chips-wrap {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .sp-hint-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #1e1e1e;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 20px;
+      padding: 5px 12px;
+      font-size: 13px;
+      color: #fff;
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.15s ease;
+    }
+    .sp-hint-chip:hover {
+      background: #2a2a2a;
+      border-color: var(--sp-orange);
+      transform: translateY(-1px);
+    }
+    .sp-hint-word {
+      font-weight: 700;
+      color: var(--sp-orange);
+    }
+    .sp-hint-pos {
+      font-size: 11px;
+      color: var(--sp-subtext);
+      font-style: italic;
+    }
+    .sp-hint-meaning {
+      font-size: 12px;
+      color: #ddd;
+    }
+    .sp-hint-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      margin-left: 4px;
+    }
+    .sp-hint-btn {
+      background: transparent;
+      border: none;
+      color: var(--sp-subtext);
+      cursor: pointer;
+      padding: 2px 4px;
+      border-radius: 4px;
+      font-size: 12px;
+      line-height: 1;
+      transition: color 0.15s, background 0.15s;
+    }
+    .sp-hint-btn:hover {
+      color: #fff;
+      background: rgba(255,255,255,0.15);
+    }
+    .sp-hint-btn.saved {
+      color: #ffd700;
+    }
 
     .sp-input-label { display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: 700; margin-bottom: 8px; color: #fff; }
     .sp-textarea {
@@ -733,6 +803,27 @@
         </div>
         <div class="sp-challenge-vi" id="promptVi">Đang tải đề bài...</div>
         <div id="promptVocabHint" class="sp-vocab-hint" style="display:none"></div>
+
+        <!-- Dedicated Vocabulary & Collocation Hints Section -->
+        <div id="vocabHintsContainer" class="sp-vocab-hints-box" style="display:none;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+            <div style="font-size:12.5px; font-weight:700; color:var(--sp-orange); display:flex; align-items:center; gap:6px;">
+              <span>💡 Gợi ý dùng từ (Collocations & Vocab):</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <button type="button" id="aiSuggestWordsBtn" class="sp-pill" style="padding:3px 10px; font-size:11.5px; background:rgba(255,164,43,0.15); border:1px solid rgba(255,164,43,0.4); color:var(--sp-orange); cursor:pointer; font-weight:700;">
+                ✨ AI Gợi ý thêm từ
+              </button>
+              <button type="button" id="toggleVocabHintBtn" class="sp-pill" style="padding:3px 9px; font-size:11px; background:rgba(255,255,255,0.08); color:var(--sp-subtext); border:none; cursor:pointer;">
+                Ẩn gợi ý
+              </button>
+            </div>
+          </div>
+          <div id="vocabHintChips" class="sp-hint-chips-wrap"></div>
+          <div style="font-size:11px; color:var(--sp-subtext); margin-top:8px; opacity:0.85;">
+            💡 <em>Mẹo: Bấm vào thẻ từ để tự chèn vào ô làm bài • 🔊 Nghe phát âm • ⭐ Lưu vào Sổ từ vựng</em>
+          </div>
+        </div>
       </div>
 
       <!-- User Textarea Input -->
@@ -1108,14 +1199,11 @@
       <label for="geminiModel">Model Gemini</label>
       <div style="display:flex; gap:8px;">
         <select id="geminiModel" style="flex:1">
-          <option value="gemini-3.5-flash-lite">gemini-3.5-flash-lite (Khuyên dùng · Siêu tốc ~1-2s)</option>
-          <option value="gemini-3.5-flash">gemini-3.5-flash (Chuẩn xác & Nhanh ~2-3s)</option>
-          <option value="gemini-2.0-flash-lite">gemini-2.0-flash-lite (Siêu nhanh ~1-2s)</option>
-          <option value="gemini-2.5-flash">gemini-2.5-flash (Cân bằng)</option>
-          <option value="gemini-2.0-flash">gemini-2.0-flash (Tốc độ cao)</option>
-          <option value="gemini-1.5-flash">gemini-1.5-flash (Bền bỉ, ít nghẽn)</option>
-          <option value="gemini-3.8-flash">gemini-3.8-flash (Reasoning Model)</option>
-          <option value="gemini-2.5-pro">gemini-2.5-pro (Model phân tích sâu)</option>
+          <option value="gemini-2.0-flash">gemini-2.0-flash (Khuyên dùng · Siêu tốc ~1-2s)</option>
+          <option value="gemini-2.0-flash-lite">gemini-2.0-flash-lite (Siêu nhẹ & Nhanh)</option>
+          <option value="gemini-1.5-flash">gemini-1.5-flash (Bền bỉ nhất · Không lo quá tải)</option>
+          <option value="gemini-1.5-flash-8b">gemini-1.5-flash-8b (Bản gọn nhẹ)</option>
+          <option value="gemini-1.5-pro">gemini-1.5-pro (Model phân tích sâu)</option>
         </select>
         <button type="button" id="scanModelsBtn" class="sp-btn-secondary" style="white-space:nowrap; font-size:12px;">🔍 Kiểm tra key</button>
       </div>
@@ -1131,35 +1219,361 @@
 <script>
 // 25 Initial Structures for Core Album
 const DEFAULT_25_STRUCTURES = [
-  { id: "s1", group: "Mệnh đề phân từ", name: "Having + V3", formula: "Having + past participle (V3), S + V", note: "Hai hành động cùng chủ ngữ; hành động ở mệnh đề phân từ hoàn thành trước hành động ở mệnh đề chính.", example: "Having finished my homework, I decided to play video games.", defaultVi: "Sau khi hoàn thành nghiên cứu, họ đã công bố kết quả trên tạp chí quốc tế." },
-  { id: "s2", group: "Mệnh đề phân từ", name: "Having been + V3", formula: "Having been + past participle (V3), S + V", note: "Dạng hoàn thành bị động của phân từ, nhấn mạnh hành động bị động xảy ra trước.", example: "Having been rejected several times, he lost confidence.", defaultVi: "Sau khi được đào tạo bài bản, các nhân viên mới đã làm việc rất hiệu quả." },
-  { id: "s3", group: "Mệnh đề phân từ", name: "V-ing mở đầu câu", formula: "V-ing ..., S + V", note: "Rút gọn mệnh đề trạng ngữ chỉ nguyên nhân hoặc hai hành động đồng thời cùng chủ ngữ.", example: "Realizing how important English was, I started practising every day.", defaultVi: "Nhận thức được tác hại của ô nhiễm không khí, chính phủ đã ban hành luật mới." },
-  { id: "s4", group: "Mệnh đề phân từ", name: "V3/ed mở đầu câu", formula: "V3/ed ..., S + V", note: "Mệnh đề phân từ mang nghĩa bị động, đóng vai trò giải thích bối cảnh hoặc nguyên nhân.", example: "Surrounded by negative posts, she felt stressed.", defaultVi: "Bị thu hút bởi mức lương hấp dẫn, nhiều bạn trẻ đã nộp đơn vào công ty công nghệ này." },
-  { id: "s5", group: "Mệnh đề phân từ", name: "Not + V-ing", formula: "Not + V-ing ..., S + V", note: "Phủ định trực tiếp của phân từ, diễn tả lý do không làm hoặc không biết điều gì.", example: "Not knowing what to do, I asked AI for help.", defaultVi: "Không hiểu rõ các quy định giao thông, anh ấy đã vô tình vi phạm luật." },
-  { id: "s6", group: "Mệnh đề phân từ", name: "By + V-ing", formula: "By + V-ing, S + V", note: "Diễn tả phương pháp, phương tiện hoặc cách thức để đạt được mục tiêu.", example: "By practising speaking every day, students can improve their confidence.", defaultVi: "Bằng cách đầu tư vào năng lượng tái tạo, quốc gia này đã giảm đáng kể lượng khí thải." },
-  { id: "s7", group: "Mệnh đề phân từ", name: "With + N + V-ing/V3", formula: "With + N + V-ing/V3, S + V", note: "Cấu trúc tuyệt đối (Absolute phrase) diễn tả tình huống đi kèm, nguyên nhân hoặc điều kiện.", example: "With technology developing rapidly, many traditional jobs are changing.", defaultVi: "Với dân số ngày càng già hóa, nhu cầu về dịch vụ chăm sóc sức khỏe đang gia tăng." },
+  {
+    id: "s1",
+    group: "Mệnh đề phân từ",
+    name: "Having + V3",
+    formula: "Having + past participle (V3), S + V",
+    note: "Hai hành động cùng chủ ngữ; hành động ở mệnh đề phân từ hoàn thành trước hành động ở mệnh đề chính.",
+    example: "Having completed the research, they published their findings in an international journal.",
+    defaultVi: "Sau khi hoàn thành nghiên cứu, họ đã công bố kết quả trên tạp chí quốc tế.",
+    vocabHints: [
+      { word: "conduct research", pos: "collocation", meaning: "tiến hành nghiên cứu" },
+      { word: "publish findings", pos: "collocation", meaning: "công bố kết quả/phát hiện" },
+      { word: "academic journal", pos: "n", meaning: "tạp chí học thuật quốc tế" }
+    ]
+  },
+  {
+    id: "s2",
+    group: "Mệnh đề phân từ",
+    name: "Having been + V3",
+    formula: "Having been + past participle (V3), S + V",
+    note: "Dạng hoàn thành bị động của phân từ, nhấn mạnh hành động bị động xảy ra trước.",
+    example: "Having been properly trained, the new recruits performed very efficiently.",
+    defaultVi: "Sau khi được đào tạo bài bản, các nhân viên mới đã làm việc rất hiệu quả.",
+    vocabHints: [
+      { word: "undergo training", pos: "collocation", meaning: "trải qua đào tạo bài bản" },
+      { word: "perform efficiently", pos: "collocation", meaning: "làm việc hiệu quả cao" },
+      { word: "new recruits", pos: "n", meaning: "nhân sự mới tuyển dụng" }
+    ]
+  },
+  {
+    id: "s3",
+    group: "Mệnh đề phân từ",
+    name: "V-ing mở đầu câu",
+    formula: "V-ing ..., S + V",
+    note: "Rút gọn mệnh đề trạng ngữ chỉ nguyên nhân hoặc hai hành động đồng thời cùng chủ ngữ.",
+    example: "Recognizing the detrimental impacts of air pollution, the government enacted new legislation.",
+    defaultVi: "Nhận thức được tác hại của ô nhiễm không khí, chính phủ đã ban hành luật mới.",
+    vocabHints: [
+      { word: "detrimental impacts", pos: "collocation", meaning: "tác hại, ảnh hưởng tiêu cực" },
+      { word: "enact legislation", pos: "collocation", meaning: "ban hành điều luật mới" },
+      { word: "air pollution", pos: "n", meaning: "ô nhiễm không khí" }
+    ]
+  },
+  {
+    id: "s4",
+    group: "Mệnh đề phân từ",
+    name: "V3/ed mở đầu câu",
+    formula: "V3/ed ..., S + V",
+    note: "Mệnh đề phân từ mang nghĩa bị động, đóng vai trò giải thích bối cảnh hoặc nguyên nhân.",
+    example: "Enticed by the lucrative remuneration, many young graduates applied for positions at this tech enterprise.",
+    defaultVi: "Bị thu hút bởi mức lương hấp dẫn, nhiều bạn trẻ đã nộp đơn vào công ty công nghệ này.",
+    vocabHints: [
+      { word: "enticed by", pos: "adj/participle", meaning: "bị cuốn hút, thu hút bởi" },
+      { word: "lucrative remuneration", pos: "collocation", meaning: "chế độ đãi ngộ / lương bổng hấp dẫn" },
+      { word: "tech enterprise", pos: "n", meaning: "doanh nghiệp công nghệ" }
+    ]
+  },
+  {
+    id: "s5",
+    group: "Mệnh đề phân từ",
+    name: "Not + V-ing",
+    formula: "Not + V-ing ..., S + V",
+    note: "Phủ định trực tiếp của phân từ, diễn tả lý do không làm hoặc không biết điều gì.",
+    example: "Not fully comprehending the traffic regulations, he inadvertently breached the law.",
+    defaultVi: "Không hiểu rõ các quy định giao thông, anh ấy đã vô tình vi phạm luật.",
+    vocabHints: [
+      { word: "traffic regulations", pos: "n", meaning: "luật lệ, quy định giao thông" },
+      { word: "inadvertently breach", pos: "collocation", meaning: "vô tình vi phạm (luật)" },
+      { word: "comprehend", pos: "v", meaning: "hiểu thấu đáo, nắm bắt" }
+    ]
+  },
+  {
+    id: "s6",
+    group: "Mệnh đề phân từ",
+    name: "By + V-ing",
+    formula: "By + V-ing, S + V",
+    note: "Diễn tả phương pháp, phương tiện hoặc cách thức để đạt được mục tiêu.",
+    example: "By investing substantially in renewable energy, the nation curtailed its carbon emissions significantly.",
+    defaultVi: "Bằng cách đầu tư vào năng lượng tái tạo, quốc gia này đã giảm đáng kể lượng khí thải.",
+    vocabHints: [
+      { word: "invest in renewable energy", pos: "collocation", meaning: "đầu tư vào năng lượng tái tạo" },
+      { word: "curtail carbon emissions", pos: "collocation", meaning: "cắt giảm lượng khí thải carbon" },
+      { word: "substantially", pos: "adv", meaning: "một cách đáng kể" }
+    ]
+  },
+  {
+    id: "s7",
+    group: "Mệnh đề phân từ",
+    name: "With + N + V-ing/V3",
+    formula: "With + N + V-ing/V3, S + V",
+    note: "Cấu trúc tuyệt đối (Absolute phrase) diễn tả tình huống đi kèm, nguyên nhân hoặc điều kiện.",
+    example: "With the demographic aging rapidly, the demand for geriatric healthcare services is escalating.",
+    defaultVi: "Với dân số ngày càng già hóa, nhu cầu về dịch vụ chăm sóc sức khỏe đang gia tăng.",
+    vocabHints: [
+      { word: "aging population", pos: "n", meaning: "dân số già hóa" },
+      { word: "escalating demand", pos: "collocation", meaning: "nhu cầu ngày càng tăng vọt" },
+      { word: "healthcare services", pos: "n", meaning: "dịch vụ chăm sóc sức khỏe" }
+    ]
+  },
 
-  { id: "s8", group: "Câu chẻ & nhấn mạnh", name: "It is/was ... that/who", formula: "It + be + [phần nhấn mạnh] + that/who + mệnh đề", note: "Nhấn mạnh chủ ngữ, tân ngữ hoặc trạng ngữ (thời gian, nơi chốn).", example: "It was during my first year at university that I started using AI tools.", defaultVi: "Chính sự kiên trì đã giúp cô ấy vượt qua mọi thử thách trong sự nghiệp." },
-  { id: "s9", group: "Câu chẻ & nhấn mạnh", name: "What ... is ...", formula: "What + S + V + be + [phần nhấn mạnh]", note: "Mệnh đề danh từ 'What' làm chủ ngữ, dùng để nhấn mạnh điều quan trọng nhất.", example: "What I like most about YouTube is its personalized recommendations.", defaultVi: "Điều làm cho khóa học này trở nên đặc biệt là sự tương tác giữa giảng viên và học viên." },
-  { id: "s10", group: "Câu chẻ & nhấn mạnh", name: "All ... is ...", formula: "All + S + V + be + [danh từ / to V]", note: "Nhấn mạnh điều duy nhất mà ai đó cần, muốn hoặc làm.", example: "All I want is a stable job.", defaultVi: "Tất cả những gì chúng ta cần lúc này là một kế hoạch hành động rõ ràng." },
-  { id: "s11", group: "Câu chẻ & nhấn mạnh", name: "The reason why ... is that", formula: "The reason why + S + V + is that + clause", note: "Nhấn mạnh lý do. Lưu ý dùng 'that' sau 'is', không dùng 'because'.", example: "The reason why I prefer YouTube is that it helps me relax.", defaultVi: "Lý do nhiều người chọn làm việc từ xa là nó giúp họ tiết kiệm thời gian đi lại." },
-  { id: "s12", group: "Câu chẻ & nhấn mạnh", name: "It is not A but B that", formula: "It is not + A + but + B + that + clause", note: "Nhấn mạnh sự đối lập: Không phải yếu tố A mà chính B mới mang lại kết quả.", example: "It is not money but personal satisfaction that makes a job meaningful.", defaultVi: "Không phải tài năng bẩm sinh mà chính sự luyện tập chăm chỉ mới đem lại thành công." },
+  {
+    id: "s8",
+    group: "Câu chẻ & nhấn mạnh",
+    name: "It is/was ... that/who",
+    formula: "It + be + [phần nhấn mạnh] + that/who + mệnh đề",
+    note: "Nhấn mạnh chủ ngữ, tân ngữ hoặc trạng ngữ (thời gian, nơi chốn).",
+    example: "It was her sheer perseverance that helped her surmount all professional obstacles.",
+    defaultVi: "Chính sự kiên trì đã giúp cô ấy vượt qua mọi thử thách trong sự nghiệp.",
+    vocabHints: [
+      { word: "sheer perseverance", pos: "n", meaning: "sự kiên trì, bền bỉ tuyệt đối" },
+      { word: "surmount obstacles", pos: "collocation", meaning: "vượt qua rào cản, thử thách" },
+      { word: "professional career", pos: "n", meaning: "con đường sự nghiệp" }
+    ]
+  },
+  {
+    id: "s9",
+    group: "Câu chẻ & nhấn mạnh",
+    name: "What ... is ...",
+    formula: "What + S + V + be + [phần nhấn mạnh]",
+    note: "Mệnh đề danh từ 'What' làm chủ ngữ, dùng để nhấn mạnh điều quan trọng nhất.",
+    example: "What distinguishes this curriculum is the dynamic engagement between instructors and learners.",
+    defaultVi: "Điều làm cho khóa học này trở nên đặc biệt là sự tương tác giữa giảng viên và học viên.",
+    vocabHints: [
+      { word: "distinguish", pos: "v", meaning: "làm cho nổi bật, phân biệt" },
+      { word: "dynamic engagement", pos: "collocation", meaning: "sự tương tác năng động, tích cực" },
+      { word: "instructors and learners", pos: "n", meaning: "giảng viên và học viên" }
+    ]
+  },
+  {
+    id: "s10",
+    group: "Câu chẻ & nhấn mạnh",
+    name: "All ... is ...",
+    formula: "All + S + V + be + [danh từ / to V]",
+    note: "Nhấn mạnh điều duy nhất mà ai đó cần, muốn hoặc làm.",
+    example: "All we require at this juncture is a concrete and executable action plan.",
+    defaultVi: "Tất cả những gì chúng ta cần lúc này là một kế hoạch hành động rõ ràng.",
+    vocabHints: [
+      { word: "concrete action plan", pos: "collocation", meaning: "kế hoạch hành động cụ thể" },
+      { word: "at this juncture", pos: "phrase", meaning: "vào thời điểm hiện tại" },
+      { word: "executable", pos: "adj", meaning: "khả thi, có thể thực thi" }
+    ]
+  },
+  {
+    id: "s11",
+    group: "Câu chẻ & nhấn mạnh",
+    name: "The reason why ... is that",
+    formula: "The reason why + S + V + is that + clause",
+    note: "Nhấn mạnh lý do. Lưu ý dùng 'that' sau 'is', không dùng 'because'.",
+    example: "The reason why numerous employees opt for remote arrangements is that it spares them lengthy commutes.",
+    defaultVi: "Lý do nhiều người chọn làm việc từ xa là nó giúp họ tiết kiệm thời gian đi lại.",
+    vocabHints: [
+      { word: "opt for remote arrangements", pos: "collocation", meaning: "lựa chọn làm việc từ xa" },
+      { word: "spare commute time", pos: "collocation", meaning: "tiết kiệm thời gian đi lại" },
+      { word: "work-life balance", pos: "n", meaning: "cân bằng công việc - đời sống" }
+    ]
+  },
+  {
+    id: "s12",
+    group: "Câu chẻ & nhấn mạnh",
+    name: "It is not A but B that",
+    formula: "It is not + A + but + B + that + clause",
+    note: "Nhấn mạnh sự đối lập: Không phải yếu tố A mà chính B mới mang lại kết quả.",
+    example: "It is not innate talent but diligent practice that yields exceptional triumph.",
+    defaultVi: "Không phải tài năng bẩm sinh mà chính sự luyện tập chăm chỉ mới đem lại thành công.",
+    vocabHints: [
+      { word: "innate talent", pos: "n", meaning: "tài năng bẩm sinh" },
+      { word: "diligent practice", pos: "collocation", meaning: "sự rèn luyện chăm chỉ" },
+      { word: "yield exceptional triumph", pos: "collocation", meaning: "mang lại thành công vượt trội" }
+    ]
+  },
 
-  { id: "s13", group: "Đảo ngữ", name: "Not only ... but also", formula: "Not only + auxiliary + S + V, but S + also + V", note: "Đảo trợ động từ lên trước chủ ngữ ở vế 'Not only' để tăng tính học thuật.", example: "Not only does AI save time, but it also improves productivity.", defaultVi: "Việc đọc sách không chỉ mở rộng kiến thức mà còn rèn luyện tư duy phản biện." },
-  { id: "s14", group: "Đảo ngữ", name: "Only by + V-ing", formula: "Only by + V-ing + auxiliary + S + V", note: "Đảo ngữ ở mệnh đề chính; nhấn mạnh cách duy nhất để đạt được kết quả.", example: "Only by practising regularly can we improve our English.", defaultVi: "Chỉ bằng cách hợp tác quốc tế, các nước mới có thể giải quyết được biến đổi khí hậu." },
-  { id: "s15", group: "Đảo ngữ", name: "Not until", formula: "Not until + [thời gian / clause] + auxiliary + S + V", note: "Chỉ đảo ngữ ở mệnh đề chính đứng sau, không đảo ngữ trong mệnh đề Not until.", example: "Not until I entered university did I realize the importance of time management.", defaultVi: "Mãi đến khi gặp thất bại, anh ấy mới học được cách lắng nghe người khác." },
-  { id: "s16", group: "Đảo ngữ", name: "Rarely / Seldom / Never", formula: "Rarely / Seldom / Never + auxiliary + S + V", note: "Đảo ngữ sau trạng từ mang nghĩa phủ định hoặc bán phủ định.", example: "Rarely do I spend an entire day without using the Internet.", defaultVi: "Hiếm khi chúng ta thấy một sự đồng thuận cao như vậy giữa các chuyên gia." },
-  { id: "s17", group: "Đảo ngữ", name: "Hardly ... when", formula: "Hardly + had + S + V3 + when + S + V2", note: "Diễn tả hai hành động nối tiếp nhau ngay tức thì ('Vừa mới... thì đã...').", example: "Hardly had I finished my homework when my friends invited me to play games.", defaultVi: "Anh ấy vừa bước ra khỏi nhà thì cơn mưa lớn ập đến." },
-  { id: "s18", group: "Đảo ngữ", name: "So + adj ... that", formula: "So + adjective + be + S + that + clause", note: "Đảo ngữ nhấn mạnh mức độ tính từ trong văn phong IELTS Writing Task 2.", example: "So expensive was the computer that I could not afford it.", defaultVi: "Vấn đề nghiêm trọng đến mức chính phủ phải triệu tập một cuộc họp khẩn cấp." },
+  {
+    id: "s13",
+    group: "Đảo ngữ",
+    name: "Not only ... but also",
+    formula: "Not only + auxiliary + S + V, but S + also + V",
+    note: "Đảo trợ động từ lên trước chủ ngữ ở vế 'Not only' để tăng tính học thuật.",
+    example: "Not only does reading voraciously broaden one's knowledge, but it also cultivates critical thinking.",
+    defaultVi: "Việc đọc sách không chỉ mở rộng kiến thức mà còn rèn luyện tư duy phản biện.",
+    vocabHints: [
+      { word: "broaden one's horizons", pos: "idiom", meaning: "mở rộng tầm hiểu biết" },
+      { word: "cultivate critical thinking", pos: "collocation", meaning: "rèn luyện/nuôi dưỡng tư duy phản biện" },
+      { word: "voracious reading", pos: "collocation", meaning: "thói quen đọc sách say mê" }
+    ]
+  },
+  {
+    id: "s14",
+    group: "Đảo ngữ",
+    name: "Only by + V-ing",
+    formula: "Only by + V-ing + auxiliary + S + V",
+    note: "Đảo ngữ ở mệnh đề chính; nhấn mạnh cách duy nhất để đạt được kết quả.",
+    example: "Only by fostering international cooperation can sovereign nations effectively combat climate change.",
+    defaultVi: "Chỉ bằng cách hợp tác quốc tế, các nước mới có thể giải quyết được biến đổi khí hậu.",
+    vocabHints: [
+      { word: "international cooperation", pos: "n", meaning: "hợp tác quốc tế" },
+      { word: "combat climate change", pos: "collocation", meaning: "chống lại / giải quyết biến đổi khí hậu" },
+      { word: "sovereign nations", pos: "n", meaning: "các quốc gia có chủ quyền" }
+    ]
+  },
+  {
+    id: "s15",
+    group: "Đảo ngữ",
+    name: "Not until",
+    formula: "Not until + [thời gian / clause] + auxiliary + S + V",
+    note: "Chỉ đảo ngữ ở mệnh đề chính đứng sau, không đảo ngữ trong mệnh đề Not until.",
+    example: "Not until he experienced severe setbacks did he learn how to heed others' perspectives.",
+    defaultVi: "Mãi đến khi gặp thất bại, anh ấy mới học được cách lắng nghe người khác.",
+    vocabHints: [
+      { word: "experience setbacks", pos: "collocation", meaning: "gặp phải thất bại, trở ngại" },
+      { word: "heed others' perspectives", pos: "collocation", meaning: "lắng nghe góc nhìn của người khác" },
+      { word: "invaluable insight", pos: "n", meaning: "bài học vô giá" }
+    ]
+  },
+  {
+    id: "s16",
+    group: "Đảo ngữ",
+    name: "Rarely / Seldom / Never",
+    formula: "Rarely / Seldom / Never + auxiliary + S + V",
+    note: "Đảo ngữ sau trạng từ mang nghĩa phủ định hoặc bán phủ định.",
+    example: "Rarely do we witness such a unanimous consensus among industry specialists.",
+    defaultVi: "Hiếm khi chúng ta thấy một sự đồng thuận cao như vậy giữa các chuyên gia.",
+    vocabHints: [
+      { word: "unanimous consensus", pos: "collocation", meaning: "sự đồng thuận tuyệt đối / nhất trí" },
+      { word: "industry specialists", pos: "n", meaning: "các chuyên gia trong ngành" },
+      { word: "witness", pos: "v", meaning: "chứng kiến, quan sát thấy" }
+    ]
+  },
+  {
+    id: "s17",
+    group: "Đảo ngữ",
+    name: "Hardly ... when",
+    formula: "Hardly + had + S + V3 + when + S + V2",
+    note: "Diễn tả hai hành động nối tiếp nhau ngay tức thì ('Vừa mới... thì đã...').",
+    example: "Hardly had he stepped outside his residence when a torrential downpour commenced.",
+    defaultVi: "Anh ấy vừa bước ra khỏi nhà thì cơn mưa lớn ập đến.",
+    vocabHints: [
+      { word: "torrential downpour", pos: "collocation", meaning: "cơn mưa rào như trút nước" },
+      { word: "commence", pos: "v", meaning: "bắt đầu, ập đến" },
+      { word: "step outside", pos: "phrase", meaning: "bước ra ngoài" }
+    ]
+  },
+  {
+    id: "s18",
+    group: "Đảo ngữ",
+    name: "So + adj ... that",
+    formula: "So + adjective + be + S + that + clause",
+    note: "Đảo ngữ nhấn mạnh mức độ tính từ trong văn phong IELTS Writing Task 2.",
+    example: "So critical was the dilemma that the municipal authorities convened an emergency symposium.",
+    defaultVi: "Vấn đề nghiêm trọng đến mức chính phủ phải triệu tập một cuộc họp khẩn cấp.",
+    vocabHints: [
+      { word: "critical dilemma", pos: "collocation", meaning: "vấn đề nan giải, nghiêm trọng" },
+      { word: "convene an emergency meeting", pos: "collocation", meaning: "triệu tập cuộc họp khẩn" },
+      { word: "authorities", pos: "n", meaning: "chính quyền, nhà chức trách" }
+    ]
+  },
 
-  { id: "s19", group: "Mệnh đề quan hệ & danh ngữ", name: "Reduced relative (active)", formula: "N + V-ing + ...", note: "Rút gọn mệnh đề quan hệ chủ động bằng V-ing, câu văn gãy gọn và học thuật.", example: "Students relying too heavily on AI may struggle to think independently.", defaultVi: "Những người tiêu dùng tìm kiếm các sản phẩm thân thiện với môi trường ngày càng đông đảo." },
-  { id: "s20", group: "Mệnh đề quan hệ & danh ngữ", name: "Reduced relative (passive)", formula: "N + V3/ed + ...", note: "Rút gọn mệnh đề quan hệ bị động bằng V3/ed.", example: "Information provided by AI is not always accurate.", defaultVi: "Dữ liệu được thu thập từ cuộc khảo sát cho thấy một xu hướng rất đáng chú ý." },
-  { id: "s21", group: "Mệnh đề quan hệ & danh ngữ", name: "Which (whole clause)", formula: "[Mệnh đề], which + V ...", note: "Đại từ 'which' có dấu phẩy đứng trước thay thế cho toàn bộ sự việc ở vế trước.", example: "Many students rely too heavily on AI, which may reduce their ability to think independently.", defaultVi: "Nhiều bạn trẻ thức khuya để dùng mạng xã hội, điều này ảnh hưởng xấu đến sức khỏe tinh thần." },
-  { id: "s22", group: "Mệnh đề quan hệ & danh ngữ", name: "What + S + V", formula: "What + S + V + be + ...", note: "Mệnh đề danh ngữ bắt đầu bằng 'What' làm chủ ngữ số ít.", example: "What concerns me most is the growing dependence on technology.", defaultVi: "Điều làm tôi bất ngờ nhất là tốc độ tiếp thu kiến thức của các em học sinh." },
-  { id: "s23", group: "Mệnh đề quan hệ & danh ngữ", name: "The extent to which", formula: "The extent to which + S + V + depends on ...", note: "Cụm danh ngữ chỉ mức độ: 'Mức độ mà... phụ thuộc vào...'. Không đảo ngữ sau which.", example: "The extent to which AI affects education depends on how students use it.", defaultVi: "Mức độ một người thành công trong công việc phụ thuộc vào khả năng thích ứng của họ." },
+  {
+    id: "s19",
+    group: "Mệnh đề quan hệ & danh ngữ",
+    name: "Reduced relative (active)",
+    formula: "N + V-ing + ...",
+    note: "Rút gọn mệnh đề quan hệ chủ động bằng V-ing, câu văn gãy gọn và học thuật.",
+    example: "Consumers actively seeking eco-friendly alternatives represent an ever-expanding demographic.",
+    defaultVi: "Những người tiêu dùng tìm kiếm các sản phẩm thân thiện với môi trường ngày càng đông đảo.",
+    vocabHints: [
+      { word: "eco-friendly alternatives", pos: "collocation", meaning: "các sản phẩm thân thiện môi trường" },
+      { word: "expanding demographic", pos: "collocation", meaning: "nhóm khách hàng ngày càng gia tăng" },
+      { word: "actively seek", pos: "collocation", meaning: "chủ động tìm kiếm" }
+    ]
+  },
+  {
+    id: "s20",
+    group: "Mệnh đề quan hệ & danh ngữ",
+    name: "Reduced relative (passive)",
+    formula: "N + V3/ed + ...",
+    note: "Rút gọn mệnh đề quan hệ bị động bằng V3/ed.",
+    example: "Empirical statistics gathered from the nationwide investigation reveal an intriguing paradigm.",
+    defaultVi: "Dữ liệu được thu thập từ cuộc khảo sát cho thấy một xu hướng rất đáng chú ý.",
+    vocabHints: [
+      { word: "empirical statistics", pos: "n", meaning: "số liệu thống kê thực nghiệm" },
+      { word: "gather from survey", pos: "collocation", meaning: "thu thập từ cuộc điều tra" },
+      { word: "intriguing paradigm", pos: "collocation", meaning: "xu hướng / mô hình đáng chú ý" }
+    ]
+  },
+  {
+    id: "s21",
+    group: "Mệnh đề quan hệ & danh ngữ",
+    name: "Which (whole clause)",
+    formula: "[Mệnh đề], which + V ...",
+    note: "Đại từ 'which' có dấu phẩy đứng trước thay thế cho toàn bộ sự việc ở vế trước.",
+    example: "Numerous adolescents stay up late engrossed in digital media, which exerts a pernicious effect on mental wellbeing.",
+    defaultVi: "Nhiều bạn trẻ thức khuya để dùng mạng xã hội, điều này ảnh hưởng xấu đến sức khỏe tinh thần.",
+    vocabHints: [
+      { word: "stay up late", pos: "phrase", meaning: "thức khuya" },
+      { word: "pernicious effect", pos: "collocation", meaning: "tác động tiêu cực / độc hại" },
+      { word: "mental wellbeing", pos: "n", meaning: "sức khỏe tinh thần" }
+    ]
+  },
+  {
+    id: "s22",
+    group: "Mệnh đề quan hệ & danh ngữ",
+    name: "What + S + V",
+    formula: "What + S + V + be + ...",
+    note: "Mệnh đề danh ngữ bắt đầu bằng 'What' làm chủ ngữ số ít.",
+    example: "What astonished researchers most was the astonishing pace of knowledge assimilation among youngsters.",
+    defaultVi: "Điều làm tôi bất ngờ nhất là tốc độ tiếp thu kiến thức của các em học sinh.",
+    vocabHints: [
+      { word: "knowledge assimilation", pos: "collocation", meaning: "sự tiếp thu, thẩm thấu kiến thức" },
+      { word: "astonish", pos: "v", meaning: "làm kinh ngạc, làm bất ngờ" },
+      { word: "pace of learning", pos: "n", meaning: "tốc độ học tập" }
+    ]
+  },
+  {
+    id: "s23",
+    group: "Mệnh đề quan hệ & danh ngữ",
+    name: "The extent to which",
+    formula: "The extent to which + S + V + depends on ...",
+    note: "Cụm danh ngữ chỉ mức độ: 'Mức độ mà... phụ thuộc vào...'. Không đảo ngữ sau which.",
+    example: "The extent to which someone succeeds in work depends on their ability to adapt.",
+    defaultVi: "Mức độ một người thành công trong công việc phụ thuộc vào khả năng thích ứng của họ.",
+    vocabHints: [
+      { word: "succeed in something", pos: "v", meaning: "thành công trong việc gì (chú ý: succeed là động từ)" },
+      { word: "ability to adapt", pos: "collocation", meaning: "khả năng thích ứng (ability to do something, KHÔNG dùng ability of)" },
+      { word: "the extent to which", pos: "phrase", meaning: "mức độ mà (+ S + V)" },
+      { word: "professional environment", pos: "n", meaning: "môi trường làm việc chuyên nghiệp" }
+    ]
+  },
 
-  { id: "s24", group: "Điều kiện & giả định", name: "Conditional inversion (Had I...)", formula: "Had + S + past participle (V3), S + would have + V3", note: "Đảo ngữ câu điều kiện loại 3 (bỏ 'if', đảo 'Had' lên đầu), giả định trái với quá khứ.", example: "Had I studied harder, I would have achieved better results.", defaultVi: "Nếu tôi chú ý đến lời khuyên của giáo viên, tôi đã không mắc phải sai lầm đó." },
-  { id: "s25", group: "Điều kiện & giả định", name: "Subjunctive mood", formula: "It is essential / crucial that + S + (should) V-bare", note: "Thể giả định hiện tại: động từ sau 'that + S' luôn ở dạng nguyên mẫu không chia.", example: "It is essential that every citizen be aware of environmental protection.", defaultVi: "Điều tối quan trọng là mọi thành viên trong nhóm phải tuân thủ nghiêm ngặt thời hạn đề ra." }
+  {
+    id: "s24",
+    group: "Điều kiện & giả định",
+    name: "Conditional inversion (Had I...)",
+    formula: "Had + S + past participle (V3), S + would have + V3",
+    note: "Đảo ngữ câu điều kiện loại 3 (bỏ 'if', đảo 'Had' lên đầu), giả định trái với quá khứ.",
+    example: "Had I heeded the mentor's counsel, I would have circumvented such disastrous errors.",
+    defaultVi: "Nếu tôi chú ý đến lời khuyên của giáo viên, tôi đã không mắc phải sai lầm đó.",
+    vocabHints: [
+      { word: "heed one's counsel", pos: "collocation", meaning: "lắng nghe lời khuyên / chỉ bảo của ai" },
+      { word: "circumvent errors", pos: "collocation", meaning: "tránh được các sai lầm" },
+      { word: "academic mentor", pos: "n", meaning: "người thầy / hướng dẫn học thuật" }
+    ]
+  },
+  {
+    id: "s25",
+    group: "Điều kiện & giả định",
+    name: "Subjunctive mood",
+    formula: "It is essential / crucial that + S + (should) V-bare",
+    note: "Thể giả định hiện tại: động từ sau 'that + S' luôn ở dạng nguyên mẫu không chia.",
+    example: "It is imperative that every team member strictly adhere to the established milestones.",
+    defaultVi: "Điều tối quan trọng là mọi thành viên trong nhóm phải tuân thủ nghiêm ngặt thời hạn đề ra.",
+    vocabHints: [
+      { word: "strictly adhere to", pos: "collocation", meaning: "tuân thủ nghiêm ngặt theo..." },
+      { word: "established milestones", pos: "collocation", meaning: "các mốc thời hạn / mục tiêu đề ra" },
+      { word: "imperative", pos: "adj", meaning: "cấp bách, tối quan trọng" }
+    ]
+  }
 ];
 
 const $ = id => document.getElementById(id);
@@ -1192,6 +1606,23 @@ if (!albums || albums.length === 0) {
       tracks: DEFAULT_25_STRUCTURES
     }
   ];
+} else {
+  // Sync vocabHints & updated examples into existing core album
+  const coreAlb = albums.find(a => a.id === "album_core_ielts");
+  if (coreAlb && Array.isArray(coreAlb.tracks)) {
+    coreAlb.tracks.forEach((tr, idx) => {
+      const def = DEFAULT_25_STRUCTURES.find(d => d.id === tr.id) || DEFAULT_25_STRUCTURES[idx];
+      if (def) {
+        if (!tr.vocabHints || tr.vocabHints.length === 0) {
+          tr.vocabHints = def.vocabHints;
+        }
+        if (def.id === 's23') {
+          tr.example = def.example;
+          tr.vocabHints = def.vocabHints;
+        }
+      }
+    });
+  }
 }
 
 // Ensure dedicated Mistakes Album exists for automated phrasal verb & grammar error collection
@@ -1437,8 +1868,8 @@ function getApiKey() {
 
 function getModel() {
   const m = localStorage.getItem('gl_gemini_model');
-  if (m && !m.includes('2.5-flash')) return m;
-  return 'gemini-3.5-flash-lite';
+  if (m && !m.includes('3.5') && !m.includes('3.8')) return m;
+  return 'gemini-2.0-flash';
 }
 
 function updateApiStatusUi() {
@@ -1505,48 +1936,58 @@ async function callGeminiApiWithFallback(prompt, systemInstruction = '') {
   if (!apiKey) throw new Error('Chưa cấu hình Gemini API Key. Vui lòng bấm "🔑 Gemini" để nhập key!');
 
   const preferredModel = getModel();
-  // Fast models first: lite and low-latency flash models
-  let candidateModels = [
-    preferredModel,
-    'gemini-3.5-flash-lite',
-    'gemini-2.0-flash-lite',
-    'gemini-3.5-flash',
-    'gemini-2.5-flash',
+  // Valid, stable models from Google Gemini API
+  const realModels = [
     'gemini-2.0-flash',
+    'gemini-2.0-flash-lite',
     'gemini-1.5-flash',
-    'gemini-3.8-flash'
+    'gemini-1.5-flash-8b',
+    'gemini-1.5-pro'
   ];
+
+  let candidateModels = [preferredModel, ...realModels];
 
   try {
     const cached = sessionStorage.getItem('gl_available_models');
     if (cached) {
       const parsed = JSON.parse(cached);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        candidateModels = [preferredModel, ...parsed, ...candidateModels];
+        candidateModels = [preferredModel, ...parsed, ...realModels];
       }
     }
   } catch {}
 
+  // Filter out any non-existent mock model names
+  candidateModels = candidateModels.filter(m => m && !m.includes('3.5') && !m.includes('3.8'));
   candidateModels = Array.from(new Set(candidateModels));
 
   let lastError = null;
   for (let i = 0; i < candidateModels.length; i++) {
     const model = candidateModels[i];
-    try {
-      return await executeSingleGeminiRequest(apiKey, model, prompt, systemInstruction);
-    } catch (err) {
-      lastError = err;
-      const msg = (err.message || '').toLowerCase();
-      const isRetryable = err.status === 503 || err.status === 429 || err.status === 404 || err.status === 400 || err.status === 504 ||
-        msg.includes('high demand') || msg.includes('no longer available') || msg.includes('not found') || msg.includes('deprecated') || msg.includes('overloaded');
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        return await executeSingleGeminiRequest(apiKey, model, prompt, systemInstruction);
+      } catch (err) {
+        lastError = err;
+        const msg = (err.message || '').toLowerCase();
+        const isDemandOrRate = err.status === 503 || err.status === 429 ||
+          msg.includes('high demand') || msg.includes('overloaded') || msg.includes('resource_exhausted');
 
-      if (!isRetryable && i === 0 && err.status === 400 && msg.includes('api_key_invalid')) {
-        throw new Error('API Key không hợp lệ. Vui lòng kiểm tra lại tại Google AI Studio!');
+        if (isDemandOrRate && attempt === 0) {
+          // Brief pause before retry
+          await new Promise(r => setTimeout(r, 400));
+          continue;
+        }
+
+        if (i === 0 && err.status === 400 && msg.includes('api_key_invalid')) {
+          throw new Error('API Key không hợp lệ. Vui lòng kiểm tra lại tại Google AI Studio!');
+        }
+        console.warn(`Model ${model} attempt ${attempt + 1} failed (${err.message}). Trying next candidate...`);
+        break;
       }
-      console.warn(`Model ${model} failed (${err.message}). Trying next fast fallback...`);
     }
   }
-  throw new Error(lastError ? lastError.message : 'Tất cả các model Gemini đều tạm thời bận. Hãy thử lại sau vài giây!');
+  throw new Error(lastError ? lastError.message : 'Tất cả các model Gemini đều tạm thời bận. Đã chuyển sang chế độ chấm dự phòng!');
 }
 
 async function executeSingleGeminiRequest(apiKey, model, prompt, systemInstruction) {
@@ -1582,7 +2023,7 @@ async function executeSingleGeminiRequest(apiKey, model, prompt, systemInstructi
     });
   } catch (err) {
     if (err.name === 'AbortError') {
-      const e = new Error(`Model ${model} quá thời gian chờ (8.5s).`);
+      const e = new Error(`Model ${model} quá thời gian chờ (7s).`);
       e.status = 504;
       throw e;
     }
@@ -1619,7 +2060,7 @@ async function executeSingleGeminiRequest(apiKey, model, prompt, systemInstructi
 // ----------------------------------------------------
 function evaluateOffline(cur, promptVi, resp) {
   const normUser = (resp || '').toLowerCase().trim();
-  const normTarget = (cur.en || '').toLowerCase().trim();
+  const normTarget = (cur.example || cur.en || '').toLowerCase().trim();
   const userWords = normUser.replace(/[.,/#!$%^&*;:{}=\-_`~()?"'’]/g, '').split(/\s+/).filter(Boolean);
   const targetWords = normTarget.replace(/[.,/#!$%^&*;:{}=\-_`~()?"'’]/g, '').split(/\s+/).filter(Boolean);
   
@@ -1661,13 +2102,16 @@ function evaluateOffline(cur, promptVi, resp) {
   } else if (structName.includes('the more')) {
     structMatch = normUser.startsWith('the more') && normUser.includes(', the ');
     structComment = structMatch ? 'Đã áp dụng cấu trúc so sánh kép The more... the more...' : 'Cấu trúc so sánh kép: The more/er..., the more/er...';
+  } else if (structName.includes('the extent to which')) {
+    structMatch = normUser.includes('the extent to which');
+    structComment = structMatch ? 'Đã áp dụng đúng cấu trúc "The extent to which".' : 'Cần dùng "The extent to which + S + V" chỉ mức độ.';
   }
 
   const isPass = similarity >= 0.65 || (similarity >= 0.45 && structMatch);
 
   const fixes = [];
   if (!structMatch) {
-    const rep = cur.formula || cur.en.split(' ').slice(0, 4).join(' ');
+    const rep = cur.formula || (cur.example ? cur.example.split(' ').slice(0, 4).join(' ') : 'Cấu trúc mục tiêu');
     fixes.push({
       original: userWords.slice(0, 4).join(' ') || 'Đầu câu',
       replacement: rep,
@@ -1676,7 +2120,36 @@ function evaluateOffline(cur, promptVi, resp) {
       drill: {
         question: `Áp dụng công thức "${cur.formula}": Hãy hoàn thành câu dịch chuẩn xác cho đề bài này.`,
         hint: cur.formula,
-        answer: cur.example || cur.en
+        answer: cur.example || cur.en || ''
+      }
+    });
+  }
+
+  // Detect specific common mistake patterns
+  if (/\bability\s+of\b/i.test(resp)) {
+    fixes.push({
+      original: 'ability of',
+      replacement: 'ability to',
+      error_type: 'Từ vựng & Diễn đạt',
+      why: "Danh từ 'ability' đi với động từ nguyên mẫu có 'to' (ability to do something).",
+      drill: {
+        question: 'Chọn dạng động từ đúng sau "ability": "Humans possess the unique ability _______ (adapt / of adapting / to adapt) to changing conditions."',
+        hint: 'ability + to-V',
+        answer: 'to adapt'
+      }
+    });
+  }
+
+  if (/\b(one|someone|a person|everybody|everyone)\s+success\b/i.test(resp)) {
+    fixes.push({
+      original: 'success',
+      replacement: 'succeeds',
+      error_type: 'Ngữ pháp',
+      why: "Sau chủ ngữ số ít cần động từ chia 'succeeds' (success là danh từ).",
+      drill: {
+        question: 'Điền dạng từ thích hợp (success / succeed / succeeds): "The extent to which someone _______ in their career depends on diligence."',
+        hint: 'Động từ thì hiện tại đơn ngôi thứ ba số ít',
+        answer: 'succeeds'
       }
     });
   }
@@ -1715,8 +2188,8 @@ function evaluateOffline(cur, promptVi, resp) {
       comment: 'Ý tứ cơ bản đã truyền đạt được nội dung câu đề bài.'
     },
     fixes: fixes,
-    corrected: cur.en,
-    better_alternatives: [cur.en],
+    corrected: cur.example || cur.en || '',
+    better_alternatives: [cur.example || cur.en || ''],
     is_offline_fallback: true
   };
 }
@@ -1873,6 +2346,181 @@ function deleteStructure(idx) {
   }
 }
 
+function showToast(msg, duration = 2500) {
+  let toast = $('spToast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'spToast';
+    toast.style.cssText = 'position:fixed; bottom:95px; left:50%; transform:translateX(-50%); background:#282828; color:#fff; padding:10px 20px; border-radius:24px; font-size:13px; font-weight:600; box-shadow:0 8px 24px rgba(0,0,0,0.6); border:1px solid rgba(255,255,255,0.15); z-index:99999; pointer-events:none; transition:opacity .2s, transform .2s; opacity:0;';
+    document.body.appendChild(toast);
+  }
+  toast.textContent = msg;
+  toast.style.opacity = '1';
+  toast.style.transform = 'translateX(-50%) translateY(0)';
+  clearTimeout(toast._timer);
+  toast._timer = setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateX(-50%) translateY(10px)';
+  }, duration);
+}
+
+function insertWordToResponse(word) {
+  const ta = $('response');
+  if (!ta) return;
+  ta.focus();
+  const start = ta.selectionStart;
+  const end = ta.selectionEnd;
+  const val = ta.value;
+  
+  // Clean word (e.g. if it has "(sth)", keep clean)
+  const cleanWord = word.replace(/\s*\(.*?\)\s*/g, ' ').replace(/\s+/g, ' ').trim();
+  
+  const before = val.substring(0, start);
+  const after = val.substring(end);
+  const needsSpaceBefore = before.length > 0 && !/\s$/.test(before);
+  const insertText = (needsSpaceBefore ? ' ' : '') + cleanWord + ' ';
+  
+  ta.value = before + insertText + after;
+  const newPos = start + insertText.length;
+  ta.setSelectionRange(newPos, newPos);
+  showToast(`Đã chèn "${cleanWord}" vào ô làm bài`);
+}
+
+function renderWordHints(cur, genEx) {
+  const container = $('vocabHintsContainer');
+  const chipsWrap = $('vocabHintChips');
+  if (!container || !chipsWrap) return;
+
+  chipsWrap.innerHTML = '';
+  
+  let hints = [];
+  if (genEx && genEx.vocab_hints) {
+    if (Array.isArray(genEx.vocab_hints)) {
+      hints = genEx.vocab_hints;
+    } else if (typeof genEx.vocab_hints === 'string') {
+      const parts = genEx.vocab_hints.split(/;|\n/);
+      hints = parts.map(p => {
+        p = p.trim();
+        if (!p) return null;
+        const match = p.match(/^([^(:]+)(?:\(([^)]+)\))?\s*:\s*(.+)$/);
+        if (match) {
+          return { word: match[1].trim(), pos: match[2]?.trim() || '', meaning: match[3].trim() };
+        }
+        return { word: p, pos: '', meaning: '' };
+      }).filter(Boolean);
+    }
+  }
+  
+  if ((!hints || hints.length === 0) && cur && cur.vocabHints && Array.isArray(cur.vocabHints)) {
+    hints = cur.vocabHints;
+  }
+
+  if (!hints || hints.length === 0) {
+    container.style.display = 'none';
+    return;
+  }
+
+  container.style.display = 'block';
+
+  hints.forEach(item => {
+    if (!item || !item.word) return;
+    const chip = document.createElement('div');
+    chip.className = 'sp-hint-chip';
+    chip.title = `Bấm để chèn "${item.word}" vào bài làm`;
+
+    const isAlreadySaved = currentVocabNotebook.some(v => v.word.toLowerCase() === item.word.toLowerCase());
+
+    chip.innerHTML = `
+      <span class="sp-hint-word">${escapeHtml(item.word)}</span>
+      ${item.pos ? `<span class="sp-hint-pos">(${escapeHtml(item.pos)})</span>` : ''}
+      ${item.meaning ? `<span class="sp-hint-meaning">: ${escapeHtml(item.meaning)}</span>` : ''}
+      <span class="sp-hint-actions">
+        <button type="button" class="sp-hint-btn sp-hint-speak" title="Nghe phát âm">🔊</button>
+        <button type="button" class="sp-hint-btn sp-hint-star ${isAlreadySaved ? 'saved' : ''}" title="${isAlreadySaved ? 'Đã có trong Sổ từ' : 'Lưu vào Sổ từ vựng'}">${isAlreadySaved ? '★' : '☆'}</button>
+      </span>
+    `;
+
+    chip.addEventListener('click', (e) => {
+      if (e.target.closest('.sp-hint-btn')) return;
+      insertWordToResponse(item.word);
+    });
+
+    const speakBtn = chip.querySelector('.sp-hint-speak');
+    speakBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      speakText(item.word, 'en-US');
+    });
+
+    const starBtn = chip.querySelector('.sp-hint-star');
+    starBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const existing = currentVocabNotebook.find(v => v.word.toLowerCase() === item.word.toLowerCase());
+      if (existing) {
+        showToast(`Từ "${item.word}" đã có trong Sổ từ vựng!`);
+        return;
+      }
+      addWordToNotebook(item.word, item.pos || 'phrase', item.meaning || '', '', cur.example || '');
+      starBtn.classList.add('saved');
+      starBtn.textContent = '★';
+      starBtn.title = 'Đã có trong Sổ từ';
+      showToast(`⭐ Đã lưu "${item.word}" vào Sổ từ vựng!`);
+    });
+
+    chipsWrap.appendChild(chip);
+  });
+}
+
+function getOfflineVocabSuggestions(promptVi, cur) {
+  const text = ((promptVi || '') + ' ' + (cur.name || '')).toLowerCase();
+  if (text.includes('thành công') || text.includes('thích nghi') || text.includes('extent to which')) {
+    return [
+      { word: "succeed in something", pos: "v", meaning: "thành công trong lĩnh vực gì" },
+      { word: "ability to adapt", pos: "collocation", meaning: "khả năng thích ứng (ability to do sth)" },
+      { word: "adapt to changes", pos: "collocation", meaning: "thích ứng với những thay đổi" },
+      { word: "dynamic work environment", pos: "n", meaning: "môi trường làm việc năng động" }
+    ];
+  }
+  if (text.includes('nghiên cứu') || text.includes('tạp chí') || text.includes('having')) {
+    return [
+      { word: "conduct research", pos: "collocation", meaning: "tiến hành nghiên cứu" },
+      { word: "publish findings", pos: "collocation", meaning: "công bố kết quả / phát hiện" },
+      { word: "peer-reviewed journal", pos: "n", meaning: "tạp chí được bình duyệt" }
+    ];
+  }
+  if (text.includes('môi trường') || text.includes('khí thải') || text.includes('ô nhiễm')) {
+    return [
+      { word: "mitigate pollution", pos: "collocation", meaning: "giảm thiểu ô nhiễm" },
+      { word: "carbon footprint", pos: "n", meaning: "dấu chân carbon" },
+      { word: "sustainable practices", pos: "collocation", meaning: "các biện pháp phát triển bền vững" }
+    ];
+  }
+  return [
+    { word: "play a pivotal role", pos: "idiom", meaning: "đóng vai trò nòng cốt" },
+    { word: "exert a significant impact", pos: "collocation", meaning: "tác động đáng kể" },
+    { word: "derive substantial benefits", pos: "collocation", meaning: "gặt hái nhiều lợi ích" }
+  ];
+}
+
+function appendExtraVocabHints(newHints) {
+  const cur = getCurrentTrack();
+  if (!cur) return;
+  if (!cur.vocabHints) cur.vocabHints = [];
+  
+  const existingWords = new Set(cur.vocabHints.map(h => (h.word || '').toLowerCase().trim()));
+  newHints.forEach(h => {
+    if (h && h.word && !existingWords.has(h.word.toLowerCase().trim())) {
+      cur.vocabHints.push(h);
+      existingWords.add(h.word.toLowerCase().trim());
+    }
+  });
+
+  const album = getCurrentAlbum();
+  const promptKey = `${album.id}_${cur.id || currentTrackIndex}`;
+  const genEx = generatedExercises[promptKey];
+  renderWordHints(cur, genEx);
+  saveState();
+}
+
 function renderCurrentStructure() {
   const album = getCurrentAlbum();
   const cur = getCurrentTrack();
@@ -1900,18 +2548,13 @@ function renderCurrentStructure() {
   if (genEx && genEx.vi) {
     $('promptVi').textContent = genEx.vi;
     $('aiGenBadge').style.display = 'inline-block';
-    if (genEx.vocab_hints) {
-      $('promptVocabHint').textContent = `💡 Gợi ý từ vựng: ${genEx.vocab_hints}`;
-      $('promptVocabHint').style.display = 'block';
-    } else {
-      $('promptVocabHint').style.display = 'none';
-    }
+    renderWordHints(cur, genEx);
     $('sampleEnText').textContent = genEx.en || cur.example;
     $('sampleNoteText').textContent = genEx.note || cur.note;
   } else {
     $('promptVi').textContent = cur.defaultVi || 'Hãy dịch câu tiếng Anh áp dụng cấu trúc mục tiêu phía trên.';
     $('aiGenBadge').style.display = 'none';
-    $('promptVocabHint').style.display = 'none';
+    renderWordHints(cur, null);
     $('sampleEnText').textContent = cur.example || cur.formula;
     $('sampleNoteText').textContent = cur.note;
   }
@@ -2124,8 +2767,8 @@ Yêu cầu trả về DUY NHẤT một chuỗi JSON hợp lệ (không kèm Mark
     }
   } catch (err) {
     const isBusy = (err.message || '').toLowerCase().includes('high demand') || (err.message || '').toLowerCase().includes('bận');
-    const msg = isBusy ? 'Máy chủ Google AI đang tạm bận (High demand). Bạn vui lòng bấm thử lại sau 2-3 giây!' : err.message;
-    alert('Không thể tạo đề bài: ' + msg);
+    const msg = isBusy ? 'Máy chủ Google AI đang tạm bận (High demand). Bạn vui lòng bấm thử lại sau vài giây!' : err.message;
+    showToast('⚠️ ' + msg);
   } finally {
     btn.disabled = false;
     btn.textContent = origText;
@@ -2222,6 +2865,9 @@ function autoAddMistakesToAlbum(fixes, cur, promptVi, userSentence) {
     saveState(true);
     renderAlbumSelector();
     updateMistakesCountUi();
+    if ($('homeView') && $('homeView').style.display !== 'none') {
+      renderHomePage();
+    }
   }
 }
 
@@ -2318,6 +2964,7 @@ Chỉ trả về JSON thuần:
   } catch (err) {
     console.warn('AI evaluation hit demand/network spike, seamlessly falling back to offline evaluator:', err);
     finalResult = evaluateOffline(cur, promptVi, resp);
+    if (finalResult) finalResult.is_offline_fallback = true;
   } finally {
     mainBtn.disabled = false;
     dockBtn.disabled = false;
@@ -3916,6 +4563,64 @@ function initEvents() {
     const text = currentVocabNotebook.map(v => `${v.word} (${v.ipa}) [${v.pos}]: ${v.meaning}`).join('\n');
     navigator.clipboard.writeText(text).then(() => alert('Đã sao chép danh sách từ vựng vào Clipboard!'));
   };
+
+  // Vocabulary & Collocation Hints Interactive Buttons
+  const aiSuggestBtn = $('aiSuggestWordsBtn');
+  if (aiSuggestBtn) {
+    aiSuggestBtn.onclick = async () => {
+      const cur = getCurrentTrack();
+      const promptVi = $('promptVi').textContent;
+      const origText = aiSuggestBtn.textContent;
+      aiSuggestBtn.disabled = true;
+      aiSuggestBtn.textContent = '✨ Đang tìm từ...';
+
+      const prompt = `Gợi ý 3-4 collocations, phrasal verbs hoặc từ vựng học thuật IELTS (C1-C2) hay nhất để dịch câu sau sang tiếng Anh:
+Câu tiếng Việt: "${promptVi}"
+Cấu trúc mục tiêu: "${cur.name}" (${cur.formula})
+
+Trả về DUY NHẤT một mảng JSON (không bọc markdown):
+[
+  { "word": "cụm từ tiếng Anh", "pos": "loại từ (v/n/collocation/phrase)", "meaning": "nghĩa tiếng Việt ngắn gọn" }
+]`;
+
+      try {
+        const res = await callGeminiApiWithFallback(prompt, 'Chuyên gia từ vựng IELTS, chỉ trả về JSON array.');
+        if (Array.isArray(res) && res.length > 0) {
+          appendExtraVocabHints(res);
+          showToast('✨ Đã thêm các từ gợi ý mới!');
+        } else {
+          showToast('Không tìm thấy gợi ý thêm lúc này.');
+        }
+      } catch (err) {
+        console.warn('AI vocab suggest failed:', err);
+        const offlineHints = getOfflineVocabSuggestions(promptVi, cur);
+        if (offlineHints && offlineHints.length > 0) {
+          appendExtraVocabHints(offlineHints);
+          showToast('💡 Đã bổ sung gợi ý từ vựng hữu ích!');
+        } else {
+          showToast('Hệ thống tạm thời bận, hãy thử lại sau!');
+        }
+      } finally {
+        aiSuggestBtn.disabled = false;
+        aiSuggestBtn.textContent = origText;
+      }
+    };
+  }
+
+  const toggleHintBtn = $('toggleVocabHintBtn');
+  if (toggleHintBtn) {
+    toggleHintBtn.onclick = () => {
+      const chips = $('vocabHintChips');
+      if (!chips) return;
+      if (chips.style.display === 'none') {
+        chips.style.display = 'flex';
+        toggleHintBtn.textContent = 'Ẩn gợi ý';
+      } else {
+        chips.style.display = 'none';
+        toggleHintBtn.textContent = 'Hiện gợi ý';
+      }
+    };
+  }
 
   // Gemini API Modal
   $('apiConfigBtn').onclick = () => {
