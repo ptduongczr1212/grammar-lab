@@ -2299,13 +2299,16 @@ function populateModelDropdown(models, currentVal) {
 
 async function callGeminiApiWithFallback(prompt, systemInstruction = '') {
   const apiKey = getApiKey();
-  if (!apiKey) throw new Error('Chưa cấu hình Gemini API Key. Vui lòng bấm "🔑 Gemini" để nhập key!');
+  if (!apiKey) {
+    const err = new Error('Chưa cấu hình Gemini API Key. Vui lòng bấm "🔑 Gemini" để nhập key!');
+    err.code = 'NO_API_KEY';
+    throw err;
+  }
 
   const preferredModel = getModel();
-  // Valid, stable models from Google Gemini API
+  // Valid, production-grade models from Google Gemini API
   const realModels = [
     'gemini-2.0-flash',
-    'gemini-2.0-flash-lite',
     'gemini-1.5-flash',
     'gemini-1.5-flash-8b',
     'gemini-1.5-pro'
@@ -2323,8 +2326,8 @@ async function callGeminiApiWithFallback(prompt, systemInstruction = '') {
     }
   } catch {}
 
-  // Filter out any non-existent mock model names
-  candidateModels = candidateModels.filter(m => m && !m.includes('3.5') && !m.includes('3.8'));
+  // Filter out any invalid / non-existent model IDs
+  candidateModels = candidateModels.filter(m => m && !m.includes('3.5') && !m.includes('3.8') && m !== 'gemini-2.0-flash-lite');
   candidateModels = Array.from(new Set(candidateModels));
 
   let lastError = null;
@@ -2341,34 +2344,33 @@ async function callGeminiApiWithFallback(prompt, systemInstruction = '') {
 
         if (isDemandOrRate && attempt === 0) {
           // Brief pause before retry
-          await new Promise(r => setTimeout(r, 400));
+          await new Promise(r => setTimeout(r, 600));
           continue;
         }
 
-        if (i === 0 && err.status === 400 && msg.includes('api_key_invalid')) {
-          throw new Error('API Key không hợp lệ. Vui lòng kiểm tra lại tại Google AI Studio!');
+        if (err.status === 400 && (msg.includes('api_key_invalid') || msg.includes('key not valid') || msg.includes('api key not valid'))) {
+          const e = new Error('API Key không hợp lệ. Vui lòng kiểm tra lại tại Google AI Studio!');
+          e.code = 'INVALID_API_KEY';
+          throw e;
         }
         console.warn(`Model ${model} attempt ${attempt + 1} failed (${err.message}). Trying next candidate...`);
         break;
       }
     }
   }
-  throw new Error(lastError ? lastError.message : 'Tất cả các model Gemini đều tạm thời bận. Đã chuyển sang chế độ chấm dự phòng!');
+  throw (lastError || new Error('Không thể kết nối đến máy chủ Google Gemini.'));
 }
 
 async function executeSingleGeminiRequest(apiKey, model, prompt, systemInstruction) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
   const fullPrompt = (systemInstruction ? systemInstruction + '\n\n' : '') + prompt;
   
+  // Set maxOutputTokens to 2048 and enforce JSON mimeType so responses are never truncated or wrapped in markdown
   const generationConfig = {
-    temperature: 0.1,
-    maxOutputTokens: 600
+    temperature: 0.15,
+    maxOutputTokens: 2048,
+    responseMimeType: 'application/json'
   };
-
-  // Disable thinking reasoning tokens on thinking models to return instant 2-3s responses
-  if (model.includes('2.5') || model.includes('thinking')) {
-    generationConfig.thinkingConfig = { thinkingBudget: 0 };
-  }
 
   const body = {
     contents: [{ role: 'user', parts: [{ text: fullPrompt }] }],
@@ -2376,8 +2378,8 @@ async function executeSingleGeminiRequest(apiKey, model, prompt, systemInstructi
   };
 
   const controller = new AbortController();
-  // Ultra-fast 7s timeout: immediately fallback if server node is stalled
-  const timeoutId = setTimeout(() => controller.abort(), 7000);
+  // Safe 16s timeout: ensures enough time across international routes without blocking indefinitely
+  const timeoutId = setTimeout(() => controller.abort(), 16000);
 
   let res;
   try {
@@ -2389,8 +2391,9 @@ async function executeSingleGeminiRequest(apiKey, model, prompt, systemInstructi
     });
   } catch (err) {
     if (err.name === 'AbortError') {
-      const e = new Error(`Model ${model} quá thời gian chờ (7s).`);
+      const e = new Error(`Model ${model} quá thời gian phản hồi (16s).`);
       e.status = 504;
+      e.code = 'TIMEOUT';
       throw e;
     }
     throw err;
@@ -2407,8 +2410,18 @@ async function executeSingleGeminiRequest(apiKey, model, prompt, systemInstructi
   }
 
   const json = await res.json();
-  const parts = json.candidates?.[0]?.content?.parts || [];
-  const text = parts.filter(p => !p.thought && typeof p.text === 'string').map(p => p.text).join('') || '';
+  const candidate = json.candidates?.[0];
+  const finishReason = candidate?.finishReason;
+  const parts = candidate?.content?.parts || [];
+  let text = parts.filter(p => !p.thought && typeof p.text === 'string').map(p => p.text).join('') || '';
+
+  // Clean markdown code blocks if model wrapped it in ```json ... ```
+  text = text.trim();
+  if (text.startsWith('```json')) {
+    text = text.replace(/^```json\s*/i, '').replace(/\s*```$/, '');
+  } else if (text.startsWith('```')) {
+    text = text.replace(/^```\s*/, '').replace(/\s*```$/, '');
+  }
 
   try {
     return JSON.parse(text);
@@ -2416,6 +2429,9 @@ async function executeSingleGeminiRequest(apiKey, model, prompt, systemInstructi
     const match = text.match(/\{[\s\S]*\}/);
     if (match) {
       try { return JSON.parse(match[0]); } catch {}
+    }
+    if (finishReason === 'MAX_TOKENS') {
+      throw new Error('Phản hồi bị cắt ngắn do vượt quá độ dài token cho phép.');
     }
     throw new Error('Phản hồi không đúng định dạng JSON: ' + text.slice(0, 100));
   }
@@ -3166,8 +3182,12 @@ Trả về DUY NHẤT một chuỗi JSON hợp lệ (không kèm Markdown):
       $('newStructDefaultVi').value = res.defaultVi || '';
     }
   } catch (err) {
-    const isBusy = (err.message || '').toLowerCase().includes('high demand') || (err.message || '').toLowerCase().includes('bận');
-    const msg = isBusy ? 'Máy chủ Google AI đang tạm bận (High demand). Bạn vui lòng bấm thử lại sau 2-3 giây!' : err.message;
+    let msg = err.message || 'Lỗi không xác định khi kết nối AI.';
+    if (err.code === 'NO_API_KEY') {
+      msg = 'Bạn chưa kết nối Gemini API Key. Vui lòng bấm vào "🔑 Gemini" ở góc trên để nhập key!';
+    } else if ((err.message || '').toLowerCase().includes('resource_exhausted')) {
+      msg = 'Máy chủ Google AI đang tạm bận (Resource exhausted). Bạn vui lòng bấm thử lại sau vài giây!';
+    }
     alert('Không thể tạo cấu trúc: ' + msg);
   } finally {
     btn.disabled = false;
@@ -3314,8 +3334,12 @@ Yêu cầu trả về DUY NHẤT một chuỗi JSON hợp lệ (không kèm Mark
       updateShortcutHint();
     }
   } catch (err) {
-    const isBusy = (err.message || '').toLowerCase().includes('high demand') || (err.message || '').toLowerCase().includes('bận');
-    const msg = isBusy ? 'Máy chủ Google AI đang tạm bận (High demand). Bạn vui lòng bấm thử lại sau vài giây!' : err.message;
+    let msg = err.message || 'Lỗi kết nối AI';
+    if (err.code === 'NO_API_KEY') {
+      msg = 'Bạn chưa kết nối Gemini API Key. Vui lòng bấm vào "🔑 Gemini" để nhập key!';
+    } else if ((err.message || '').toLowerCase().includes('resource_exhausted')) {
+      msg = 'Máy chủ Google AI đang tạm bận (Resource exhausted). Vui lòng thử lại sau vài giây!';
+    }
     showToast('⚠️ ' + msg);
   } finally {
     btn.disabled = false;
@@ -3448,6 +3472,9 @@ async function submitExercise(forceRetryAi = false) {
   // If no API key configured, evaluate immediately with Smart Offline Evaluator
   if (!apiKey) {
     const offlineRes = evaluateOffline(cur, promptVi, resp);
+    offlineRes.is_offline_fallback = true;
+    offlineRes.fallback_type = 'NO_API_KEY';
+    offlineRes.fallback_msg = 'Chưa cấu hình API Key. Đang chấm bằng bộ đối chiếu IELTS chuẩn.';
     autoAddMistakesToAlbum(offlineRes.fixes, cur, promptVi, resp);
     renderAiFeedback(offlineRes);
     logMistakes(offlineRes.fixes, cur.name, resp);
@@ -3520,9 +3547,13 @@ Chỉ trả về JSON thuần:
       'Giám khảo IELTS chấm bài công tâm, ngắn gọn, phản hồi JSON thuần.'
     );
   } catch (err) {
-    console.warn('AI evaluation hit demand/network spike, seamlessly falling back to offline evaluator:', err);
+    console.warn('AI evaluation error, falling back to offline evaluator:', err);
     finalResult = evaluateOffline(cur, promptVi, resp);
-    if (finalResult) finalResult.is_offline_fallback = true;
+    if (finalResult) {
+      finalResult.is_offline_fallback = true;
+      finalResult.fallback_type = err.code || 'API_ERROR';
+      finalResult.fallback_msg = err.message || 'Lỗi kết nối AI';
+    }
   } finally {
     mainBtn.disabled = false;
     dockBtn.disabled = false;
@@ -3607,20 +3638,57 @@ function renderAiFeedback(res) {
 
   if (res.is_offline_fallback) {
     fallbackAlert.style.display = 'block';
+
+    let titleText = '⚡ Máy chủ Google AI phản hồi chậm / tạm bận';
+    let descText = 'Hệ thống đã tự động đối chiếu chấm điểm theo đáp án chuẩn IELTS để không ngắt quãng buổi học của bạn.';
+    let actionBtnHtml = `
+      <button id="retryAiBtn" class="sp-pill" type="button" style="background:#d97706; color:#000; font-weight:700; font-size:12px; padding:7px 15px; border:none; cursor:pointer;">
+        🔄 Chấm lại bằng AI
+      </button>
+    `;
+
+    if (res.fallback_type === 'NO_API_KEY') {
+      titleText = '🔑 Bạn chưa kết nối Google Gemini API Key';
+      descText = 'Đang chấm bằng bộ đối chiếu IELTS chuẩn. Để nhận giải thích lỗi sai chi tiết và nhận xét trực tiếp từ Google AI, bạn hãy kết nối API Key.';
+      actionBtnHtml = `
+        <button id="connectKeyPromptBtn" class="sp-pill green" type="button" style="font-weight:700; font-size:12px; padding:7px 15px; border:none; cursor:pointer;">
+          🔑 Kết nối Gemini API
+        </button>
+      `;
+    } else if (res.fallback_type === 'INVALID_API_KEY') {
+      titleText = '⚠️ Google Gemini API Key không hợp lệ';
+      descText = 'Vui lòng kiểm tra lại mã API Key tại Google AI Studio để kích hoạt chấm bài thông minh bằng AI.';
+      actionBtnHtml = `
+        <button id="connectKeyPromptBtn" class="sp-pill red-badge" type="button" style="font-weight:700; font-size:12px; padding:7px 15px; border:none; cursor:pointer;">
+          🔑 Đổi API Key
+        </button>
+      `;
+    } else if (res.fallback_type === 'TIMEOUT') {
+      titleText = '⏱️ Phản hồi từ Google AI quá thời gian chờ (16s)';
+      descText = 'Đường truyền mạng hoặc máy chủ AI phản hồi chậm. Hệ thống đã đối chiếu câu chuẩn IELTS để bạn tiếp tục luyện tập.';
+    } else if (res.fallback_msg) {
+      descText = `${escapeHtml(res.fallback_msg)}. Hệ thống đã chuyển sang đối chiếu chuẩn IELTS để tiếp tục buổi học.`;
+    }
+
     fallbackAlert.innerHTML = `
       <div style="background:#261806; border:1px solid #d97706; border-radius:10px; padding:12px 16px; margin-bottom:16px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
         <div style="font-size:13px; color:#fde68a; line-height:1.45;">
-          <strong>⚡ Máy chủ Google AI đang tạm bận (High demand)</strong><br>
-          Hệ thống đã tự động đối chiếu chấm điểm theo đáp án chuẩn IELTS để không ngắt quãng buổi học của bạn.
+          <strong>${titleText}</strong><br>
+          ${descText}
         </div>
-        <button id="retryAiBtn" class="sp-pill" type="button" style="background:#d97706; color:#000; font-weight:700; font-size:12px; padding:7px 15px; border:none; cursor:pointer;">
-          🔄 Chấm lại bằng AI
-        </button>
+        <div>
+          ${actionBtnHtml}
+        </div>
       </div>
     `;
+
     const retryBtn = $('retryAiBtn');
     if (retryBtn) {
       retryBtn.onclick = () => submitExercise(true);
+    }
+    const connectKeyBtn = $('connectKeyPromptBtn');
+    if (connectKeyBtn) {
+      connectKeyBtn.onclick = () => $('apiConfigModal').classList.add('open');
     }
   } else {
     fallbackAlert.style.display = 'none';
@@ -4517,8 +4585,12 @@ Trả về DUY NHẤT một chuỗi JSON hợp lệ (không kèm Markdown block)
     const data = await callGeminiApiWithFallback(prompt, 'Chỉ trả về JSON hợp lệ.');
     renderVocabPracticeContent(data, vocabItem);
   } catch (err) {
-    const isBusy = (err.message || '').toLowerCase().includes('high demand') || (err.message || '').toLowerCase().includes('bận');
-    const msg = isBusy ? 'Máy chủ Google AI đang tạm bận (High demand). Bạn hãy bấm "Thử lại" sau vài giây.' : err.message;
+    let msg = err.message || 'Lỗi không xác định khi tải bài tập.';
+    if (err.code === 'NO_API_KEY') {
+      msg = 'Bạn chưa kết nối Gemini API Key. Hãy nhập API Key để tạo bài tập từ vựng chuyên sâu!';
+    } else if ((err.message || '').toLowerCase().includes('resource_exhausted')) {
+      msg = 'Máy chủ Google AI đang tạm bận (Resource exhausted). Vui lòng bấm thử lại sau vài giây!';
+    }
     $('practiceModalBody').innerHTML = `
       <div style="text-align:center; padding:30px; color:var(--sp-orange);">
         <strong style="font-size:15px;">Chưa thể tải bài tập AI:</strong>
