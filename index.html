@@ -1003,10 +1003,19 @@
         <div class="sp-formula-ex" id="structExample">↳ Ví dụ: Having finished my homework, I decided to relax.</div>
       </div>
 
+      <!-- Practice Mode Switcher Row -->
+      <div class="sp-practice-modes-row" id="practiceModesRow" style="display:flex; align-items:center; gap:8px; margin-bottom:14px; overflow-x:auto; padding-bottom:4px;">
+        <span style="font-size:11px; font-weight:800; color:var(--sp-subtext); text-transform:uppercase; letter-spacing:0.5px; white-space:nowrap;">Dạng bài:</span>
+        <button type="button" class="sp-chip active" id="modeBtn_translate" data-mode="translate">🎯 Dịch tình huống</button>
+        <button type="button" class="sp-chip" id="modeBtn_error_spot" data-mode="error_spot">🔍 Tìm & Sửa lỗi sai</button>
+        <button type="button" class="sp-chip" id="modeBtn_transform" data-mode="transform">🔄 Viết lại câu nâng cao</button>
+        <button type="button" class="sp-chip" id="modeBtn_cloze" data-mode="cloze">✍️ Điền khuyết theo ngữ cảnh</button>
+      </div>
+
       <!-- Challenge Prompt Box -->
       <div class="sp-challenge-box">
         <div class="sp-challenge-top">
-          <span class="sp-challenge-tag">Đề bài dịch sang tiếng Anh</span>
+          <span class="sp-challenge-tag" id="challengeModeTag">🎯 Đề bài dịch tình huống sang tiếng Anh</span>
           <span id="aiGenBadge" style="display:none; font-size:11px; color:var(--sp-green); font-weight:700;">● Đề bài AI</span>
         </div>
         <div class="sp-challenge-vi" id="promptVi">Đang tải đề bài...</div>
@@ -3157,6 +3166,227 @@ function appendExtraVocabHints(newHints) {
   saveState();
 }
 
+// ----------------------------------------------------
+// DIVERSE PRACTICE MODES ENGINE (No more boring self-invented sentences!)
+// ----------------------------------------------------
+let currentPracticeMode = 'translate'; // 'translate' | 'error_spot' | 'transform' | 'cloze'
+
+function getModeTitle(mode) {
+  switch (mode) {
+    case 'error_spot': return '🔍 Đề bài: Phát hiện & Sửa lỗi ngữ pháp';
+    case 'transform': return '🔄 Đề bài: Tái cấu trúc câu nâng cao';
+    case 'cloze': return '✍️ Đề bài: Điền khuyết theo ngữ cảnh';
+    case 'translate':
+    default:
+      return '🎯 Đề bài: Dịch tình huống sang tiếng Anh';
+  }
+}
+
+function getModePlaceholder(mode) {
+  switch (mode) {
+    case 'error_spot': return 'Phát hiện lỗi sai và viết lại câu tiếng Anh chuẩn xác... (Nhấn Enter để chấm)';
+    case 'transform': return 'Viết lại câu hoàn chỉnh áp dụng cấu trúc mục tiêu... (Nhấn Enter để chấm)';
+    case 'cloze': return 'Nhập câu tiếng Anh hoàn chỉnh hoặc chia đúng dạng từ... (Nhấn Enter để chấm)';
+    case 'translate':
+    default:
+      return 'Nhập câu tiếng Anh của bạn áp dụng cấu trúc trên... (Nhấn Enter để chấm)';
+  }
+}
+
+function updatePracticeModePills() {
+  const modes = ['translate', 'error_spot', 'transform', 'cloze'];
+  modes.forEach(m => {
+    const btn = $(`modeBtn_${m}`);
+    if (btn) btn.classList.toggle('active', currentPracticeMode === m);
+  });
+}
+
+function initPracticeModeEvents() {
+  const modes = ['translate', 'error_spot', 'transform', 'cloze'];
+  modes.forEach(m => {
+    const btn = $(`modeBtn_${m}`);
+    if (btn) {
+      btn.onclick = () => {
+        if (currentPracticeMode === m) return;
+        currentPracticeMode = m;
+        renderCurrentStructure();
+        $('response').value = '';
+        $('aiFeedbackCard').style.display = 'none';
+        $('sampleAnswerCard').style.display = 'none';
+        lastGradedResponse = null;
+        lastGradedTrackKey = null;
+        updateShortcutHint();
+      };
+    }
+  });
+}
+
+function sanitizeAlbumTracks() {
+  albums.forEach(alb => {
+    (alb.tracks || []).forEach(t => {
+      if (t.defaultVi && (t.defaultVi.includes('Hãy đặt một câu') || t.defaultVi.includes('đặt một câu tiếng Anh'))) {
+        t.defaultVi = '';
+      }
+    });
+  });
+}
+
+function getSmartExerciseForTrack(cur, album, mode) {
+  const promptKey = `${album.id}_${cur.id || currentTrackIndex}_${mode}`;
+  const legacyKey = `${album.id}_${cur.id || currentTrackIndex}`;
+  
+  if (generatedExercises[promptKey] && generatedExercises[promptKey].vi) {
+    return { ...generatedExercises[promptKey], isAiGen: true };
+  }
+  if (mode === 'translate' && generatedExercises[legacyKey] && generatedExercises[legacyKey].vi) {
+    return { ...generatedExercises[legacyKey], isAiGen: true };
+  }
+
+  const name = cur.name || 'cấu trúc này';
+  const ex = cur.example || '';
+  const note = cur.note || '';
+
+  const hasRealVi = cur.defaultVi && !cur.defaultVi.toLowerCase().startsWith('hãy đặt') && !cur.defaultVi.toLowerCase().includes('đặt một câu');
+
+  if (mode === 'translate') {
+    if (hasRealVi) {
+      return {
+        vi: cur.defaultVi,
+        en: cur.example || cur.formula,
+        note: cur.note,
+        isAiGen: false
+      };
+    }
+
+    let situationVi = '';
+    const normName = name.toLowerCase();
+    if (normName.includes('pregnant')) {
+      situationVi = 'Sau nhiều năm kiên trì chữa trị và hy vọng, người phụ nữ cuối cùng đã mang thai ở tuổi 38.';
+    } else if (normName.includes('massive scale')) {
+      situationVi = 'Chính phủ đã triển khai một chiến dịch tiêm chủng trên quy mô lớn để bảo vệ sức khỏe cộng đồng.';
+    } else if (normName.includes('having been')) {
+      situationVi = 'Sau khi được đào tạo bài bản trong quân ngũ, anh ấy đã dễ dàng thích nghi với môi trường làm việc kỷ luật.';
+    } else if (normName.includes('subject-verb') || normName.includes('agreement')) {
+      situationVi = 'Sự gia tăng nhanh chóng của lượng phương tiện cá nhân trong thập kỷ qua đã gây ra áp lực nặng nề lên hạ tầng giao thông đô thị.';
+    } else if (ex) {
+      situationVi = `Hãy dịch một tình huống học thuật diễn đạt ý sau sang tiếng Anh dùng "${name}":\n"${ex}"`;
+    } else {
+      situationVi = `Một nhà nghiên cứu muốn nhấn mạnh vai trò của việc áp dụng "${name}" trong thực tiễn. Hãy dịch một câu thể hiện quan điểm này sang tiếng Anh.`;
+    }
+
+    return {
+      vi: situationVi,
+      en: cur.example || cur.formula,
+      note: cur.note,
+      isAiGen: false
+    };
+  }
+
+  if (mode === 'error_spot') {
+    let wrongSentence = '';
+    let explanation = '';
+    const normName = name.toLowerCase();
+
+    if (normName.includes('pregnant')) {
+      wrongSentence = 'She have pregnant last year after quitting her stressful job.';
+      explanation = 'Sai ngữ pháp: pregnant là tính từ, không thể đi sau trợ động từ have như một danh từ; cần dùng động từ "became pregnant".';
+    } else if (normName.includes('hardly')) {
+      wrongSentence = 'Hardly she had entered the room than the fire alarm suddenly went off.';
+      explanation = 'Sai trật tự đảo ngữ (phải là Hardly had she entered...) và sai liên từ (phải dùng when, không dùng than).';
+    } else if (normName.includes('not until')) {
+      wrongSentence = 'Not until the manager arrived, the team did start the meeting.';
+      explanation = 'Sai vị trí đảo ngữ: phải đảo ngữ ở mệnh đề chính ("did the team start").';
+    } else if (normName.includes('rarely') || normName.includes('never')) {
+      wrongSentence = 'Rarely scientists have witnessed such a rapid rate of environmental degradation.';
+      explanation = 'Đứng đầu câu với phó từ phủ định cần đảo trợ động từ lên trước chủ ngữ: "Rarely have scientists witnessed...".';
+    } else if (note.includes('Bạn đã dùng "') && note.includes('➜ Cần dùng "')) {
+      const match = note.match(/Bạn đã dùng "([^"]+)" ➜ Cần dùng "([^"]+)"/);
+      if (match) {
+        wrongSentence = ex ? ex.replace(new RegExp(match[2], 'i'), match[1]) : `In this situation, they ${match[1]} yesterday.`;
+        explanation = `Lỗi ngữ pháp: Dùng "${match[1]}" thay vì "${match[2]}".`;
+      }
+    }
+
+    if (!wrongSentence) {
+      wrongSentence = ex ? ex.replace(/\b(was|were|is|are|has|had|did)\b/i, 'was not') : `Scientists has proved that this phenomenon occur frequently.`;
+      explanation = `Cần xem xét kỹ thì động từ, trật tự từ và sự hòa hợp chủ - vị khi dùng "${name}".`;
+    }
+
+    return {
+      vi: `Phát hiện điểm sai ngữ pháp trong câu dưới đây và viết lại câu chuẩn xác:\n"${wrongSentence}"`,
+      en: cur.example || cur.formula,
+      note: explanation || cur.note,
+      isAiGen: false
+    };
+  }
+
+  if (mode === 'transform') {
+    let original = '';
+    let leadIn = '';
+    const normName = name.toLowerCase();
+
+    if (normName.includes('pregnant')) {
+      original = 'She found out that she was expecting a baby after five years of marriage.';
+      leadIn = 'After five years of marriage, she...';
+    } else if (normName.includes('having')) {
+      original = 'Because he had finished all the required courses, he felt confident about graduation.';
+      leadIn = 'Having...';
+    } else if (normName.includes('not until')) {
+      original = 'I only realized how important family was when I moved to a foreign country.';
+      leadIn = 'Not until I moved to a foreign country...';
+    } else if (normName.includes('hardly')) {
+      original = 'As soon as the meeting started, the electricity cut out.';
+      leadIn = 'Hardly had...';
+    } else if (ex) {
+      original = `Rewrite this idea in an advanced academic style using "${name}":\n"${ex}"`;
+      leadIn = name.split(/\s+/)[0] + '...';
+    } else {
+      original = `Rephrase this sentence using the target structure "${name}".`;
+      leadIn = 'In order to...';
+    }
+
+    return {
+      vi: `Viết lại câu sau bắt đầu bằng "${leadIn}", sử dụng cấu trúc "${name}":\n"${original}"`,
+      en: cur.example || cur.formula,
+      note: cur.note,
+      isAiGen: false
+    };
+  }
+
+  if (mode === 'cloze') {
+    let clozeSentence = '';
+    const normName = name.toLowerCase();
+
+    if (normName.includes('pregnant')) {
+      clozeSentence = 'After three years of medical treatment, the couple rejoiced when she finally [become / pregnant] last autumn.';
+    } else if (normName.includes('having')) {
+      clozeSentence = '[Finish / all / assignment], the students were allowed to leave the laboratory.';
+    } else if (normName.includes('not until')) {
+      clozeSentence = 'Not until the government intervened [the situation / begin] to improve significantly.';
+    } else if (normName.includes('hardly')) {
+      clozeSentence = 'Hardly [she / step] onto the stage when the entire audience burst into applause.';
+    } else if (ex) {
+      clozeSentence = ex.replace(new RegExp(name, 'i'), `[${name}]`);
+    } else {
+      clozeSentence = `To achieve optimal results, one must [apply / ${name}] correctly in every context.`;
+    }
+
+    return {
+      vi: `Điền dạng và thì đúng của cấu trúc trong ngoặc để hoàn thành câu:\n"${clozeSentence}"`,
+      en: cur.example || cur.formula,
+      note: cur.note,
+      isAiGen: false
+    };
+  }
+
+  return {
+    vi: cur.defaultVi || `Luyện tập cấu trúc "${name}"`,
+    en: cur.example || cur.formula,
+    note: cur.note,
+    isAiGen: false
+  };
+}
+
 function renderCurrentStructure() {
   const album = getCurrentAlbum();
   const cur = getCurrentTrack();
@@ -3178,22 +3408,21 @@ function renderCurrentStructure() {
   $('dockStructName').textContent = cur.name;
   $('dockGroupName').textContent = `${album.icon || '⚡'} ${album.title}`;
 
+  // Update Practice Mode Pills
+  updatePracticeModePills();
+
   // Challenge Prompt
-  const promptKey = `${album.id}_${cur.id || currentTrackIndex}`;
-  const genEx = generatedExercises[promptKey];
-  if (genEx && genEx.vi) {
-    $('promptVi').textContent = genEx.vi;
-    $('aiGenBadge').style.display = 'inline-block';
-    renderWordHints(cur, genEx);
-    $('sampleEnText').textContent = genEx.en || cur.example;
-    $('sampleNoteText').textContent = genEx.note || cur.note;
-  } else {
-    $('promptVi').textContent = cur.defaultVi || 'Hãy dịch câu tiếng Anh áp dụng cấu trúc mục tiêu phía trên.';
-    $('aiGenBadge').style.display = 'none';
-    renderWordHints(cur, null);
-    $('sampleEnText').textContent = cur.example || cur.formula;
-    $('sampleNoteText').textContent = cur.note;
-  }
+  const smartEx = getSmartExerciseForTrack(cur, album, currentPracticeMode);
+  const modeTagEl = $('challengeModeTag');
+  if (modeTagEl) modeTagEl.textContent = getModeTitle(currentPracticeMode);
+  $('promptVi').textContent = smartEx.vi;
+  $('aiGenBadge').style.display = smartEx.isAiGen ? 'inline-block' : 'none';
+  renderWordHints(cur, smartEx);
+  $('sampleEnText').textContent = smartEx.en || cur.example;
+  $('sampleNoteText').textContent = smartEx.note || cur.note;
+
+  // Placeholder
+  $('response').placeholder = getModePlaceholder(currentPracticeMode);
 
   // Personal Notes
   const curNoteKey = getNoteKey(cur);
@@ -3378,24 +3607,57 @@ async function generateNewChallenge() {
   const btn = $('genNewChallengeBtn');
   const origText = btn.textContent;
   btn.disabled = true;
-  btn.textContent = '✨ Đang tạo...';
+  btn.textContent = '✨ Đang tạo đề mới...';
 
-  const prompt = `Bạn là chuyên gia luyện thi IELTS Writing. Hãy tạo 1 câu bài tập dịch tiếng Việt sang tiếng Anh:
+  let modeInstruction = '';
+  if (currentPracticeMode === 'error_spot') {
+    modeInstruction = `DẠNG BÀI: TÌM & SỬA LỖI NGỮ PHÁP (Error Spotting & Correction).
+Tạo 1 câu tiếng Anh học thuật IELTS dài 18-26 từ có chứa lỗi sai ngữ pháp cố tình liên quan trực tiếp đến cấu trúc/cụm từ "${cur.name}" (ví dụ: chia sai thì, dùng sai từ loại, hoặc trật tự từ đảo ngữ sai).
+- "vi": "Phát hiện lỗi sai ngữ pháp trong câu sau và viết lại câu chuẩn xác:\n\"[câu tiếng Anh chứa lỗi sai cố tình]\""
+- "en": "Câu tiếng Anh đã sửa hoàn chỉnh chuẩn Band 8.0"
+- "vocab_hints": "1-2 từ vựng học thuật trong câu"
+- "note": "Chỉ rõ câu ban đầu sai ở đâu và nguyên lý ngữ pháp đúng"`;
+  } else if (currentPracticeMode === 'transform') {
+    modeInstruction = `DẠNG BÀI: TÁI CẤU TRÚC CÂU NÂNG CAO (Sentence Transformation).
+Cho 1 câu gốc học thuật và 1 cụm từ bắt đầu bắt buộc để học viên viết lại câu áp dụng cấu trúc "${cur.name}".
+- "vi": "Viết lại câu sau bắt đầu bằng '[Lead-in phrase...]', sử dụng cấu trúc '${cur.name}':\n\"[Câu gốc tiếng Anh]\""
+- "en": "Câu viết lại hoàn chỉnh chuẩn xác sử dụng đúng cấu trúc"
+- "vocab_hints": "Từ vựng trọng tâm"
+- "note": "Công thức chuyển đổi ngữ pháp"`;
+  } else if (currentPracticeMode === 'cloze') {
+    modeInstruction = `DẠNG BÀI: ĐIỀN KHUYẾT THEO NGỮ CẢNH (Contextual Cloze / Completion).
+Tạo 1 câu tiếng Anh học thuật IELTS hoàn chỉnh có 1 chỗ trống [_____] (kèm từ gốc trong ngoặc) để học viên chia đúng thì và dạng của cấu trúc "${cur.name}".
+- "vi": "Chia đúng dạng và thì của cấu trúc trong ngoặc để hoàn thành câu:\n\"[Câu tiếng Anh có chỗ trống [_____ (từ gốc)]]\""
+- "en": "Câu tiếng Anh hoàn chỉnh sau khi điền đúng"
+- "vocab_hints": "Từ vựng liên quan"
+- "note": "Giải thích vì sao chia thì/dạng từ như vậy"`;
+  } else {
+    modeInstruction = `DẠNG BÀI: DỊCH TÌNH HUỐNG THỰC TẾ SANG TIẾNG ANH (Contextual Translation).
+Tạo 1 câu tình huống tiếng Việt cụ thể, sinh động (chủ đề IELTS: đời sống, giáo dục, kinh tế, công việc, khoa học) để người học dịch sang tiếng Anh sử dụng đúng cấu trúc "${cur.name}".
+TUYỆT ĐỐI KHÔNG ra đề chung chung kiểu "Hãy đặt một câu...". Hãy viết một câu tình huống tiếng Việt cụ thể, hấp dẫn!
+- "vi": "Câu tình huống tiếng Việt cụ thể và giàu hình ảnh"
+- "en": "Câu tiếng Anh dịch mẫu chuẩn xác sử dụng đúng cấu trúc"
+- "vocab_hints": "1-2 từ vựng gợi ý (VD: significant (adj), approach (v))"
+- "note": "Cách áp dụng công thức vào câu này"`;
+  }
+
+  const prompt = `Bạn là Chuyên gia Khảo thí Ngữ pháp IELTS.
 Cấu trúc mục tiêu: "${cur.name}" (Công thức: ${cur.formula})
-Chủ đề IELTS: (Học thuật, công nghệ, môi trường, xã hội, giáo dục, hoặc công việc).
+${modeInstruction}
 
-Yêu cầu trả về DUY NHẤT một chuỗi JSON hợp lệ (không kèm Markdown):
+Yêu cầu trả về DUY NHẤT một chuỗi JSON hợp lệ (không kèm Markdown block):
 {
-  "vi": "Câu tiếng Việt tự nhiên, phù hợp để dịch dùng đúng cấu trúc trên",
-  "en": "Câu tiếng Anh mẫu chuẩn xác sử dụng đúng cấu trúc trên",
-  "vocab_hints": "1-3 từ vựng IELTS hay liên quan (VD: accelerate (v), substantial (adj))",
-  "note": "Giải thích ngắn gọn cách áp dụng công thức vào câu này"
+  "mode": "${currentPracticeMode}",
+  "vi": "Nội dung đề bài chi tiết theo đúng dạng bài trên",
+  "en": "Đáp án câu tiếng Anh chuẩn xác",
+  "vocab_hints": "1-3 từ vựng gợi ý",
+  "note": "Giải thích ngữ pháp ngắn gọn"
 }`;
 
   try {
     const res = await callGeminiApiWithFallback(prompt, 'Chỉ trả về JSON hợp lệ.');
     if (res && res.vi && res.en) {
-      const promptKey = `${album.id}_${cur.id || currentTrackIndex}`;
+      const promptKey = `${album.id}_${cur.id || currentTrackIndex}_${currentPracticeMode}`;
       generatedExercises[promptKey] = res;
       saveState();
       renderCurrentStructure();
@@ -3498,7 +3760,7 @@ function autoAddMistakesToAlbum(fixes, cur, promptVi, userSentence) {
       formula: patternFormula,
       note: `Tự động lưu từ lỗi thực tế: Bạn đã dùng "${fix.original}" ➜ Cần dùng "${fix.replacement}". ${whyDetail}`,
       example: userSentence ? userSentence.replace(fix.original, fix.replacement) : fix.replacement,
-      defaultVi: `Hãy đặt một câu tiếng Anh áp dụng đúng cụm từ/cấu trúc "${patternName}".`
+      defaultVi: ''
     };
 
     album.tracks.push(newTrack);
@@ -3564,10 +3826,17 @@ async function submitExercise(forceRetryAi = false) {
     return;
   }
 
-  const prompt = `Chấm bài dịch IELTS chuyên sâu về NGỮ PHÁP:
+  const prompt = `Chấm bài IELTS chuyên sâu về NGỮ PHÁP:
+Dạng bài tập: "${getModeTitle(currentPracticeMode)}"
 Cấu trúc mục tiêu: "${cur.name}" (Công thức: ${cur.formula})
-Đề bài tiếng Việt: "${promptVi}"
-Bài làm tiếng Anh: "${resp}"
+Đề bài: "${promptVi}"
+Bài làm của học viên: "${resp}"
+
+LƯU Ý THEO DẠNG BÀI:
+- Nếu dạng bài là "Tìm & Sửa lỗi": Học viên cần phát hiện và sửa đúng lỗi ngữ pháp trong câu đề bài.
+- Nếu dạng bài là "Tái cấu trúc câu": Học viên cần viết lại câu dùng cấu trúc mục tiêu, đúng trật tự từ và giữ trọn nghĩa.
+- Nếu dạng bài là "Điền khuyết": Học viên cần chia đúng thì và dạng từ vào câu.
+- Nếu dạng bài là "Dịch tình huống": Học viên dịch câu tình huống sang tiếng Anh áp dụng đúng cấu trúc.
 
 NGUYÊN TẮC CHẤM BÀI ĐẶC BIỆT QUAN TRỌNG (TUÂN THỦ TUYỆT ĐỐI):
 1. CHỈ TẬP TRUNG 100% VÀO LỖI NGỮ PHÁP THỰC CHẤT:
@@ -5815,6 +6084,7 @@ function renderNotesNotebook() {
 // ----------------------------------------------------
 function initEvents() {
   initSidebarEvents();
+  initPracticeModeEvents();
   $('prevTrackBtn').onclick = () => {
     const album = getCurrentAlbum();
     const nextIdx = (currentTrackIndex - 1 + album.tracks.length) % album.tracks.length;
@@ -6100,6 +6370,7 @@ function escapeHtml(str) {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
+  sanitizeAlbumTracks();
   renderAll();
   initEvents();
   setupUniversalSelection();
