@@ -5824,9 +5824,111 @@ function checkAndSendSrsNotification(forceTest = false) {
 }
 
 // ----------------------------------------------------
-// DICTIONARY LOOKUP & TTS
+// DICTIONARY LOOKUP & TTS (HYBRID AI & FREE DICTIONARY)
 // ----------------------------------------------------
 let dictLang = 'en';
+
+async function lookupViaGemini(word, lang) {
+  const isEn = lang === 'en';
+  const prompt = `Bạn là Từ điển Học thuật IELTS Anh - Việt & Việt - Anh chuẩn xác nhất.
+Hãy tra cứu từ/cụm từ: "${word}" (Chiều tra: ${isEn ? 'Tiếng Anh sang Tiếng Việt' : 'Tiếng Việt sang Tiếng Anh'}).
+
+Yêu cầu trả về DUY NHẤT một chuỗi JSON hợp lệ (không kèm Markdown codeblock):
+{
+  "word": "${word}",
+  "ipa": "/phiên âm chuẩn quốc tế IPA/",
+  "results": [
+    {
+      "pronunciations": [{ "ipa": "/phiên âm chuẩn/" }],
+      "audio": null,
+      "meanings": [
+        {
+          "pos": "Tính từ / Danh từ / Động từ / Cụm từ",
+          "definition": "Định nghĩa tiếng Việt chuẩn xác, súc tích và tự nhiên",
+          "example": "Ví dụ câu tiếng Anh học thuật IELTS minh họa ngữ cảnh"
+        }
+      ]
+    }
+  ],
+  "collocations": ["collocation 1", "collocation 2"],
+  "synonyms": ["synonym 1", "synonym 2"]
+}`;
+
+  return await callGeminiApiWithFallback(prompt, 'Chỉ trả về JSON hợp lệ.');
+}
+
+async function lookupViaPublicApis(word, lang) {
+  const isEn = lang === 'en';
+  let ipa = '';
+  let audio = null;
+  const meanings = [];
+
+  if (isEn) {
+    try {
+      const dictRes = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);
+      if (dictRes.ok) {
+        const dictJson = await dictRes.json();
+        if (Array.isArray(dictJson) && dictJson.length > 0) {
+          const entry = dictJson[0];
+          ipa = entry.phonetic || (entry.phonetics && entry.phonetics.find(p => p.text)?.text) || '';
+          const audioObj = entry.phonetics && entry.phonetics.find(p => p.audio && p.audio.startsWith('http'));
+          if (audioObj) audio = audioObj.audio;
+
+          (entry.meanings || []).slice(0, 3).forEach(m => {
+            const def = m.definitions && m.definitions[0];
+            if (def) {
+              meanings.push({
+                pos: m.partOfSpeech || 'Nghĩa',
+                definition: def.definition,
+                example: def.example || ''
+              });
+            }
+          });
+        }
+      }
+    } catch (e) {
+      console.warn('FreeDict API error:', e);
+    }
+  }
+
+  // Translate to Vietnamese / English
+  const sourceLang = isEn ? 'en' : 'vi';
+  const targetLang = isEn ? 'vi' : 'en';
+  let translatedText = '';
+  try {
+    const transRes = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(word)}&langpair=${sourceLang}|${targetLang}`);
+    if (transRes.ok) {
+      const transJson = await transRes.json();
+      translatedText = transJson.responseData?.translatedText || '';
+    }
+  } catch (e) {
+    console.warn('MyMemory translate error:', e);
+  }
+
+  if (meanings.length === 0 && !translatedText) {
+    throw new Error(`Không tìm thấy dữ liệu từ điển cho "${word}".`);
+  }
+
+  if (translatedText) {
+    meanings.unshift({
+      pos: isEn ? 'Nghĩa tiếng Việt' : 'Nghĩa tiếng Anh',
+      definition: translatedText,
+      example: ''
+    });
+  }
+
+  return {
+    word: word,
+    ipa: ipa,
+    results: [
+      {
+        pronunciations: ipa ? [{ ipa }] : [],
+        audio: audio,
+        meanings: meanings
+      }
+    ]
+  };
+}
 
 async function doLookup(wordToLookup) {
   const word = (wordToLookup || $('dictSearchInput').value).trim();
@@ -5841,41 +5943,41 @@ async function doLookup(wordToLookup) {
   `;
   $('dictSuggestions').style.display = 'none';
 
-  const defLang = dictLang === 'en' ? 'vi' : 'en';
-  const url = `https://dict.minhqnd.com/api/v1/lookup?word=${encodeURIComponent(word)}&lang=${dictLang}&def_lang=${defLang}`;
-
-  try {
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    if (!data.exists || !data.results || data.results.length === 0) {
-      bodyEl.innerHTML = `
-        <div style="text-align:center; padding:40px 10px; color:var(--sp-subtext);">
-          <div style="font-size:32px; margin-bottom:8px;">😕</div>
-          <strong style="color:#fff; font-size:16px;">Không tìm thấy "${escapeHtml(word)}"</strong>
-          <p style="font-size:13px; margin-top:6px;">Hãy kiểm tra chính tả hoặc đổi chiều dịch [${dictLang === 'en' ? 'Anh → Việt' : 'Việt → Anh'}].</p>
-        </div>
-      `;
-      return;
+  // 1. Try Gemini AI Dictionary first if API key is present
+  const apiKey = getApiKey();
+  if (apiKey) {
+    try {
+      const aiResult = await lookupViaGemini(word, dictLang);
+      if (aiResult && aiResult.results && aiResult.results.length > 0) {
+        renderDictResult(aiResult, word, 'ai');
+        return;
+      }
+    } catch (err) {
+      console.warn('Gemini lookup fallback to public dictionary:', err);
     }
-    renderDictResult(data, word);
+  }
+
+  // 2. Fallback to Free Dictionary API + MyMemory (No key required, always works)
+  try {
+    const fallbackResult = await lookupViaPublicApis(word, dictLang);
+    renderDictResult(fallbackResult, word, 'public');
   } catch (err) {
     bodyEl.innerHTML = `
       <div style="text-align:center; padding:30px 10px; color:var(--sp-orange);">
-        <strong style="font-size:15px;">Lỗi kết nối từ điển</strong>
-        <p style="font-size:13px; color:var(--sp-subtext); margin-top:6px;">${escapeHtml(err.message)}</p>
+        <strong style="font-size:15px;">Chưa tìm thấy từ "${escapeHtml(word)}"</strong>
+        <p style="font-size:13px; color:var(--sp-subtext); margin-top:6px;">${escapeHtml(err.message || 'Vui lòng kiểm tra lại chính tả hoặc đổi chiều dịch.')}</p>
         <button class="sp-btn-secondary" onclick="doLookup('${escapeHtml(word)}')">Thử lại</button>
       </div>
     `;
   }
 }
 
-function renderDictResult(data, word) {
-  const result = data.results[0] || {};
+function renderDictResult(data, word, source = 'ai') {
+  const result = (data.results && data.results[0]) || {};
   const meanings = result.meanings || [];
   const pronunciations = result.pronunciations || [];
-  const primaryIpa = pronunciations[0]?.ipa || '';
-  const audioEndpoint = result.audio ? `https://dict.minhqnd.com${result.audio}` : null;
+  const primaryIpa = data.ipa || pronunciations[0]?.ipa || '';
+  const audioEndpoint = result.audio || null;
   const isSaved = isWordSaved(data.word || word);
 
   const grouped = {};
@@ -5912,9 +6014,34 @@ function renderDictResult(data, word) {
     });
   }
 
+  // Display Collocations if available
+  if (Array.isArray(data.collocations) && data.collocations.length > 0) {
+    html += `
+      <div style="margin-top:14px;">
+        <div style="font-size:11.5px; font-weight:800; color:var(--sp-blue); text-transform:uppercase; margin-bottom:6px;">Collocations IELTS:</div>
+        <div style="display:flex; flex-wrap:wrap; gap:6px;">
+          ${data.collocations.map(c => `<span class="sp-colloc-tag">${escapeHtml(c)}</span>`).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  // Display Synonyms if available
+  if (Array.isArray(data.synonyms) && data.synonyms.length > 0) {
+    html += `
+      <div style="margin-top:12px;">
+        <div style="font-size:11.5px; font-weight:800; color:var(--sp-orange); text-transform:uppercase; margin-bottom:6px;">Từ đồng nghĩa (Synonyms):</div>
+        <div style="display:flex; flex-wrap:wrap; gap:6px;">
+          ${data.synonyms.map(s => `<span class="sp-chip" style="cursor:pointer;" onclick="doLookup('${escapeHtml(s)}')">${escapeHtml(s)}</span>`).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  const sourceLabel = source === 'ai' ? '🤖 Từ điển Học thuật IELTS AI (Gemini)' : '📖 Từ điển Mở Quốc tế (Wiktionary & FreeDict)';
   html += `
     <div style="font-size:11.5px; color:var(--sp-muted); margin-top:20px; border-top:1px solid var(--sp-border); padding-top:10px; text-align:center;">
-      Nguồn: minhqnd/dictionary (Wiktionary open data)
+      Nguồn: ${sourceLabel}
     </div>
   `;
 

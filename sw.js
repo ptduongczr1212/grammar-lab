@@ -53,7 +53,7 @@ self.addEventListener('fetch', event => {
   }
 
   // API calls to Google Gemini or external dictionaries should go direct to network
-  if (req.url.includes('googleapis.com') || req.url.includes('dictionaryapi.dev') || req.url.includes('api.dictionaryapi.dev')) {
+  if (req.url.includes('googleapis.com') || req.url.includes('dictionaryapi.dev') || req.url.includes('api.dictionaryapi.dev') || req.url.includes('mymemory.translated.net')) {
     return;
   }
 
