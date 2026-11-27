@@ -1,5 +1,5 @@
 // Grammar Lab IELTS — Progressive Web App Service Worker
-const CACHE_NAME = 'gl-ielts-v4';
+const CACHE_NAME = 'gl-ielts-v5';
 const STATIC_ASSETS = [
   './',
   './index.html',
