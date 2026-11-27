@@ -1,0 +1,39 @@
+{
+  "id": "grammar-lab-ielts",
+  "name": "Grammar Lab IELTS — Luyện Dịch & Từ Vựng",
+  "short_name": "Grammar Lab",
+  "description": "Luyện dịch phản xạ 25 cấu trúc IELTS 8.0+, tự động sửa lỗi và sổ từ vựng SRS phong cách Spotify Web Player.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#121212",
+  "theme_color": "#1db954",
+  "orientation": "any",
+  "categories": ["education", "productivity"],
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

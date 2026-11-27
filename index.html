@@ -4,6 +4,16 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Grammar Lab — Luyện Dịch Việt → Anh (Spotify Style, Album & AI Vocab)</title>
+  <!-- Progressive Web App (PWA) Manifest & Meta Tags -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#1db954">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Grammar Lab">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="apple-touch-icon" sizes="192x192" href="icon-192.png">
+  <link rel="apple-touch-icon" sizes="512x512" href="icon-512.png">
   <!-- Spotify Style Favicons -->
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 168 168'%3E%3Ccircle cx='84' cy='84' r='84' fill='%231DB954'/%3E%3Cpath fill='%23000000' d='M125.7 122.9c-1.8 0-3.3-.6-4.6-1.5-23.4-14.3-52.9-17.5-87.6-9.6-3.6.8-7.2-1.4-8-5-.8-3.6 1.4-7.2 5-8 38.3-8.8 71.1-5.1 97.4 11 3.1 1.9 4.1 6 2.2 9.2-1.1 2.5-3.6 3.9-6.4 3.9zm10.7-23.8c-2.3 0-4.3-.8-5.9-2-26.8-16.5-67.6-21.2-99.3-11.6-4.6 1.4-9.6-1.2-11-5.8-1.4-4.6 1.2-9.6 5.8-11 36.3-11 81.4-5.7 112.5 13.4 3.9 2.4 5.2 7.6 2.7 11.6-1.5 3.3-4.8 5.4-8.8 5.4zm1.1-25.1c-2.7 0-5.1-.9-7.1-2.4-32.1-19.1-85.3-20.9-116.1-11.5-5.5 1.7-11.3-1.4-13-6.9-1.7-5.5 1.4-11.3 6.9-13 35.6-10.8 94.3-8.7 131.5 13.4 4.8 2.8 6.4 9 3.5 13.8-1.9 4.1-5.8 6.6-10.7 6.6z'/%3E%3C/svg%3E">
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
@@ -795,6 +805,9 @@
   <div class="sp-top-nav-links" style="display:flex; align-items:center; gap:8px;">
     <button class="sp-pill" id="navHomeBtn" style="font-weight:700;">🏠 Trang chủ</button>
     <button class="sp-pill active" id="navPracticeBtn" style="font-weight:700;">⚡ Luyện dịch</button>
+    <button class="sp-pill" id="pwaInstallBtn" style="display:none; font-weight:700; background:rgba(29, 185, 84, 0.2); color:var(--sp-green); border:1px solid rgba(29, 185, 84, 0.4);" title="Cài đặt Grammar Lab thành ứng dụng độc lập trên máy">
+      📲 Cài đặt App
+    </button>
   </div>
 
   <div class="sp-top-pills">
@@ -4731,16 +4744,30 @@ function checkAndSendSrsNotification(forceTest = false) {
   if (!('Notification' in window) || Notification.permission !== 'granted') return;
   const now = Date.now();
   const due = currentVocabNotebook.filter(v => (v.nextReview || 0) <= now);
-  if (due.length > 0) {
-    new Notification('Grammar Lab IELTS — Lịch ôn tập từ vựng', {
-      body: `Hôm nay bạn có ${due.length} từ vựng cần ôn tập theo phương pháp lặp lại ngắt quãng (SRS)!`,
-      icon: 'https://cdn-icons-png.flaticon.com/512/3898/3898150.png'
+  if (due.length === 0 && !forceTest) return;
+
+  const title = due.length > 0 ? 'Grammar Lab IELTS — Lịch ôn tập từ vựng' : 'Grammar Lab IELTS';
+  const body = due.length > 0 
+    ? `Hôm nay bạn có ${due.length} từ vựng cần ôn tập theo phương pháp lặp lại ngắt quãng (SRS)!` 
+    : 'Thông báo đã được bật thành công! App sẽ tự động nhắc nhở khi có từ vựng đến lịch ôn tập.';
+  const notifOptions = {
+    body: body,
+    icon: './icon-192.png',
+    badge: './icon-192.png',
+    tag: 'srs-reminder',
+    renotify: true,
+    vibrate: [100, 50, 100],
+    data: { url: './index.html#/practice' }
+  };
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.ready.then(reg => {
+      reg.showNotification(title, notifOptions);
+    }).catch(() => {
+      try { new Notification(title, notifOptions); } catch {}
     });
-  } else if (forceTest) {
-    new Notification('Grammar Lab IELTS', {
-      body: 'Thông báo đã được bật thành công! Web sẽ tự động nhắc nhở khi có từ vựng đến lịch ôn tập.',
-      icon: 'https://cdn-icons-png.flaticon.com/512/3898/3898150.png'
-    });
+  } else {
+    try { new Notification(title, notifOptions); } catch {}
   }
 }
 
@@ -5381,6 +5408,55 @@ window.addEventListener('DOMContentLoaded', () => {
   }
   // Check SRS notification on boot
   setTimeout(() => checkAndSendSrsNotification(false), 2000);
+
+  // Progressive Web App (PWA) Registration & Install Prompt
+  let deferredPrompt = null;
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    deferredPrompt = e;
+    const installBtn = $('pwaInstallBtn');
+    if (installBtn) installBtn.style.display = 'inline-flex';
+  });
+
+  const pwaBtn = $('pwaInstallBtn');
+  if (pwaBtn) {
+    pwaBtn.onclick = async () => {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+          showToast('🎉 Đang cài đặt Grammar Lab lên máy của bạn!');
+          pwaBtn.style.display = 'none';
+        }
+        deferredPrompt = null;
+      } else {
+        alert('Để cài đặt ứng dụng: Bấm vào biểu tượng Cài đặt (Install App ⊕) ở góc phải thanh địa chỉ trình duyệt!');
+      }
+    };
+  }
+
+  window.addEventListener('appinstalled', () => {
+    showToast('🎉 Grammar Lab đã được cài đặt thành công như một ứng dụng độc lập!');
+    const installBtn = $('pwaInstallBtn');
+    if (installBtn) installBtn.style.display = 'none';
+  });
+
+  // Register Service Worker for offline capability & background notifications
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js').then(reg => {
+      console.log('Grammar Lab PWA Service Worker registered:', reg.scope);
+      reg.onupdatefound = () => {
+        const installingWorker = reg.installing;
+        if (installingWorker) {
+          installingWorker.onstatechange = () => {
+            if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              showToast('✨ Đã có phiên bản cập nhật mới! Tải lại trang để áp dụng.');
+            }
+          };
+        }
+      };
+    }).catch(err => console.warn('PWA SW registration error:', err));
+  }
 });
 </script>
 </body>
