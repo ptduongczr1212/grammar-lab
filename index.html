@@ -4889,6 +4889,7 @@ function isWordSaved(word) {
 
 function toggleSaveWord(word, ipa, groupedMeanings, audioUrl) {
   const existingIdx = currentVocabNotebook.findIndex(v => v.word.toLowerCase() === word.toLowerCase());
+  let justSavedItem = null;
   if (existingIdx >= 0) {
     currentVocabNotebook.splice(existingIdx, 1);
   } else {
@@ -4899,7 +4900,7 @@ function toggleSaveWord(word, ipa, groupedMeanings, audioUrl) {
       items.forEach(it => sampleMeanings.push(it.definition));
       if (sampleMeanings.length >= 2) break;
     }
-    currentVocabNotebook.unshift({
+    justSavedItem = {
       word,
       ipa: ipa || '',
       pos: firstPos || 'Từ vựng',
@@ -4908,12 +4909,13 @@ function toggleSaveWord(word, ipa, groupedMeanings, audioUrl) {
       savedAt: Date.now(),
       srsStage: 0,
       masteryScore: 0,
-      nextReview: Date.now(),
+      nextReview: Date.now() + 4 * 60 * 60 * 1000,
       lastReviewed: null,
       reviewCount: 0,
       lastFeedback: '',
       lastAdvice: ''
-    });
+    };
+    currentVocabNotebook.unshift(justSavedItem);
   }
   saveState();
   updateVocabCountUi();
@@ -4923,6 +4925,11 @@ function toggleSaveWord(word, ipa, groupedMeanings, audioUrl) {
     const saved = isWordSaved(word);
     btn.className = `sp-pill ${saved ? 'green active' : 'green'}`;
     btn.innerHTML = saved ? '★ Đã lưu' : '⭐ Lưu từ';
+  }
+
+  // Tự động bắn thông báo xác nhận qua Discord ngay khi vừa lưu từ mới
+  if (justSavedItem && isDiscordAutoSendEnabled()) {
+    sendDiscordWordSavedNotification(justSavedItem).catch(err => console.warn('Discord notify error:', err));
   }
 }
 
@@ -5490,6 +5497,11 @@ function displayAiEvaluationResult(vocabItem, evalResult) {
   updateVocabCountUi();
   renderVocabNotebook();
 
+  // Tức thời gửi kết quả chấm điểm AI qua Discord
+  if (isDiscordAutoSendEnabled()) {
+    sendDiscordVocabGradedNotification(vocabItem, score, nextStage, nextTierInfo, evalResult).catch(err => console.warn('Discord grade notify error:', err));
+  }
+
   const reportContainer = $('aiPracticeReportContainer');
   if (!reportContainer) return;
   reportContainer.style.display = 'block';
@@ -5695,6 +5707,107 @@ async function sendDiscordSrsNotification(dueVocabs, forceTest = false) {
   } catch (err) {
     console.warn('Gửi thông báo Discord thất bại:', err);
     if (forceTest) throw err;
+  }
+}
+
+// Gửi thông báo tức thời qua Discord khi vừa lưu một từ vựng mới
+async function sendDiscordWordSavedNotification(item) {
+  const webhook = getDiscordWebhook();
+  if (!webhook) return;
+
+  const payload = {
+    username: 'Grammar Lab IELTS',
+    avatar_url: 'https://ptduongczr1212.github.io/grammar-lab/icon-192.png',
+    embeds: [
+      {
+        title: `⭐ Đã thêm từ mới vào Sổ từ vựng: "${item.word}"`,
+        description: `Bạn vừa lưu từ vựng mới vào sổ tay Spaced Repetition (SRS). Hệ thống đã tự động lên lịch nhắc ôn tập!`,
+        color: 1947988, // Spotify Green #1DB954
+        fields: [
+          {
+            name: '📖 Từ & Phiên âm',
+            value: `**${item.word}** ${item.ipa ? `\`${item.ipa}\`` : ''} • *${item.pos}*`,
+            inline: true
+          },
+          {
+            name: '💡 Nghĩa tiếng Việt',
+            value: item.meaning || 'Chưa có định nghĩa',
+            inline: true
+          },
+          {
+            name: '🎯 Chu kỳ ôn tập đầu tiên (SRS)',
+            value: `🔴 **Cấp 0 (Chưa thuộc)** — Lần ôn đầu tiên: **Sau 4 giờ nữa**`,
+            inline: false
+          },
+          {
+            name: '🔗 Mở Grammar Lab để học ngay',
+            value: '[Bấm vào đây để vào học ngay](https://ptduongczr1212.github.io/grammar-lab/#/practice)',
+            inline: false
+          }
+        ],
+        footer: { text: 'Grammar Lab IELTS • Spaced Repetition System' },
+        timestamp: new Date().toISOString()
+      }
+    ]
+  };
+
+  try {
+    await sendDiscordNotification(payload);
+  } catch (err) {
+    console.warn('Lỗi gửi Discord khi lưu từ mới:', err);
+  }
+}
+
+// Gửi thông báo tức thời qua Discord khi AI chấm điểm xong buổi ôn tập
+async function sendDiscordVocabGradedNotification(vocabItem, score, nextStage, tierInfo, evalResult) {
+  const webhook = getDiscordWebhook();
+  if (!webhook) return;
+
+  const payload = {
+    username: 'Grammar Lab IELTS',
+    avatar_url: 'https://ptduongczr1212.github.io/grammar-lab/icon-192.png',
+    embeds: [
+      {
+        title: `🎉 Kết quả đánh giá mức độ thuộc: "${vocabItem.word}"`,
+        description: `Gemini AI vừa hoàn thành chấm điểm buổi ôn tập từ vựng của bạn!`,
+        color: score >= 65 ? 1947988 : 15158332, // Green or Orange
+        fields: [
+          {
+            name: '🏆 Điểm số AI',
+            value: `**${score} / 100 điểm**`,
+            inline: true
+          },
+          {
+            name: '💎 Cấp độ Spaced Repetition',
+            value: `${tierInfo.icon} **Cấp ${nextStage}: ${tierInfo.name}**`,
+            inline: true
+          },
+          {
+            name: '⏳ Lần ôn tập tiếp theo',
+            value: `Sau **${tierInfo.intervalLabel}**`,
+            inline: true
+          },
+          {
+            name: '💡 Nhận xét từ AI',
+            value: evalResult?.summary_feedback ? `*${evalResult.summary_feedback}*` : 'Đã ghi nhận kết quả!',
+            inline: false
+          },
+          {
+            name: '🔗 Tiếp tục ôn tập',
+            value: '[Vào Grammar Lab luyện tiếp](https://ptduongczr1212.github.io/grammar-lab/#/practice)',
+            inline: false
+          }
+        ],
+        footer: { text: 'Grammar Lab IELTS • Spaced Repetition System' },
+        timestamp: new Date().toISOString()
+      }
+    ]
+  };
+
+  try {
+    await sendDiscordNotification(payload);
+  } catch (err) {
+    console.warn('Lỗi gửi Discord kết quả chấm điểm:', err);
   }
 }
 
@@ -6588,8 +6701,9 @@ window.addEventListener('DOMContentLoaded', () => {
   if (key) {
     discoverAndCacheModels(key).catch(() => {});
   }
-  // Check SRS notification on boot
+  // Check SRS notification on boot and periodically every 5 minutes
   setTimeout(() => checkAndSendSrsNotification(false), 2000);
+  setInterval(() => checkAndSendSrsNotification(false), 5 * 60 * 1000);
 
   // Progressive Web App (PWA) Registration & Install Prompt
   let deferredPrompt = null;
