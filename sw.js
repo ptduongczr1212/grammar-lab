@@ -1,5 +1,5 @@
 // Grammar Lab IELTS — Progressive Web App Service Worker
-const CACHE_NAME = 'gl-ielts-v2';
+const CACHE_NAME = 'gl-ielts-v3';
 const STATIC_ASSETS = [
   './',
   './index.html',
@@ -15,12 +15,13 @@ const STATIC_ASSETS = [
 
 // Install Event: Cache essential assets and activate immediately
 self.addEventListener('install', event => {
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
       return cache.addAll(STATIC_ASSETS).catch(err => {
         console.warn('Cache prefetch partial warning:', err);
       });
-    }).then(() => self.skipWaiting())
+    })
   );
 });
 
@@ -31,6 +32,7 @@ self.addEventListener('activate', event => {
       return Promise.all(
         keys.map(key => {
           if (key !== CACHE_NAME) {
+            console.log('PWA deleting legacy cache:', key);
             return caches.delete(key);
           }
         })

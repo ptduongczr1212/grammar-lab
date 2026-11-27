@@ -3222,9 +3222,25 @@ function initPracticeModeEvents() {
 }
 
 function sanitizeAlbumTracks() {
+  // Clean generated exercises cache from legacy generic prompts
+  if (generatedExercises && typeof generatedExercises === 'object') {
+    let cleanedGen = false;
+    Object.keys(generatedExercises).forEach(key => {
+      const item = generatedExercises[key];
+      if (item && item.vi && (item.vi.toLowerCase().includes('hãy đặt') || item.vi.toLowerCase().includes('đặt một câu'))) {
+        delete generatedExercises[key];
+        cleanedGen = true;
+      }
+    });
+    if (cleanedGen) {
+      try { localStorage.setItem('gl_generated_exercises_v2', JSON.stringify(generatedExercises)); } catch {}
+    }
+  }
+
+  // Clean all albums
   albums.forEach(alb => {
     (alb.tracks || []).forEach(t => {
-      if (t.defaultVi && (t.defaultVi.includes('Hãy đặt một câu') || t.defaultVi.includes('đặt một câu tiếng Anh'))) {
+      if (t.defaultVi && (t.defaultVi.toLowerCase().includes('hãy đặt') || t.defaultVi.toLowerCase().includes('đặt một câu'))) {
         t.defaultVi = '';
       }
     });
@@ -5098,7 +5114,7 @@ async function openVocabPracticeModal(vocabItem) {
 1. Word Family (Họ từ vựng): Các dạng danh từ, động từ, tính từ, trạng từ liên quan cùng nghĩa tiếng Việt.
 2. Collocations: 3-4 cụm từ/collocations phổ biến nhất trong IELTS.
 3. Bài tập 1 (Dịch Việt -> Anh): 1 câu tiếng Việt cần học viên dịch sang tiếng Anh sử dụng từ "${vocabItem.word}".
-4. Bài tập 2 (Dịch Anh -> Việt): 1 câu tiếng Anh hay chứa từ "${vocabItem.word}" để học viên dịch sang tiếng Việt.
+4. Bài tập 2 (Nhớ nghĩa từ vựng): Cung cấp nghĩa tiếng Việt chuẩn xác và ngắn gọn của từ "${vocabItem.word}" (để học viên gõ nghĩa tiếng Việt của từ này, KHÔNG bắt dịch cả câu), kèm 1 câu ví dụ ngữ cảnh ngắn.
 5. Bài tập 3 (Word Family form): 1 câu có chỗ trống cần học viên chia đúng dạng từ của "${vocabItem.word}".
 
 Trả về DUY NHẤT một chuỗi JSON hợp lệ (không kèm Markdown block):
@@ -5117,9 +5133,10 @@ Trả về DUY NHẤT một chuỗi JSON hợp lệ (không kèm Markdown block)
     "vi": "câu tiếng Việt luyện dịch",
     "sample_en": "câu tiếng Anh mẫu"
   },
-  "ex2_en_to_vi": {
-    "en": "câu tiếng Anh luyện dịch",
-    "sample_vi": "câu tiếng Việt mẫu"
+  "ex2_meaning": {
+    "target_word": "${vocabItem.word}",
+    "correct_meaning": "nghĩa tiếng Việt chuẩn của từ",
+    "example_context": "câu ví dụ ngắn minh họa"
   },
   "ex3_word_form": {
     "sentence": "câu chứa [____] và từ gốc trong ngoặc",
@@ -5194,18 +5211,21 @@ function renderVocabPracticeContent(data, vocabItem) {
       </div>
     </div>
 
-    <!-- 4. Bài tập 2: Dịch Anh -> Việt -->
+    <!-- 4. Bài tập 2: Nhớ nghĩa tiếng Việt của từ mục tiêu -->
     <div class="sp-deep-card">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
         <span style="font-size:12px; font-weight:800; color:var(--sp-green); text-transform:uppercase;">
-          4. Bài tập Dịch Anh ➔ Việt (Thấu hiểu ngữ cảnh)
+          4. Bài tập 2: Nhớ nghĩa từ vựng (Chỉ cần gõ nghĩa tiếng Việt của từ)
         </span>
         <button class="sp-btn-secondary" id="toggleHint2Btn" type="button" style="padding:2px 8px; font-size:11px;">💡 Gợi ý</button>
       </div>
-      <div style="font-size:14.5px; font-weight:600; color:#fff; margin-bottom:8px;">"${escapeHtml(data.ex2_en_to_vi?.en || '')}"</div>
-      <input type="text" id="practiceInput2" style="width:100%; padding:9px 12px; border-radius:6px; border:1px solid var(--sp-border); background:#121212; color:#fff; font-size:13.5px; outline:none;" placeholder="Gõ bản dịch tiếng Việt của bạn...">
+      <div style="font-size:14px; font-weight:600; color:#fff; margin-bottom:8px;">
+        Từ <span style="color:var(--sp-green); font-size:15px; font-weight:800;">"${escapeHtml(vocabItem.word)}"</span> có nghĩa tiếng Việt là gì?
+        ${(data.ex2_meaning?.example_context || data.ex2_en_to_vi?.en) ? `<div style="font-size:12px; color:var(--sp-subtext); margin-top:4px; font-weight:normal;">💡 Ví dụ ngữ cảnh: <em>"${escapeHtml(data.ex2_meaning?.example_context || data.ex2_en_to_vi?.en)}"</em></div>` : ''}
+      </div>
+      <input type="text" id="practiceInput2" style="width:100%; padding:9px 12px; border-radius:6px; border:1px solid var(--sp-border); background:#121212; color:#fff; font-size:13.5px; outline:none;" placeholder="Gõ nghĩa tiếng Việt của từ '${escapeHtml(vocabItem.word)}'...">
       <div id="hint2Box" style="display:none; margin-top:8px; font-size:12.5px; background:rgba(255,255,255,0.04); padding:8px 10px; border-radius:6px; color:var(--sp-subtext);">
-        <strong style="color:var(--sp-green);">Bản dịch tham khảo:</strong> "${escapeHtml(data.ex2_en_to_vi?.sample_vi || '')}"
+        <strong style="color:var(--sp-green);">Nghĩa chuẩn xác:</strong> "${escapeHtml(data.ex2_meaning?.correct_meaning || vocabItem.meaning || data.ex2_en_to_vi?.sample_vi || '')}"
       </div>
     </div>
 
@@ -5296,27 +5316,27 @@ function renderVocabPracticeContent(data, vocabItem) {
 }
 
 async function evaluateVocabPracticeWithAi(vocabItem, data, ans1, ans2, ans3) {
-  const evalPrompt = `Bạn là chuyên gia sư phạm ngôn ngữ và khảo thí IELTS. Hãy ĐÁNH GIÁ MỨC ĐỘ THUỘC & NĂNG LỰC VẬN DỤNG của học viên đối với từ vựng mục tiêu: "${vocabItem.word}" (Nghĩa: ${vocabItem.meaning}).
+  const correctMeaning = data.ex2_meaning?.correct_meaning || vocabItem.meaning || data.ex2_en_to_vi?.sample_vi || '';
+  const evalPrompt = `Bạn là chuyên gia sư phạm ngôn ngữ và khảo thí IELTS. Hãy ĐÁNH GIÁ MỨC ĐỘ THUỘC & NĂNG LỰC VẬN DỤNG của học viên đối với từ vựng mục tiêu: "${vocabItem.word}" (Nghĩa chuẩn: ${vocabItem.meaning}).
 
 Dữ liệu bài làm của học viên:
-1. Bài tập Dịch Việt -> Anh (Đòi hỏi phản xạ vận dụng từ "${vocabItem.word}"):
+1. Bài tập 1: Dịch Việt -> Anh (Đòi hỏi phản xạ vận dụng từ "${vocabItem.word}"):
 - Câu gốc tiếng Việt: "${data.ex1_vi_to_en?.vi || ''}"
 - Học viên trả lời: "${ans1 || '(Chưa làm)'}"
 - Câu mẫu tham khảo: "${data.ex1_vi_to_en?.sample_en || ''}"
 
-2. Bài tập Dịch Anh -> Việt (Đòi hỏi khả năng thấu hiểu ngữ cảnh):
-- Câu gốc tiếng Anh: "${data.ex2_en_to_vi?.en || ''}"
+2. Bài tập 2: Nhớ nghĩa tiếng Việt của từ mục tiêu "${vocabItem.word}":
+- Nghĩa chuẩn của từ: "${correctMeaning}"
 - Học viên trả lời: "${ans2 || '(Chưa làm)'}"
-- Bản dịch tham khảo: "${data.ex2_en_to_vi?.sample_vi || ''}"
 
-3. Bài tập chia đúng dạng từ (Word Family in context):
+3. Bài tập 3: Chia đúng dạng từ (Word Family in context):
 - Câu gốc: "${data.ex3_word_form?.sentence || ''}"
 - Học viên điền: "${ans3 || '(Chưa làm)'}"
 - Đáp án đúng: "${data.ex3_word_form?.correct_form || ''}"
 
 Hãy chấm điểm công tâm, chuyên nghiệp theo thang điểm 100:
 - Bài 1 (tối đa 50đ): Học viên có dùng đúng từ mục tiêu "${vocabItem.word}" và đúng ngữ pháp không?
-- Bài 2 (tối đa 30đ): Dịch đúng nghĩa và sắc thái không?
+- Bài 2 (tối đa 30đ): Học viên có nhớ đúng nghĩa tiếng Việt của từ "${vocabItem.word}" không? (Chỉ kiểm tra nghĩa của từ, chấp nhận từ đồng nghĩa hoặc diễn đạt tương đương).
 - Bài 3 (tối đa 20đ): Chia đúng dạng từ không?
 (Nếu bài nào học viên không làm thì cho 0 điểm bài đó).
 
@@ -5344,7 +5364,7 @@ Trả về DUY NHẤT một chuỗi JSON hợp lệ (không kèm Markdown):
   "ex2_analysis": {
     "score": 26,
     "max_score": 30,
-    "critique": "Nhận xét bản dịch tiếng Việt."
+    "critique": "Nhận xét khả năng nhớ nghĩa tiếng Việt của từ."
   },
   "ex3_analysis": {
     "score": 17,
@@ -5376,9 +5396,19 @@ function localEvaluateVocabPractice(vocabItem, data, ans1, ans2, ans3) {
     critique1 = 'Bạn chưa làm bài tập này (0/50đ).';
   }
 
+  const correctMeaning = (data.ex2_meaning?.correct_meaning || vocabItem.meaning || data.ex2_en_to_vi?.sample_vi || '').toLowerCase();
   if (ans2) {
-    score2 = 25;
-    critique2 = 'Đã hoàn thành bản dịch tiếng Việt.';
+    const a2 = ans2.toLowerCase().trim();
+    if (a2.length >= 2 && (correctMeaning.includes(a2) || a2.includes(correctMeaning) || a2 === correctMeaning)) {
+      score2 = 30;
+      critique2 = `Chính xác! Bạn đã nhớ đúng nghĩa tiếng Việt của từ "${vocabItem.word}".`;
+    } else if (a2.length >= 2) {
+      score2 = 20;
+      critique2 = `Đã trả lời nghĩa tiếng Việt. Nghĩa chuẩn xác: "${data.ex2_meaning?.correct_meaning || vocabItem.meaning}".`;
+    } else {
+      score2 = 10;
+      critique2 = 'Nghĩa gõ quá ngắn hoặc chưa đầy đủ.';
+    }
   } else {
     critique2 = 'Bạn chưa làm bài tập này (0/30đ).';
   }
@@ -5413,13 +5443,45 @@ function localEvaluateVocabPractice(vocabItem, data, ans1, ans2, ans3) {
 
 function displayAiEvaluationResult(vocabItem, evalResult) {
   const score = Math.max(0, Math.min(100, Math.round(evalResult.score || 0)));
-  const tierInfo = getMasteryTierInfo(score);
+  const currentStage = (typeof vocabItem.srsStage === 'number') ? vocabItem.srsStage : 0;
 
-  // Update item in notebook
+  // QUY TẮC SPACED REPETITION KHÔNG NHẢY CÓC BẬC:
+  // Vì người học có thể vừa xem từ hoặc làm đúng tức thời, không cho nhảy cóc nhiều bậc chỉ qua 1 lần ôn tập.
+  // Mỗi phiên ôn tập đạt chuẩn (score >= 65) CHỈ TĂNG TỐI ĐA +1 CẤP ĐỘ để đảm bảo từ vựng trải qua đủ
+  // các mốc giãn cách thời gian thực tế của đường cong lãng quên Ebbinghaus (4h -> 1d -> 3d -> 7d -> 14d -> 30d).
+  let nextStage = currentStage;
+  let stageChangeStatus = '';
+  let stageChangeColor = 'var(--sp-green)';
+
+  if (score >= 65) {
+    nextStage = Math.min(5, currentStage + 1);
+    if (nextStage > currentStage) {
+      stageChangeStatus = `🚀 Lên Cấp ${nextStage} (+1 bậc vững chắc)`;
+      stageChangeColor = 'var(--sp-green)';
+    } else {
+      stageChangeStatus = `🏆 Đã duy trì Cấp 5 tối đa (Làm chủ IELTS)`;
+      stageChangeColor = '#ffd700';
+    }
+  } else if (score < 40) {
+    nextStage = Math.max(0, currentStage - 1);
+    if (nextStage < currentStage) {
+      stageChangeStatus = `⚠️ Hạ xuống Cấp ${nextStage} (-1 bậc để ôn luyện lại)`;
+      stageChangeColor = 'var(--sp-red)';
+    } else {
+      stageChangeStatus = `⚠️ Giữ ở Cấp 0 (Cần ôn củng cố ngay)`;
+      stageChangeColor = 'var(--sp-red)';
+    }
+  } else {
+    nextStage = currentStage;
+    stageChangeStatus = `⏸️ Giữ nguyên Cấp ${currentStage} (Cần luyện thêm để lên cấp)`;
+    stageChangeColor = 'var(--sp-orange)';
+  }
+
+  const nextTierInfo = SRS_MASTERY_TIERS[nextStage];
   vocabItem.masteryScore = score;
-  vocabItem.srsStage = tierInfo.tier;
+  vocabItem.srsStage = nextStage;
   vocabItem.lastReviewed = Date.now();
-  vocabItem.nextReview = Date.now() + tierInfo.intervalMs;
+  vocabItem.nextReview = Date.now() + nextTierInfo.intervalMs;
   vocabItem.reviewCount = (vocabItem.reviewCount || 0) + 1;
   vocabItem.lastFeedback = evalResult.summary_feedback || '';
   vocabItem.lastAdvice = evalResult.advice || '';
@@ -5437,27 +5499,34 @@ function displayAiEvaluationResult(vocabItem, evalResult) {
       <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px; flex-wrap:wrap; gap:10px;">
         <div>
           <div style="font-size:11px; text-transform:uppercase; font-weight:800; color:var(--sp-green); letter-spacing:0.5px;">
-            KẾT QUẢ ĐÁNH GIÁ MỨC ĐỘ THUỘC TỪ AI
+            KẾT QUẢ ĐÁNH GIÁ MỨC ĐỘ THUỘC TỪ AI (SRS)
           </div>
-          <div style="font-size:22px; font-weight:900; color:#fff; margin-top:2px; display:flex; align-items:center; gap:8px;">
-            <span style="color:${tierInfo.color}; font-size:26px;">${score}</span>
+          <div style="font-size:22px; font-weight:900; color:#fff; margin-top:2px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <span style="color:${nextTierInfo.color}; font-size:26px;">${score}</span>
             <span style="font-size:14px; color:var(--sp-subtext);">/ 100 điểm</span>
-            <span class="sp-srs-badge srs-tier-${tierInfo.tier}" style="font-size:12px; margin-left:6px;">
-              ${tierInfo.icon} Cấp ${tierInfo.tier}: ${tierInfo.name}
+            <span class="sp-srs-badge srs-tier-${nextStage}" style="font-size:12px; margin-left:4px;">
+              ${nextTierInfo.icon} Cấp ${nextStage}: ${nextTierInfo.name}
+            </span>
+            <span style="font-size:12px; font-weight:700; color:${stageChangeColor}; background:rgba(255,255,255,0.06); padding:3px 8px; border-radius:12px;">
+              ${stageChangeStatus}
             </span>
           </div>
         </div>
         <div style="background:rgba(255,255,255,0.06); padding:8px 14px; border-radius:8px; border:1px solid rgba(255,255,255,0.1); text-align:right;">
           <div style="font-size:11px; color:var(--sp-subtext);">Lần ôn tập tiếp theo:</div>
           <div style="font-size:14px; font-weight:800; color:var(--sp-green); margin-top:2px;">
-            ⏳ Sau ${tierInfo.intervalLabel}
+            ⏳ Sau ${nextTierInfo.intervalLabel}
           </div>
         </div>
       </div>
 
       <!-- Mastery Bar -->
       <div class="sp-mastery-bar-wrap" style="height:8px; margin-bottom:10px;">
-        <div class="sp-mastery-bar-fill" style="width:${Math.max(4, score)}%; background:${tierInfo.color};"></div>
+        <div class="sp-mastery-bar-fill" style="width:${Math.max(4, score)}%; background:${nextTierInfo.color};"></div>
+      </div>
+
+      <div style="font-size:12px; color:var(--sp-subtext); margin-bottom:12px; background:rgba(255,255,255,0.03); padding:8px 10px; border-radius:6px; line-height:1.45;">
+        💡 <strong>Cơ chế Spaced Repetition khoa học:</strong> Mỗi lần ôn tập chỉ thăng tối đa <strong>+1 bậc</strong> (không nhảy cóc nhiều cấp cùng lúc) để đảm bảo từ vựng trải qua đủ chu kỳ giãn cách thời gian thực tế, chuyển hóa vào trí nhớ dài hạn bền vững.
       </div>
 
       <div style="font-size:13.5px; color:#fff; line-height:1.5; margin-bottom:14px; background:rgba(0,0,0,0.3); padding:10px 12px; border-radius:6px;">
@@ -5468,7 +5537,7 @@ function displayAiEvaluationResult(vocabItem, evalResult) {
       <div style="font-size:12.5px; margin-bottom:14px; display:grid; gap:8px;">
         <div style="background:rgba(255,255,255,0.04); padding:8px 12px; border-radius:6px;">
           <div style="display:flex; justify-content:space-between; font-weight:700; color:var(--sp-orange); margin-bottom:3px;">
-            <span>Bài 1: Dịch Việt ➔ Anh</span>
+            <span>Bài 1: Dịch Việt ➔ Anh (Phản xạ dùng từ)</span>
             <span>${evalResult.ex1_analysis?.score || 0}/${evalResult.ex1_analysis?.max_score || 50}đ</span>
           </div>
           <div style="color:var(--sp-subtext);">${escapeHtml(evalResult.ex1_analysis?.critique || '')}</div>
@@ -5481,7 +5550,7 @@ function displayAiEvaluationResult(vocabItem, evalResult) {
 
         <div style="background:rgba(255,255,255,0.04); padding:8px 12px; border-radius:6px;">
           <div style="display:flex; justify-content:space-between; font-weight:700; color:var(--sp-green); margin-bottom:3px;">
-            <span>Bài 2: Dịch Anh ➔ Việt</span>
+            <span>Bài 2: Nhớ nghĩa từ vựng</span>
             <span>${evalResult.ex2_analysis?.score || 0}/${evalResult.ex2_analysis?.max_score || 30}đ</span>
           </div>
           <div style="color:var(--sp-subtext);">${escapeHtml(evalResult.ex2_analysis?.critique || '')}</div>
@@ -5489,7 +5558,7 @@ function displayAiEvaluationResult(vocabItem, evalResult) {
 
         <div style="background:rgba(255,255,255,0.04); padding:8px 12px; border-radius:6px;">
           <div style="display:flex; justify-content:space-between; font-weight:700; color:var(--sp-blue); margin-bottom:3px;">
-            <span>Bài 3: Biến đổi dạng từ</span>
+            <span>Bài 3: Biến đổi dạng từ (Word Family)</span>
             <span>${evalResult.ex3_analysis?.score || 0}/${evalResult.ex3_analysis?.max_score || 20}đ</span>
           </div>
           <div style="color:var(--sp-subtext);">${escapeHtml(evalResult.ex3_analysis?.critique || '')}</div>
@@ -5512,7 +5581,7 @@ function displayAiEvaluationResult(vocabItem, evalResult) {
 
   $('closeAiPracticeSuccessBtn').onclick = () => {
     $('vocabPracticeModal').classList.remove('open');
-    showToast(`🎉 Đã lưu kết quả! Từ "${vocabItem.word}" đạt Cấp ${tierInfo.tier}: ${tierInfo.name}`);
+    showToast(`🎉 Đã lưu kết quả! Từ "${vocabItem.word}" ở Cấp ${nextStage}: ${nextTierInfo.name}`);
   };
 }
 
@@ -6429,14 +6498,24 @@ window.addEventListener('DOMContentLoaded', () => {
 
   // Register Service Worker for offline capability & background notifications
   if ('serviceWorker' in navigator) {
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!refreshing) {
+        refreshing = true;
+        window.location.reload();
+      }
+    });
+
     navigator.serviceWorker.register('./sw.js').then(reg => {
       console.log('Grammar Lab PWA Service Worker registered:', reg.scope);
+      try { reg.update(); } catch {}
       reg.onupdatefound = () => {
         const installingWorker = reg.installing;
         if (installingWorker) {
           installingWorker.onstatechange = () => {
             if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
-              showToast('✨ Đã có phiên bản cập nhật mới! Tải lại trang để áp dụng.');
+              showToast('✨ Đang cập nhật phiên bản mới nhất...');
+              installingWorker.postMessage({ type: 'SKIP_WAITING' });
             }
           };
         }
