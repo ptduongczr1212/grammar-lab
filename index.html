@@ -5037,9 +5037,28 @@ function renderVocabNotebook() {
         <div class="sp-mastery-bar-wrap" title="Độ thuộc AI đánh giá: ${score}%">
           <div class="sp-mastery-bar-fill" style="width:${Math.max(4, score)}%; background:${tier.color};"></div>
         </div>
-        <div style="display:flex; justify-content:space-between; align-items:center; font-size:11px; color:var(--sp-subtext); margin-top:-2px; margin-bottom:6px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; font-size:11px; color:var(--sp-subtext); margin-top:-2px; margin-bottom:4px;">
           <span>Độ thuộc AI: <strong style="color:${tier.color};">${score}%</strong> (${tier.name})</span>
           <span>Lần ôn tiếp: <strong style="color:${isDue ? 'var(--sp-red)' : '#fff'};">${formatTimeRemaining(item.nextReview)}</strong></span>
+        </div>
+
+        <!-- Vocab Tree Branch Badges -->
+        <div style="display:flex; align-items:center; gap:5px; margin:5px 0 6px; font-size:11px; flex-wrap:wrap;">
+          <span style="color:var(--sp-subtext); font-weight:700;">🌳 Vocab Tree:</span>
+          ${(() => {
+            const tree = item.vocabTree || {};
+            const tm = item.treeMastery?.branches || {};
+            const vWord = tree.verb?.word || 'Verb';
+            const nWord = tree.noun?.word || 'Noun';
+            const adjWord = tree.adjective?.word || 'Adj';
+            const advWord = tree.adverb?.word || 'Adv';
+            return `
+              <span class="sp-pill" style="padding:1px 6px; font-size:10px; background:${tm.verb?.status === 'mastered' ? 'rgba(40,167,69,0.25)' : 'rgba(255,255,255,0.06)'}; color:${tm.verb?.status === 'mastered' ? '#4ade80' : 'var(--sp-subtext)'}; border:none;" title="Động từ: ${escapeHtml(vWord)}">V</span>
+              <span class="sp-pill" style="padding:1px 6px; font-size:10px; background:${tm.noun?.status === 'mastered' ? 'rgba(40,167,69,0.25)' : 'rgba(255,255,255,0.06)'}; color:${tm.noun?.status === 'mastered' ? '#4ade80' : 'var(--sp-subtext)'}; border:none;" title="Danh từ: ${escapeHtml(nWord)}">N</span>
+              <span class="sp-pill" style="padding:1px 6px; font-size:10px; background:${tm.adjective?.status === 'mastered' ? 'rgba(40,167,69,0.25)' : 'rgba(255,255,255,0.06)'}; color:${tm.adjective?.status === 'mastered' ? '#4ade80' : 'var(--sp-subtext)'}; border:none;" title="Tính từ: ${escapeHtml(adjWord)}">Adj</span>
+              <span class="sp-pill" style="padding:1px 6px; font-size:10px; background:${tm.adverb?.status === 'mastered' ? 'rgba(40,167,69,0.25)' : 'rgba(255,255,255,0.06)'}; color:${tm.adverb?.status === 'mastered' ? '#4ade80' : 'var(--sp-subtext)'}; border:none;" title="Trạng từ: ${escapeHtml(advWord)}">Adv</span>
+            `;
+          })()}
         </div>
 
         ${item.lastFeedback ? `
@@ -5117,21 +5136,31 @@ async function openVocabPracticeModal(vocabItem) {
   `;
   $('vocabPracticeModal').classList.add('open');
 
-  const prompt = `Bạn là chuyên gia từ vựng IELTS. Hãy phân tích chuyên sâu từ tiếng Anh: "${vocabItem.word}" (Nghĩa: ${vocabItem.meaning}):
-1. Word Family (Họ từ vựng): Các dạng danh từ, động từ, tính từ, trạng từ liên quan cùng nghĩa tiếng Việt.
-2. Collocations: 3-4 cụm từ/collocations phổ biến nhất trong IELTS.
-3. Bài tập 1 (Dịch Việt -> Anh): 1 câu tiếng Việt cần học viên dịch sang tiếng Anh sử dụng từ "${vocabItem.word}".
-4. Bài tập 2 (Nhớ nghĩa từ vựng): Cung cấp nghĩa tiếng Việt chuẩn xác và ngắn gọn của từ "${vocabItem.word}" (để học viên gõ nghĩa tiếng Việt của từ này, KHÔNG bắt dịch cả câu), kèm 1 câu ví dụ ngữ cảnh ngắn.
-5. Bài tập 3 (Word Family form): 1 câu có chỗ trống cần học viên chia đúng dạng từ của "${vocabItem.word}".
+  const prompt = `Bạn là chuyên gia từ vựng IELTS & Ngôn ngữ học. Để người học THÀNH THẠO TOÀN DIỆN MỘT TỪ VỰNG, họ không chỉ học từ mục tiêu "${vocabItem.word}" mà BẮT BUỘC PHẢI THÀNH THẠO CẢ VOCAB TREE (CÂY TỪ VỰNG / WORD FAMILY) của nó (gồm cả Gốc từ, Động từ, Danh từ, Tính từ, Trạng từ, Collocations).
 
-Trả về DUY NHẤT một chuỗi JSON hợp lệ (không kèm Markdown block):
+Hãy phân tích toàn diện Vocab Tree của từ: "${vocabItem.word}" (Nghĩa: ${vocabItem.meaning}):
+1. Xây dựng Vocab Tree đầy đủ:
+   - root: Từ gốc cội nguồn
+   - verb: Dạng động từ, nghĩa tiếng Việt
+   - noun: Các dạng danh từ (kể cả danh từ trừu tượng / chỉ mức độ), nghĩa tiếng Việt
+   - adjective: Các dạng tính từ, nghĩa tiếng Việt
+   - adverb: Dạng trạng từ, nghĩa tiếng Việt
+2. Collocations IELTS: 3-4 cụm từ phổ biến nhất trong bài thi IELTS.
+3. Bài tập 1 (Dịch Việt -> Anh): 1 câu ngữ cảnh học thuật IELTS cần vận dụng từ "${vocabItem.word}".
+4. Bài tập 2 (Nhớ nghĩa từ mục tiêu): Nghĩa tiếng Việt chuẩn xác của từ "${vocabItem.word}", kèm 1 ví dụ ngắn.
+5. Bài tập 3 (Thử thách Đa nhánh Vocab Tree - 2 câu riêng biệt kiểm tra 2 nhánh khác nhau của cây từ):
+   - drill_a (Kiểm tra nhánh Danh từ hoặc Động từ): 1 câu tiếng Anh có [____] kèm từ gốc trong ngoặc để học viên chia dạng đúng.
+   - drill_b (Kiểm tra nhánh Tính từ hoặc Trạng từ): 1 câu tiếng Anh có [____] kèm từ gốc trong ngoặc để học viên chia dạng đúng.
+
+Trả về DUY NHẤT một chuỗi JSON hợp lệ (không kèm Markdown codeblock):
 {
-  "word_family": [
-    { "type": "Verb", "word": "...", "vi": "..." },
-    { "type": "Noun", "word": "...", "vi": "..." },
-    { "type": "Adjective", "word": "...", "vi": "..." },
-    { "type": "Adverb", "word": "...", "vi": "..." }
-  ],
+  "vocab_tree": {
+    "root": "từ gốc",
+    "verb": { "word": "động từ", "vi": "nghĩa" },
+    "noun": { "word": "danh từ", "vi": "nghĩa" },
+    "adjective": { "word": "tính từ", "vi": "nghĩa" },
+    "adverb": { "word": "trạng từ", "vi": "nghĩa" }
+  },
   "collocations": [
     { "en": "collocation 1", "vi": "nghĩa" },
     { "en": "collocation 2", "vi": "nghĩa" }
@@ -5145,10 +5174,17 @@ Trả về DUY NHẤT một chuỗi JSON hợp lệ (không kèm Markdown block)
     "correct_meaning": "nghĩa tiếng Việt chuẩn của từ",
     "example_context": "câu ví dụ ngắn minh họa"
   },
-  "ex3_word_form": {
-    "sentence": "câu chứa [____] và từ gốc trong ngoặc",
+  "ex3a_tree_drill": {
+    "target_branch": "Noun hoặc Verb",
+    "sentence": "câu tiếng Anh chứa [____ (từ gốc)]",
     "correct_form": "dạng đúng",
-    "why": "giải thích"
+    "why": "giải thích ngữ pháp"
+  },
+  "ex3b_tree_drill": {
+    "target_branch": "Adverb hoặc Adjective",
+    "sentence": "câu tiếng Anh chứa [____ (từ gốc)]",
+    "correct_form": "dạng đúng",
+    "why": "giải thích ngữ pháp"
   }
 }`;
 
@@ -5176,30 +5212,71 @@ function renderVocabPracticeContent(data, vocabItem) {
   const currentScore = typeof vocabItem.masteryScore === 'number' ? vocabItem.masteryScore : (vocabItem.srsStage || 0) * 20;
   const currentTier = getMasteryTierInfo(currentScore, vocabItem.srsStage || 0);
 
-  let wfHtml = (data.word_family || []).map(f => `
-    <tr>
-      <td style="color:var(--sp-green); font-weight:700; width:90px;">${escapeHtml(f.type)}</td>
-      <td style="color:#fff; font-weight:600;">${escapeHtml(f.word)}</td>
-      <td style="color:var(--sp-subtext);">${escapeHtml(f.vi)}</td>
-    </tr>
-  `).join('');
+  const tree = data.vocab_tree || {};
+  const rootWord = tree.root || vocabItem.word;
+  const verbInfo = tree.verb || (data.word_family || []).find(f => /verb|động/i.test(f.type)) || { word: '—', vi: '' };
+  const nounInfo = tree.noun || (data.word_family || []).find(f => /noun|danh/i.test(f.type)) || { word: '—', vi: '' };
+  const adjInfo = tree.adjective || (data.word_family || []).find(f => /adj|tính/i.test(f.type)) || { word: '—', vi: '' };
+  const advInfo = tree.adverb || (data.word_family || []).find(f => /adv|trạng/i.test(f.type)) || { word: '—', vi: '' };
 
   let collocHtml = (data.collocations || []).map(c => `
     <span class="sp-colloc-tag">${escapeHtml(c.en)} <small style="color:rgba(255,255,255,0.7); font-weight:normal;">(${escapeHtml(c.vi)})</small></span>
   `).join('');
 
+  const drillA = data.ex3a_tree_drill || data.ex3_word_form || { sentence: `The [____ (${vocabItem.word})] was noted.`, correct_form: '', why: '' };
+  const drillB = data.ex3b_tree_drill || { sentence: `They worked [____ (${vocabItem.word})] on this project.`, correct_form: '', why: '' };
+
   $('practiceModalBody').innerHTML = `
-    <!-- 1. Word Family -->
-    <div class="sp-deep-card">
-      <div style="font-size:12px; font-weight:800; color:var(--sp-green); text-transform:uppercase; margin-bottom:4px;">1. Họ từ vựng (Word Family)</div>
-      <table class="sp-wf-table">
-        <tbody>${wfHtml || '<tr><td>Không có dữ liệu họ từ</td></tr>'}</tbody>
-      </table>
+    <!-- 1. Interactive Vocab Tree Diagram -->
+    <div class="sp-deep-card" style="background:#151515; border:1px solid rgba(29, 185, 84, 0.3); border-radius:10px; padding:16px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <div style="font-size:12.5px; font-weight:800; color:var(--sp-green); text-transform:uppercase; letter-spacing:0.5px; display:flex; align-items:center; gap:6px;">
+          <span>🌳</span> SƠ ĐỒ VOCAB TREE (CÂY HỌ TỪ VỰNG IELTS)
+        </div>
+        <span style="font-size:11px; background:rgba(255,255,255,0.06); padding:3px 8px; border-radius:12px; color:var(--sp-subtext);">
+          Gốc từ: <strong style="color:#fff;">${escapeHtml(rootWord)}</strong>
+        </span>
+      </div>
+
+      <!-- Vocab Tree Branches Grid -->
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:10px; margin-bottom:12px;">
+        <!-- Verb Branch -->
+        <div style="background:#1e1e1e; border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:10px;">
+          <div style="font-size:10.5px; font-weight:800; color:#4dabf7; text-transform:uppercase; margin-bottom:4px;">🌿 Động từ (Verb)</div>
+          <div style="font-size:13.5px; font-weight:700; color:#fff;">${escapeHtml(verbInfo.word || '—')}</div>
+          <div style="font-size:11.5px; color:var(--sp-subtext); margin-top:2px;">${escapeHtml(verbInfo.vi || '')}</div>
+        </div>
+
+        <!-- Noun Branch -->
+        <div style="background:#1e1e1e; border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:10px;">
+          <div style="font-size:10.5px; font-weight:800; color:#ffd43b; text-transform:uppercase; margin-bottom:4px;">🌿 Danh từ (Noun)</div>
+          <div style="font-size:13.5px; font-weight:700; color:#fff;">${escapeHtml(nounInfo.word || '—')}</div>
+          <div style="font-size:11.5px; color:var(--sp-subtext); margin-top:2px;">${escapeHtml(nounInfo.vi || '')}</div>
+        </div>
+
+        <!-- Adjective Branch -->
+        <div style="background:#1e1e1e; border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:10px;">
+          <div style="font-size:10.5px; font-weight:800; color:#69db7c; text-transform:uppercase; margin-bottom:4px;">🌿 Tính từ (Adj)</div>
+          <div style="font-size:13.5px; font-weight:700; color:#fff;">${escapeHtml(adjInfo.word || '—')}</div>
+          <div style="font-size:11.5px; color:var(--sp-subtext); margin-top:2px;">${escapeHtml(adjInfo.vi || '')}</div>
+        </div>
+
+        <!-- Adverb Branch -->
+        <div style="background:#1e1e1e; border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:10px;">
+          <div style="font-size:10.5px; font-weight:800; color:#ff922b; text-transform:uppercase; margin-bottom:4px;">🌿 Trạng từ (Adv)</div>
+          <div style="font-size:13.5px; font-weight:700; color:#fff;">${escapeHtml(advInfo.word || '—')}</div>
+          <div style="font-size:11.5px; color:var(--sp-subtext); margin-top:2px;">${escapeHtml(advInfo.vi || '')}</div>
+        </div>
+      </div>
+
+      <div style="font-size:11px; color:var(--sp-subtext); line-height:1.4;">
+        ⚠️ <strong>Nguyên tắc thành thạo IELTS:</strong> Bạn phải làm chủ toàn bộ các nhánh trong Vocab Tree (Verb, Noun, Adj, Adv) mới có thể đạt mức Nhuần nhuyễn (Cấp 4) và Master (Cấp 5).
+      </div>
     </div>
 
     <!-- 2. Collocations -->
     <div class="sp-deep-card">
-      <div style="font-size:12px; font-weight:800; color:var(--sp-blue); text-transform:uppercase; margin-bottom:8px;">2. Collocations IELTS phổ biến</div>
+      <div style="font-size:12px; font-weight:800; color:var(--sp-blue); text-transform:uppercase; margin-bottom:8px;">Collocations IELTS phổ biến của họ từ này:</div>
       <div>${collocHtml || 'Không có collocations'}</div>
     </div>
 
@@ -5207,22 +5284,22 @@ function renderVocabPracticeContent(data, vocabItem) {
     <div class="sp-deep-card">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
         <span style="font-size:12px; font-weight:800; color:var(--sp-orange); text-transform:uppercase;">
-          3. Bài tập Dịch Việt ➔ Anh (Phản xạ dùng từ "${escapeHtml(vocabItem.word)}")
+          1. Bài tập Dịch tình huống IELTS (Dùng từ mục tiêu "${escapeHtml(vocabItem.word)}")
         </span>
         <button class="sp-btn-secondary" id="toggleHint1Btn" type="button" style="padding:2px 8px; font-size:11px;">💡 Gợi ý</button>
       </div>
       <div style="font-size:14.5px; font-weight:600; color:#fff; margin-bottom:8px;">"${escapeHtml(data.ex1_vi_to_en?.vi || '')}"</div>
-      <input type="text" id="practiceInput1" style="width:100%; padding:9px 12px; border-radius:6px; border:1px solid var(--sp-border); background:#121212; color:#fff; font-size:13.5px; outline:none;" placeholder="Gõ câu dịch tiếng Anh của bạn (hãy dùng từ '${escapeHtml(vocabItem.word)}')...">
+      <input type="text" id="practiceInput1" style="width:100%; padding:9px 12px; border-radius:6px; border:1px solid var(--sp-border); background:#121212; color:#fff; font-size:13.5px; outline:none;" placeholder="Gõ câu dịch tiếng Anh của bạn (dùng từ '${escapeHtml(vocabItem.word)}')...">
       <div id="hint1Box" style="display:none; margin-top:8px; font-size:12.5px; background:rgba(255,255,255,0.04); padding:8px 10px; border-radius:6px; color:var(--sp-subtext);">
         <strong style="color:var(--sp-green);">Đáp án mẫu:</strong> "${escapeHtml(data.ex1_vi_to_en?.sample_en || '')}"
       </div>
     </div>
 
-    <!-- 4. Bài tập 2: Nhớ nghĩa tiếng Việt của từ mục tiêu -->
+    <!-- 4. Bài tập 2: Nhớ nghĩa tiếng Việt -->
     <div class="sp-deep-card">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
         <span style="font-size:12px; font-weight:800; color:var(--sp-green); text-transform:uppercase;">
-          4. Bài tập 2: Nhớ nghĩa từ vựng (Chỉ cần gõ nghĩa tiếng Việt của từ)
+          2. Bài tập Phản xạ nghĩa từ vựng (Chỉ gõ nghĩa tiếng Việt của từ)
         </span>
         <button class="sp-btn-secondary" id="toggleHint2Btn" type="button" style="padding:2px 8px; font-size:11px;">💡 Gợi ý</button>
       </div>
@@ -5236,20 +5313,36 @@ function renderVocabPracticeContent(data, vocabItem) {
       </div>
     </div>
 
-    <!-- 5. Bài tập 3: Biến đổi dạng từ (Word Form Cloze) -->
-    <div class="sp-deep-card">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-        <span style="font-size:12px; font-weight:800; color:var(--sp-blue); text-transform:uppercase;">
-          5. Bài tập Chia dạng từ (Word Form in Context)
+    <!-- 5. Bài tập 3: Thử thách Vocab Tree Đa nhánh -->
+    <div class="sp-deep-card" style="border:1px solid rgba(77, 171, 247, 0.25);">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <span style="font-size:12px; font-weight:800; color:#4dabf7; text-transform:uppercase;">
+          3. Thử thách Vocab Tree (Biến đổi các nhánh họ hàng trong câu)
         </span>
         <button class="sp-btn-secondary" id="toggleHint3Btn" type="button" style="padding:2px 8px; font-size:11px;">💡 Gợi ý</button>
       </div>
-      <div style="font-size:14.5px; font-weight:600; color:#fff; margin-bottom:8px;">${escapeHtml(data.ex3_word_form?.sentence || '')}</div>
-      <div style="display:flex; gap:8px;">
-        <input type="text" id="practiceInput3" style="max-width:240px; padding:9px 12px; border-radius:6px; border:1px solid var(--sp-border); background:#121212; color:#fff; font-size:13.5px; outline:none;" placeholder="Điền dạng từ đúng...">
+
+      <!-- Drill A -->
+      <div style="margin-bottom:14px; background:rgba(0,0,0,0.25); padding:10px 12px; border-radius:6px;">
+        <div style="font-size:11.5px; font-weight:700; color:#ffd43b; margin-bottom:4px;">
+          Nhánh A: ${escapeHtml(drillA.target_branch || 'Danh từ / Động từ')}
+        </div>
+        <div style="font-size:13.5px; font-weight:600; color:#fff; margin-bottom:6px;">${escapeHtml(drillA.sentence || '')}</div>
+        <input type="text" id="practiceInput3a" style="width:100%; max-width:280px; padding:8px 12px; border-radius:6px; border:1px solid var(--sp-border); background:#121212; color:#fff; font-size:13px; outline:none;" placeholder="Điền dạng từ đúng của nhánh A...">
       </div>
-      <div id="hint3Box" style="display:none; margin-top:8px; font-size:12.5px; background:rgba(255,255,255,0.04); padding:8px 10px; border-radius:6px; color:var(--sp-subtext);">
-        <strong style="color:var(--sp-green);">Dạng đúng:</strong> "${escapeHtml(data.ex3_word_form?.correct_form || '')}" — ${escapeHtml(data.ex3_word_form?.why || '')}
+
+      <!-- Drill B -->
+      <div style="background:rgba(0,0,0,0.25); padding:10px 12px; border-radius:6px;">
+        <div style="font-size:11.5px; font-weight:700; color:#ff922b; margin-bottom:4px;">
+          Nhánh B: ${escapeHtml(drillB.target_branch || 'Tính từ / Trạng từ')}
+        </div>
+        <div style="font-size:13.5px; font-weight:600; color:#fff; margin-bottom:6px;">${escapeHtml(drillB.sentence || '')}</div>
+        <input type="text" id="practiceInput3b" style="width:100%; max-width:280px; padding:8px 12px; border-radius:6px; border:1px solid var(--sp-border); background:#121212; color:#fff; font-size:13px; outline:none;" placeholder="Điền dạng từ đúng của nhánh B...">
+      </div>
+
+      <div id="hint3Box" style="display:none; margin-top:10px; font-size:12px; background:rgba(255,255,255,0.04); padding:8px 10px; border-radius:6px; color:var(--sp-subtext);">
+        <div><strong style="color:#ffd43b;">Nhánh A:</strong> "${escapeHtml(drillA.correct_form || '')}" — ${escapeHtml(drillA.why || '')}</div>
+        <div style="margin-top:4px;"><strong style="color:#ff922b;">Nhánh B:</strong> "${escapeHtml(drillB.correct_form || '')}" — ${escapeHtml(drillB.why || '')}</div>
       </div>
     </div>
 
@@ -5257,7 +5350,7 @@ function renderVocabPracticeContent(data, vocabItem) {
     <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:16px; margin-top:16px;">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
         <div>
-          <div style="font-size:12px; color:var(--sp-subtext);">Mức độ thuộc hiện tại:</div>
+          <div style="font-size:12px; color:var(--sp-subtext);">Mức độ thành thạo hiện tại:</div>
           <div style="font-size:14px; font-weight:700; color:#fff; display:flex; align-items:center; gap:6px;">
             <span class="sp-srs-badge srs-tier-${currentTier.tier}">${currentTier.icon} Cấp ${currentTier.tier}: ${currentTier.name} (${currentScore}%)</span>
           </div>
@@ -5269,10 +5362,10 @@ function renderVocabPracticeContent(data, vocabItem) {
       </div>
 
       <button class="sp-pill green" id="aiEvaluatePracticeBtn" type="button" style="width:100%; padding:12px; font-size:14.5px; font-weight:800; justify-content:center; display:flex; align-items:center; gap:8px; cursor:pointer;">
-        <span>🤖</span> Nộp bài để AI Chấm Điểm & Phân Cấp Mức Độ Thuộc
+        <span>🤖</span> Nộp bài để AI Chấm Điểm & Đánh Giá Thành Thạo Cả Vocab Tree
       </button>
       <div style="font-size:11.5px; color:var(--sp-subtext); text-align:center; margin-top:8px; line-height:1.4;">
-        Gemini AI sẽ chấm điểm từng câu, đánh giá mức độ thuộc theo khoa học Spaced Repetition và tự động phân chia khoảng thời gian học tối ưu!
+        Gemini AI sẽ chấm điểm toàn diện cả <strong>từ mục tiêu</strong> và <strong>các nhánh trong Vocab Tree</strong> để xếp cấp độ thuộc chuẩn khoa học!
       </div>
 
       <!-- AI Evaluation Result Report Box -->
@@ -5298,23 +5391,24 @@ function renderVocabPracticeContent(data, vocabItem) {
   $('aiEvaluatePracticeBtn').onclick = async () => {
     const ans1 = ($('practiceInput1')?.value || '').trim();
     const ans2 = ($('practiceInput2')?.value || '').trim();
-    const ans3 = ($('practiceInput3')?.value || '').trim();
+    const ans3a = ($('practiceInput3a')?.value || '').trim();
+    const ans3b = ($('practiceInput3b')?.value || '').trim();
 
-    if (!ans1 && !ans2 && !ans3) {
-      return alert('Vui lòng hoàn thành ít nhất 1 bài tập phía trên để AI có cơ sở đánh giá mức độ thuộc của bạn!');
+    if (!ans1 && !ans2 && !ans3a && !ans3b) {
+      return alert('Vui lòng hoàn thành bài tập phía trên để AI có cơ sở đánh giá độ thành thạo Vocab Tree của bạn!');
     }
 
     const btn = $('aiEvaluatePracticeBtn');
     btn.disabled = true;
-    btn.innerHTML = `<span class="sp-dot sp-dot-busy" style="display:inline-block; margin-right:6px;"></span> ⏳ AI đang chấm điểm & phân tích mức độ thuộc...`;
+    btn.innerHTML = `<span class="sp-dot sp-dot-busy" style="display:inline-block; margin-right:6px;"></span> ⏳ AI đang chấm điểm & phân tích Vocab Tree...`;
 
     try {
-      const evalResult = await evaluateVocabPracticeWithAi(vocabItem, data, ans1, ans2, ans3);
-      displayAiEvaluationResult(vocabItem, evalResult);
+      const evalResult = await evaluateVocabPracticeWithAi(vocabItem, data, ans1, ans2, ans3a, ans3b);
+      displayAiEvaluationResult(vocabItem, evalResult, data);
     } catch (err) {
       console.warn('AI evaluation error, using fallback:', err);
-      const fallbackResult = localEvaluateVocabPractice(vocabItem, data, ans1, ans2, ans3);
-      displayAiEvaluationResult(vocabItem, fallbackResult);
+      const fallbackResult = localEvaluateVocabPractice(vocabItem, data, ans1, ans2, ans3a, ans3b);
+      displayAiEvaluationResult(vocabItem, fallbackResult, data);
     } finally {
       btn.disabled = false;
       btn.innerHTML = `<span>🔄</span> Chấm lại bài làm`;
@@ -5322,140 +5416,166 @@ function renderVocabPracticeContent(data, vocabItem) {
   };
 }
 
-async function evaluateVocabPracticeWithAi(vocabItem, data, ans1, ans2, ans3) {
+async function evaluateVocabPracticeWithAi(vocabItem, data, ans1, ans2, ans3a, ans3b) {
   const correctMeaning = data.ex2_meaning?.correct_meaning || vocabItem.meaning || data.ex2_en_to_vi?.sample_vi || '';
-  const evalPrompt = `Bạn là chuyên gia sư phạm ngôn ngữ và khảo thí IELTS. Hãy ĐÁNH GIÁ MỨC ĐỘ THUỘC & NĂNG LỰC VẬN DỤNG của học viên đối với từ vựng mục tiêu: "${vocabItem.word}" (Nghĩa chuẩn: ${vocabItem.meaning}).
+  const drillA = data.ex3a_tree_drill || data.ex3_word_form || {};
+  const drillB = data.ex3b_tree_drill || {};
+
+  const evalPrompt = `Bạn là Chuyên gia Khảo thí IELTS & Giảng viên Ngôn ngữ học cấp cao.
+Học viên đang thực hiện bài kiểm tra ĐÁNH GIÁ ĐỘ THÀNH THẠO TOÀN DIỆN CỦA TỪ: "${vocabItem.word}" (Nghĩa: ${vocabItem.meaning}).
+
+⚠️ NGUYÊN TẮC KHẢO THÍ BẮT BUỘC (VOCAB TREE MASTERY PRINCIPLE):
+Để được công nhận là THÀNH THẠO hoặc LÀM CHỦ một từ vựng (Điểm >= 75, tương ứng Cấp 3, Cấp 4, Cấp 5), học viên BẮT BUỘC PHẢI THÀNH THẠO CẢ VOCAB TREE (CÂY HỌ TỪ VỰNG: gồm cả Động từ, Danh từ, Tính từ, Trạng từ) chứ KHÔNG ĐƯỢC CHỈ BIẾT MỖI TỪ ĐÃ LƯU.
+Nếu học viên làm sai các nhánh biến đổi trong Vocab Tree (Bài 3A hoặc Bài 3B):
+- Điểm tổng KHÔNG ĐƯỢC VƯỢT QUÁ 64 ĐIỂM (Tối đa Cấp 2: Đang tiến bộ / Chưa thành thạo cây từ).
+- Phải chỉ rõ nhánh cây từ vựng bị yếu cần củng cố thêm!
 
 Dữ liệu bài làm của học viên:
-1. Bài tập 1: Dịch Việt -> Anh (Đòi hỏi phản xạ vận dụng từ "${vocabItem.word}"):
-- Câu gốc tiếng Việt: "${data.ex1_vi_to_en?.vi || ''}"
-- Học viên trả lời: "${ans1 || '(Chưa làm)'}"
-- Câu mẫu tham khảo: "${data.ex1_vi_to_en?.sample_en || ''}"
+1. Bài 1: Dịch tình huống IELTS (Vận dụng từ mục tiêu "${vocabItem.word}"):
+- Đề bài tiếng Việt: "${data.ex1_vi_to_en?.vi || ''}"
+- Học viên dịch: "${ans1 || '(Chưa làm)'}"
+- Câu mẫu chuẩn: "${data.ex1_vi_to_en?.sample_en || ''}"
 
-2. Bài tập 2: Nhớ nghĩa tiếng Việt của từ mục tiêu "${vocabItem.word}":
-- Nghĩa chuẩn của từ: "${correctMeaning}"
+2. Bài 2: Phản xạ nghĩa tiếng Việt của từ mục tiêu "${vocabItem.word}":
+- Nghĩa chuẩn: "${correctMeaning}"
 - Học viên trả lời: "${ans2 || '(Chưa làm)'}"
 
-3. Bài tập 3: Chia đúng dạng từ (Word Family in context):
-- Câu gốc: "${data.ex3_word_form?.sentence || ''}"
-- Học viên điền: "${ans3 || '(Chưa làm)'}"
-- Đáp án đúng: "${data.ex3_word_form?.correct_form || ''}"
+3. Bài 3A: Thử thách Vocab Tree - Nhánh ${drillA.target_branch || 'Danh từ / Động từ'}:
+- Câu ngữ cảnh: "${drillA.sentence || ''}"
+- Học viên điền: "${ans3a || '(Chưa làm)'}"
+- Đáp án đúng: "${drillA.correct_form || ''}"
 
-Hãy chấm điểm công tâm, chuyên nghiệp theo thang điểm 100:
-- Bài 1 (tối đa 50đ): Học viên có dùng đúng từ mục tiêu "${vocabItem.word}" và đúng ngữ pháp không?
-- Bài 2 (tối đa 30đ): Học viên có nhớ đúng nghĩa tiếng Việt của từ "${vocabItem.word}" không? (Chỉ kiểm tra nghĩa của từ, chấp nhận từ đồng nghĩa hoặc diễn đạt tương đương).
-- Bài 3 (tối đa 20đ): Chia đúng dạng từ không?
-(Nếu bài nào học viên không làm thì cho 0 điểm bài đó).
+4. Bài 3B: Thử thách Vocab Tree - Nhánh ${drillB.target_branch || 'Tính từ / Trạng từ'}:
+- Câu ngữ cảnh: "${drillB.sentence || ''}"
+- Học viên điền: "${ans3b || '(Chưa làm)'}"
+- Đáp án đúng: "${drillB.correct_form || ''}"
 
-Quy đổi điểm tổng sang Cấp độ thuộc (Tier 0-5):
-- 0 đến 39: Cấp 0 (Chưa thuộc / Cần học lại ngay) -> Khoảng cách ôn tiếp: 4 giờ
-- 40 đến 59: Cấp 1 (Nhận biết sơ khởi) -> Khoảng cách ôn tiếp: 1 ngày
-- 60 đến 74: Cấp 2 (Đang tiến bộ / Khá) -> Khoảng cách ôn tiếp: 3 ngày
-- 75 đến 89: Cấp 3 (Vận dụng tốt) -> Khoảng cách ôn tiếp: 7 ngày
-- 90 đến 97: Cấp 4 (Nhuần nhuyễn) -> Khoảng cách ôn tiếp: 14 ngày
-- 98 đến 100: Cấp 5 (Làm chủ IELTS) -> Khoảng cách ôn tiếp: 30 ngày
+Thang điểm 100:
+- Bài 1 (tối đa 35đ): Vận dụng đúng từ mục tiêu và chuẩn ngữ pháp.
+- Bài 2 (tối đa 25đ): Nhớ đúng nghĩa tiếng Việt của từ.
+- Bài 3A (tối đa 20đ): Chia đúng dạng nhánh Vocab Tree A.
+- Bài 3B (tối đa 20đ): Chia đúng dạng nhánh Vocab Tree B.
 
-Trả về DUY NHẤT một chuỗi JSON hợp lệ (không kèm Markdown):
+Quy đổi Cấp độ (Tier 0-5):
+- 0 đến 39: Cấp 0 (Chưa thuộc) -> Ôn tiếp sau: 4 giờ
+- 40 đến 59: Cấp 1 (Nhận biết sơ) -> Ôn tiếp sau: 1 ngày
+- 60 đến 74: Cấp 2 (Đang tiến bộ / Cần rèn Vocab Tree) -> Ôn tiếp sau: 3 ngày
+- 75 đến 89: Cấp 3 (Vận dụng tốt cả cây) -> Ôn tiếp sau: 7 ngày
+- 90 đến 97: Cấp 4 (Nhuần nhuyễn Vocab Tree) -> Ôn tiếp sau: 14 ngày
+- 98 đến 100: Cấp 5 (Làm chủ IELTS toàn diện) -> Ôn tiếp sau: 30 ngày
+
+Trả về DUY NHẤT chuỗi JSON hợp lệ (không kèm Markdown codeblock):
 {
   "score": 85,
-  "tier": 3,
-  "tier_name": "Vận dụng tốt",
-  "summary_feedback": "Nhận xét tổng quan súc tích về năng lực làm chủ từ này của học viên.",
-  "ex1_analysis": {
-    "score": 42,
-    "max_score": 50,
-    "used_target_word": true,
-    "critique": "Nhận xét câu dịch tiếng Anh.",
-    "improved_version": "Câu tiếng Anh gợi ý chuẩn IELTS hơn nếu có"
+  "tree_mastered": true,
+  "summary_feedback": "Nhận xét tổng quan về độ thành thạo cả Vocab Tree của học viên.",
+  "vocab_tree_analysis": {
+    "tree_score": 85,
+    "branches": {
+      "verb": { "status": "mastered", "comment": "Đã làm chủ nhánh Động từ" },
+      "noun": { "status": "mastered", "comment": "Đã làm chủ nhánh Danh từ" },
+      "adjective": { "status": "mastered", "comment": "Đã làm chủ nhánh Tính từ" },
+      "adverb": { "status": "mastered", "comment": "Đã làm chủ nhánh Trạng từ" }
+    }
   },
-  "ex2_analysis": {
-    "score": 26,
-    "max_score": 30,
-    "critique": "Nhận xét khả năng nhớ nghĩa tiếng Việt của từ."
-  },
-  "ex3_analysis": {
-    "score": 17,
-    "max_score": 20,
-    "critique": "Giải thích dạng từ chia đúng/sai."
-  },
-  "advice": "Lời khuyên để từ này ăn sâu vào trí nhớ dài hạn."
+  "ex1_analysis": { "score": 30, "max_score": 35, "critique": "Nhận xét bài 1", "improved_version": "Câu tiếng Anh gợi ý chuẩn IELTS hơn nếu có" },
+  "ex2_analysis": { "score": 25, "max_score": 25, "critique": "Nhận xét bài 2" },
+  "ex3a_analysis": { "score": 15, "max_score": 20, "critique": "Nhận xét nhánh 3A" },
+  "ex3b_analysis": { "score": 15, "max_score": 20, "critique": "Nhận xét nhánh 3B" },
+  "advice": "Lời khuyên rèn luyện các nhánh Vocab Tree tiếp theo."
 }`;
 
   return await callGeminiApiWithFallback(evalPrompt, 'Chỉ trả về JSON hợp lệ.');
 }
 
-function localEvaluateVocabPractice(vocabItem, data, ans1, ans2, ans3) {
+function localEvaluateVocabPractice(vocabItem, data, ans1, ans2, ans3a, ans3b) {
   const target = (vocabItem.word || '').toLowerCase();
-  let score1 = 0, score2 = 0, score3 = 0;
-  let critique1 = '', critique2 = '', critique3 = '';
+  let score1 = 0, score2 = 0, score3a = 0, score3b = 0;
+  let critique1 = '', critique2 = '', critique3a = '', critique3b = '';
 
   if (ans1) {
     const a1 = ans1.toLowerCase();
     if (a1.includes(target)) {
-      score1 = 38;
+      score1 = 28;
       critique1 = `Đã vận dụng thành công từ mục tiêu "${vocabItem.word}" trong câu!`;
     } else {
-      score1 = 18;
+      score1 = 12;
       critique1 = `Câu dịch chưa chứa từ mục tiêu "${vocabItem.word}".`;
     }
-    if (ans1.trim().split(/\s+/).length >= 5) score1 += 12;
+    if (ans1.trim().split(/\s+/).length >= 5) score1 += 7;
   } else {
-    critique1 = 'Bạn chưa làm bài tập này (0/50đ).';
+    critique1 = 'Bạn chưa làm bài tập này (0/35đ).';
   }
 
   const correctMeaning = (data.ex2_meaning?.correct_meaning || vocabItem.meaning || data.ex2_en_to_vi?.sample_vi || '').toLowerCase();
   if (ans2) {
     const a2 = ans2.toLowerCase().trim();
     if (a2.length >= 2 && (correctMeaning.includes(a2) || a2.includes(correctMeaning) || a2 === correctMeaning)) {
-      score2 = 30;
+      score2 = 25;
       critique2 = `Chính xác! Bạn đã nhớ đúng nghĩa tiếng Việt của từ "${vocabItem.word}".`;
     } else if (a2.length >= 2) {
-      score2 = 20;
-      critique2 = `Đã trả lời nghĩa tiếng Việt. Nghĩa chuẩn xác: "${data.ex2_meaning?.correct_meaning || vocabItem.meaning}".`;
+      score2 = 15;
+      critique2 = `Đã trả lời nghĩa tiếng Việt. Nghĩa chuẩn: "${data.ex2_meaning?.correct_meaning || vocabItem.meaning}".`;
     } else {
-      score2 = 10;
+      score2 = 8;
       critique2 = 'Nghĩa gõ quá ngắn hoặc chưa đầy đủ.';
     }
   } else {
-    critique2 = 'Bạn chưa làm bài tập này (0/30đ).';
+    critique2 = 'Bạn chưa làm bài tập này (0/25đ).';
   }
 
-  const correctForm = (data.ex3_word_form?.correct_form || '').trim().toLowerCase();
-  if (ans3) {
-    if (ans3.trim().toLowerCase() === correctForm) {
-      score3 = 20;
-      critique3 = `Chính xác! Dạng từ đúng là "${correctForm}".`;
+  const drillA = data.ex3a_tree_drill || data.ex3_word_form || {};
+  const correctFormA = (drillA.correct_form || '').trim().toLowerCase();
+  if (ans3a) {
+    if (ans3a.trim().toLowerCase() === correctFormA) {
+      score3a = 20;
+      critique3a = `Chính xác! Dạng đúng của nhánh là "${correctFormA}".`;
     } else {
-      score3 = 8;
-      critique3 = `Chưa chính xác. Dạng từ đúng là "${correctForm}".`;
+      score3a = 6;
+      critique3a = `Chưa chính xác. Dạng đúng là "${correctFormA}".`;
     }
   } else {
-    critique3 = 'Bạn chưa làm bài tập này (0/20đ).';
+    critique3a = 'Bạn chưa làm nhánh này (0/20đ).';
   }
 
-  const totalScore = Math.min(100, score1 + score2 + score3);
+  const drillB = data.ex3b_tree_drill || {};
+  const correctFormB = (drillB.correct_form || '').trim().toLowerCase();
+  if (ans3b) {
+    if (ans3b.trim().toLowerCase() === correctFormB) {
+      score3b = 20;
+      critique3b = `Chính xác! Dạng đúng của nhánh là "${correctFormB}".`;
+    } else {
+      score3b = 6;
+      critique3b = `Chưa chính xác. Dạng đúng là "${correctFormB}".`;
+    }
+  } else {
+    critique3b = 'Bạn chưa làm nhánh này (0/20đ).';
+  }
+
+  let totalScore = Math.min(100, score1 + score2 + score3a + score3b);
+  // Quy tắc Vocab Tree: Nếu chưa thành thạo 2 nhánh Vocab Tree thì tối đa 64 điểm
+  if ((score3a < 15 || score3b < 15) && totalScore > 64) {
+    totalScore = 64;
+  }
   const tierInfo = getMasteryTierInfo(totalScore);
 
   return {
     score: totalScore,
     tier: tierInfo.tier,
     tier_name: tierInfo.name,
-    summary_feedback: `Đánh giá sơ bộ: Bạn đạt ${totalScore}/100 điểm (${tierInfo.name}). Tiếp tục rèn luyện để từ này ăn sâu vào tiềm thức!`,
-    ex1_analysis: { score: score1, max_score: 50, critique: critique1, improved_version: data.ex1_vi_to_en?.sample_en || '' },
-    ex2_analysis: { score: score2, max_score: 30, critique: critique2 },
-    ex3_analysis: { score: score3, max_score: 20, critique: critique3 },
-    advice: `Chu kỳ ôn tập tiếp theo: sau ${tierInfo.intervalLabel}.`
+    summary_feedback: `Đánh giá Vocab Tree: Bạn đạt ${totalScore}/100 điểm (${tierInfo.name}). Để đạt mức Nhuần nhuyễn (Cấp 4-5), bạn cần nắm vững mọi biến thể trong Vocab Tree!`,
+    ex1_analysis: { score: score1, max_score: 35, critique: critique1, improved_version: data.ex1_vi_to_en?.sample_en || '' },
+    ex2_analysis: { score: score2, max_score: 25, critique: critique2 },
+    ex3a_analysis: { score: score3a, max_score: 20, critique: critique3a },
+    ex3b_analysis: { score: score3b, max_score: 20, critique: critique3b },
+    advice: `Luyện tập biến đổi linh hoạt các nhánh Vocab Tree (Noun, Verb, Adj, Adv) trong câu.`
   };
 }
 
-function displayAiEvaluationResult(vocabItem, evalResult) {
+function displayAiEvaluationResult(vocabItem, evalResult, data) {
   const score = Math.max(0, Math.min(100, Math.round(evalResult.score || 0)));
   const currentStage = (typeof vocabItem.srsStage === 'number') ? vocabItem.srsStage : 0;
 
-  // QUY TẮC SPACED REPETITION KHÔNG NHẢY CÓC BẬC:
-  // Vì người học có thể vừa xem từ hoặc làm đúng tức thời, không cho nhảy cóc nhiều bậc chỉ qua 1 lần ôn tập.
-  // Mỗi phiên ôn tập đạt chuẩn (score >= 65) CHỈ TĂNG TỐI ĐA +1 CẤP ĐỘ để đảm bảo từ vựng trải qua đủ
-  // các mốc giãn cách thời gian thực tế của đường cong lãng quên Ebbinghaus (4h -> 1d -> 3d -> 7d -> 14d -> 30d).
   let nextStage = currentStage;
   let stageChangeStatus = '';
   let stageChangeColor = 'var(--sp-green)';
@@ -5492,6 +5612,12 @@ function displayAiEvaluationResult(vocabItem, evalResult) {
   vocabItem.reviewCount = (vocabItem.reviewCount || 0) + 1;
   vocabItem.lastFeedback = evalResult.summary_feedback || '';
   vocabItem.lastAdvice = evalResult.advice || '';
+  if (data && data.vocab_tree) {
+    vocabItem.vocabTree = data.vocab_tree;
+  }
+  if (evalResult.vocab_tree_analysis) {
+    vocabItem.treeMastery = evalResult.vocab_tree_analysis;
+  }
 
   saveState();
   updateVocabCountUi();
@@ -5506,12 +5632,14 @@ function displayAiEvaluationResult(vocabItem, evalResult) {
   if (!reportContainer) return;
   reportContainer.style.display = 'block';
 
+  const treeBranches = evalResult.vocab_tree_analysis?.branches || {};
+
   reportContainer.innerHTML = `
     <div class="sp-ai-report-card">
       <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px; flex-wrap:wrap; gap:10px;">
         <div>
           <div style="font-size:11px; text-transform:uppercase; font-weight:800; color:var(--sp-green); letter-spacing:0.5px;">
-            KẾT QUẢ ĐÁNH GIÁ MỨC ĐỘ THUỘC TỪ AI (SRS)
+            KẾT QUẢ ĐÁNH GIÁ THÀNH THẠO VOCAB TREE TỪ AI
           </div>
           <div style="font-size:22px; font-weight:900; color:#fff; margin-top:2px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
             <span style="color:${nextTierInfo.color}; font-size:26px;">${score}</span>
@@ -5537,24 +5665,41 @@ function displayAiEvaluationResult(vocabItem, evalResult) {
         <div class="sp-mastery-bar-fill" style="width:${Math.max(4, score)}%; background:${nextTierInfo.color};"></div>
       </div>
 
-      <div style="font-size:12px; color:var(--sp-subtext); margin-bottom:12px; background:rgba(255,255,255,0.03); padding:8px 10px; border-radius:6px; line-height:1.45;">
-        💡 <strong>Cơ chế Spaced Repetition khoa học:</strong> Mỗi lần ôn tập chỉ thăng tối đa <strong>+1 bậc</strong> (không nhảy cóc nhiều cấp cùng lúc) để đảm bảo từ vựng trải qua đủ chu kỳ giãn cách thời gian thực tế, chuyển hóa vào trí nhớ dài hạn bền vững.
+      <!-- Vocab Tree Mastery Status Banner -->
+      <div style="background:#151515; border:1px solid rgba(77, 171, 247, 0.3); border-radius:8px; padding:10px 12px; margin-bottom:12px;">
+        <div style="font-size:11.5px; font-weight:800; color:#4dabf7; text-transform:uppercase; margin-bottom:6px;">
+          🌳 ĐỘ THÀNH THẠO CÁC NHÁNH VOCAB TREE:
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:6px; font-size:12px;">
+          <div style="background:rgba(255,255,255,0.04); padding:6px 8px; border-radius:6px;">
+            🌿 <strong>Verb:</strong> <span style="color:${treeBranches.verb?.status === 'mastered' ? 'var(--sp-green)' : '#ffd43b'};">${treeBranches.verb?.status === 'mastered' ? '✓ Thành thạo' : 'Cần ôn thêm'}</span>
+          </div>
+          <div style="background:rgba(255,255,255,0.04); padding:6px 8px; border-radius:6px;">
+            🌿 <strong>Noun:</strong> <span style="color:${treeBranches.noun?.status === 'mastered' ? 'var(--sp-green)' : '#ffd43b'};">${treeBranches.noun?.status === 'mastered' ? '✓ Thành thạo' : 'Cần ôn thêm'}</span>
+          </div>
+          <div style="background:rgba(255,255,255,0.04); padding:6px 8px; border-radius:6px;">
+            🌿 <strong>Adj:</strong> <span style="color:${treeBranches.adjective?.status === 'mastered' ? 'var(--sp-green)' : '#ffd43b'};">${treeBranches.adjective?.status === 'mastered' ? '✓ Thành thạo' : 'Cần ôn thêm'}</span>
+          </div>
+          <div style="background:rgba(255,255,255,0.04); padding:6px 8px; border-radius:6px;">
+            🌿 <strong>Adv:</strong> <span style="color:${treeBranches.adverb?.status === 'mastered' ? 'var(--sp-green)' : '#ffd43b'};">${treeBranches.adverb?.status === 'mastered' ? '✓ Thành thạo' : 'Cần ôn thêm'}</span>
+          </div>
+        </div>
       </div>
 
-      <div style="font-size:13.5px; color:#fff; line-height:1.5; margin-bottom:14px; background:rgba(0,0,0,0.3); padding:10px 12px; border-radius:6px;">
+      <div style="font-size:13px; color:#fff; line-height:1.5; margin-bottom:14px; background:rgba(0,0,0,0.3); padding:10px 12px; border-radius:6px;">
         ${escapeHtml(evalResult.summary_feedback || '')}
       </div>
 
       <!-- Exercise Breakdowns -->
-      <div style="font-size:12.5px; margin-bottom:14px; display:grid; gap:8px;">
+      <div style="font-size:12px; margin-bottom:14px; display:grid; gap:8px;">
         <div style="background:rgba(255,255,255,0.04); padding:8px 12px; border-radius:6px;">
           <div style="display:flex; justify-content:space-between; font-weight:700; color:var(--sp-orange); margin-bottom:3px;">
-            <span>Bài 1: Dịch Việt ➔ Anh (Phản xạ dùng từ)</span>
-            <span>${evalResult.ex1_analysis?.score || 0}/${evalResult.ex1_analysis?.max_score || 50}đ</span>
+            <span>Bài 1: Dịch tình huống IELTS</span>
+            <span>${evalResult.ex1_analysis?.score || 0}/${evalResult.ex1_analysis?.max_score || 35}đ</span>
           </div>
           <div style="color:var(--sp-subtext);">${escapeHtml(evalResult.ex1_analysis?.critique || '')}</div>
           ${evalResult.ex1_analysis?.improved_version ? `
-            <div style="color:var(--sp-green); margin-top:4px; font-size:12px;">
+            <div style="color:var(--sp-green); margin-top:4px; font-size:11.5px;">
               ✨ <strong>Bản dịch chuẩn IELTS:</strong> "${escapeHtml(evalResult.ex1_analysis.improved_version)}"
             </div>
           ` : ''}
@@ -5562,30 +5707,38 @@ function displayAiEvaluationResult(vocabItem, evalResult) {
 
         <div style="background:rgba(255,255,255,0.04); padding:8px 12px; border-radius:6px;">
           <div style="display:flex; justify-content:space-between; font-weight:700; color:var(--sp-green); margin-bottom:3px;">
-            <span>Bài 2: Nhớ nghĩa từ vựng</span>
-            <span>${evalResult.ex2_analysis?.score || 0}/${evalResult.ex2_analysis?.max_score || 30}đ</span>
+            <span>Bài 2: Phản xạ nghĩa từ vựng</span>
+            <span>${evalResult.ex2_analysis?.score || 0}/${evalResult.ex2_analysis?.max_score || 25}đ</span>
           </div>
           <div style="color:var(--sp-subtext);">${escapeHtml(evalResult.ex2_analysis?.critique || '')}</div>
         </div>
 
         <div style="background:rgba(255,255,255,0.04); padding:8px 12px; border-radius:6px;">
-          <div style="display:flex; justify-content:space-between; font-weight:700; color:var(--sp-blue); margin-bottom:3px;">
-            <span>Bài 3: Biến đổi dạng từ (Word Family)</span>
-            <span>${evalResult.ex3_analysis?.score || 0}/${evalResult.ex3_analysis?.max_score || 20}đ</span>
+          <div style="display:flex; justify-content:space-between; font-weight:700; color:#ffd43b; margin-bottom:3px;">
+            <span>Bài 3A: Thử thách Vocab Tree (Nhánh A)</span>
+            <span>${evalResult.ex3a_analysis?.score || 0}/${evalResult.ex3a_analysis?.max_score || 20}đ</span>
           </div>
-          <div style="color:var(--sp-subtext);">${escapeHtml(evalResult.ex3_analysis?.critique || '')}</div>
+          <div style="color:var(--sp-subtext);">${escapeHtml(evalResult.ex3a_analysis?.critique || '')}</div>
+        </div>
+
+        <div style="background:rgba(255,255,255,0.04); padding:8px 12px; border-radius:6px;">
+          <div style="display:flex; justify-content:space-between; font-weight:700; color:#ff922b; margin-bottom:3px;">
+            <span>Bài 3B: Thử thách Vocab Tree (Nhánh B)</span>
+            <span>${evalResult.ex3b_analysis?.score || 0}/${evalResult.ex3b_analysis?.max_score || 20}đ</span>
+          </div>
+          <div style="color:var(--sp-subtext);">${escapeHtml(evalResult.ex3b_analysis?.critique || '')}</div>
         </div>
       </div>
 
       ${evalResult.advice ? `
-        <div style="font-size:12.5px; color:#dbe4f8; margin-bottom:14px; font-style:italic;">
-          💡 <strong>Lời khuyên duy trì:</strong> ${escapeHtml(evalResult.advice)}
+        <div style="font-size:12px; color:#dbe4f8; margin-bottom:14px; font-style:italic;">
+          💡 <strong>Lời khuyên Vocab Tree:</strong> ${escapeHtml(evalResult.advice)}
         </div>
       ` : ''}
 
       <div style="display:flex; justify-content:flex-end;">
         <button class="sp-pill green" id="closeAiPracticeSuccessBtn" type="button" style="padding:8px 20px; font-size:13.5px;">
-          ✓ Hoàn thành buổi ôn & Lưu kết quả
+          ✓ Hoàn thành buổi ôn & Lưu kết quả Vocab Tree
         </button>
       </div>
     </div>
@@ -5593,7 +5746,7 @@ function displayAiEvaluationResult(vocabItem, evalResult) {
 
   $('closeAiPracticeSuccessBtn').onclick = () => {
     $('vocabPracticeModal').classList.remove('open');
-    showToast(`🎉 Đã lưu kết quả! Từ "${vocabItem.word}" ở Cấp ${nextStage}: ${nextTierInfo.name}`);
+    showToast(`🎉 Đã lưu kết quả Vocab Tree cho "${vocabItem.word}" (Cấp ${nextStage}: ${nextTierInfo.name})`);
   };
 }
 
