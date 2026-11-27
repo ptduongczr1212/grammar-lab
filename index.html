@@ -598,11 +598,27 @@
       background: #222222; border-radius: 8px; padding: 12px 14px; margin-bottom: 10px; border: 1px solid var(--sp-border);
     }
     .sp-srs-badge {
-      font-size: 10.5px; font-weight: 800; padding: 2px 6px; border-radius: 4px;
+      font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px;
     }
-    .srs-due { background: rgba(241, 94, 108, 0.2); color: var(--sp-red); border: 1px solid var(--sp-red); }
-    .srs-ok { background: rgba(29, 185, 84, 0.15); color: var(--sp-green); }
-    .srs-mastered { background: rgba(255, 164, 43, 0.2); color: var(--sp-orange); border: 1px solid var(--sp-orange); }
+    .srs-tier-0 { background: rgba(241, 94, 108, 0.18); color: var(--sp-red); border: 1px solid rgba(241, 94, 108, 0.4); }
+    .srs-tier-1 { background: rgba(255, 164, 43, 0.18); color: var(--sp-orange); border: 1px solid rgba(255, 164, 43, 0.4); }
+    .srs-tier-2 { background: rgba(229, 169, 60, 0.18); color: #e5a93c; border: 1px solid rgba(229, 169, 60, 0.4); }
+    .srs-tier-3 { background: rgba(29, 185, 84, 0.18); color: var(--sp-green); border: 1px solid rgba(29, 185, 84, 0.4); }
+    .srs-tier-4 { background: rgba(61, 145, 244, 0.18); color: var(--sp-blue); border: 1px solid rgba(61, 145, 244, 0.4); }
+    .srs-tier-5 { background: rgba(255, 215, 0, 0.18); color: #ffd700; border: 1px solid rgba(255, 215, 0, 0.4); }
+    .srs-due-badge { background: rgba(241, 94, 108, 0.25); color: #ff5263; border: 1px solid #f15e6c; font-weight: 800; animation: spPulseDue 2s infinite ease-in-out; }
+    @keyframes spPulseDue { 0%, 100% { opacity: 1; } 50% { opacity: 0.65; } }
+
+    .sp-mastery-bar-wrap {
+      width: 100%; height: 6px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden; margin: 6px 0 8px;
+    }
+    .sp-mastery-bar-fill {
+      height: 100%; border-radius: 4px; transition: width 0.3s ease;
+    }
+    .sp-ai-report-card {
+      background: linear-gradient(135deg, rgba(29, 185, 84, 0.08) 0%, rgba(24, 24, 24, 0.95) 100%);
+      border: 1px solid rgba(29, 185, 84, 0.35); border-radius: 10px; padding: 18px; margin-top: 16px; animation: spFadeIn .25s ease-out;
+    }
 
     .sp-selection-tooltip {
       position: absolute; display: none; z-index: 3500;
@@ -1204,10 +1220,12 @@
     </div>
 
     <!-- SRS Filter Chips -->
-    <div style="display:flex; gap:6px; margin-bottom:12px; overflow-x:auto;">
+    <div style="display:flex; gap:6px; margin-bottom:12px; overflow-x:auto; padding-bottom:4px;">
       <button class="sp-chip active" id="srsFilterAll">Tất cả (<span id="srsCountAll">0</span>)</button>
-      <button class="sp-chip" id="srsFilterDue" style="color:var(--sp-red);">🔔 Cần ôn tập (<span id="srsCountDue">0</span>)</button>
-      <button class="sp-chip" id="srsFilterMastered" style="color:var(--sp-orange);">⭐ Đã thuộc (<span id="srsCountMastered">0</span>)</button>
+      <button class="sp-chip" id="srsFilterDue" style="color:var(--sp-red);">🔔 Cần ôn (<span id="srsCountDue">0</span>)</button>
+      <button class="sp-chip" id="srsFilterLearning" style="color:var(--sp-orange);">🔴 Chưa thuộc (<span id="srsCountLearning">0</span>)</button>
+      <button class="sp-chip" id="srsFilterDeveloping" style="color:#e5a93c;">🟡 Đang luyện (<span id="srsCountDeveloping">0</span>)</button>
+      <button class="sp-chip" id="srsFilterMastered" style="color:var(--sp-green);">👑 Thành thạo (<span id="srsCountMastered">0</span>)</button>
     </div>
 
     <input type="text" id="vocabFilterInput" style="width:100%; padding:8px 12px; border-radius:6px; border:1px solid var(--sp-border); background:#121212; color:#fff; font-size:13px; outline:none; margin-bottom:12px;" placeholder="Tìm trong sổ từ...">
@@ -4389,23 +4407,46 @@ $('clearAllMistakesBtn').onclick = () => {
 };
 
 // ----------------------------------------------------
-// SPACED REPETITION (SRS) & VOCABULARY NOTEBOOK
 // ----------------------------------------------------
-// SRS Intervals in milliseconds:
-// Stage 0: 0 hours (new)
-// Stage 1: 1 day
-// Stage 2: 3 days
-// Stage 3: 7 days
-// Stage 4: 14 days
-// Stage 5: 30 days (Mastered)
-const SRS_INTERVALS = [
-  0,
-  1 * 24 * 60 * 60 * 1000,
-  3 * 24 * 60 * 60 * 1000,
-  7 * 24 * 60 * 60 * 1000,
-  14 * 24 * 60 * 60 * 1000,
-  30 * 24 * 60 * 60 * 1000
+// AI-POWERED SPACED REPETITION SYSTEM (SRS) & MASTERY ENGINE
+// ----------------------------------------------------
+// Thay vì để học viên tự đánh giá, Gemini AI sẽ tự động phân tích và chấm điểm
+// năng lực sản sinh từ (phản xạ dịch, collocations, ngữ pháp, word family).
+// Dựa trên nghiên cứu đường cong quên lãng Ebbinghaus và thuật toán SM-2/FSRS:
+// Từ điểm số AI (0 - 100), hệ thống chia 6 cấp độ thuộc và tự động phân bổ chu kỳ ôn:
+const SRS_MASTERY_TIERS = [
+  { tier: 0, minScore: 0,  maxScore: 39, name: 'Chưa thuộc', icon: '🔴', color: 'var(--sp-red)', intervalMs: 4 * 60 * 60 * 1000, intervalLabel: '4 giờ', desc: 'Chưa nhớ từ hoặc sai ngữ nghĩa, cần củng cố ngay trong ngày' },
+  { tier: 1, minScore: 40, maxScore: 59, name: 'Nhận biết sơ', icon: '🟠', color: 'var(--sp-orange)', intervalMs: 24 * 60 * 60 * 1000, intervalLabel: '1 ngày', desc: 'Nhớ láng máng, còn sai ngữ pháp hoặc dạng từ' },
+  { tier: 2, minScore: 60, maxScore: 74, name: 'Đang tiến bộ', icon: '🟡', color: '#e5a93c', intervalMs: 3 * 24 * 60 * 60 * 1000, intervalLabel: '3 ngày', desc: 'Nắm được nghĩa cơ bản, cần rèn luyện thêm ngữ cảnh' },
+  { tier: 3, minScore: 75, maxScore: 89, name: 'Vận dụng tốt', icon: '🟢', color: 'var(--sp-green)', intervalMs: 7 * 24 * 60 * 60 * 1000, intervalLabel: '7 ngày', desc: 'Vận dụng đúng câu và ngữ cảnh, bước vào trí nhớ trung hạn' },
+  { tier: 4, minScore: 90, maxScore: 97, name: 'Nhuần nhuyễn', icon: '💎', color: '#3d91f4', intervalMs: 14 * 24 * 60 * 60 * 1000, intervalLabel: '14 ngày', desc: 'Phản xạ chuẩn xác, áp dụng collocations tự nhiên' },
+  { tier: 5, minScore: 98, maxScore: 100, name: 'Làm chủ (IELTS)', icon: '👑', color: '#ffd700', intervalMs: 30 * 24 * 60 * 60 * 1000, intervalLabel: '30 ngày', desc: 'Bộ nhớ dài hạn vững chắc, làm chủ hoàn toàn từ vựng' }
 ];
+
+const SRS_INTERVALS = SRS_MASTERY_TIERS.map(t => t.intervalMs);
+
+function getMasteryTierInfo(score, stageFallback = 0) {
+  if (typeof score === 'number' && score >= 0) {
+    if (score >= 98) return SRS_MASTERY_TIERS[5];
+    if (score >= 90) return SRS_MASTERY_TIERS[4];
+    if (score >= 75) return SRS_MASTERY_TIERS[3];
+    if (score >= 60) return SRS_MASTERY_TIERS[2];
+    if (score >= 40) return SRS_MASTERY_TIERS[1];
+    return SRS_MASTERY_TIERS[0];
+  }
+  const tierIdx = Math.min(5, Math.max(0, stageFallback || 0));
+  return SRS_MASTERY_TIERS[tierIdx];
+}
+
+function formatTimeRemaining(nextReviewTimestamp) {
+  if (!nextReviewTimestamp) return 'Đến hạn ôn';
+  const diff = nextReviewTimestamp - Date.now();
+  if (diff <= 0) return 'Đến hạn ôn ngay';
+  const hours = Math.round(diff / (1000 * 60 * 60));
+  if (hours < 24) return `Sau ${Math.max(1, hours)} giờ`;
+  const days = Math.round(diff / (1000 * 60 * 60 * 24));
+  return `Sau ${days} ngày`;
+}
 
 function isWordSaved(word) {
   return currentVocabNotebook.some(v => v.word.toLowerCase() === word.toLowerCase());
@@ -4431,9 +4472,12 @@ function toggleSaveWord(word, ipa, groupedMeanings, audioUrl) {
       audio: audioUrl || null,
       savedAt: Date.now(),
       srsStage: 0,
+      masteryScore: 0,
       nextReview: Date.now(),
       lastReviewed: null,
-      reviewCount: 0
+      reviewCount: 0,
+      lastFeedback: '',
+      lastAdvice: ''
     });
   }
   saveState();
@@ -4451,15 +4495,22 @@ function updateVocabCountUi() {
   const count = currentVocabNotebook.length;
   const now = Date.now();
   const dueCount = currentVocabNotebook.filter(v => (v.nextReview || 0) <= now).length;
-  const masteredCount = currentVocabNotebook.filter(v => (v.srsStage || 0) >= 5).length;
+  const learningCount = currentVocabNotebook.filter(v => (v.masteryScore ?? ((v.srsStage || 0) * 20)) < 60).length;
+  const developingCount = currentVocabNotebook.filter(v => {
+    const sc = v.masteryScore ?? ((v.srsStage || 0) * 20);
+    return sc >= 60 && sc < 90;
+  }).length;
+  const masteredCount = currentVocabNotebook.filter(v => (v.masteryScore ?? ((v.srsStage || 0) * 20)) >= 90 || (v.srsStage || 0) >= 5).length;
 
   $('topVocabCount').textContent = count;
   $('dockVocabCount').textContent = count;
   $('drawerVocabCount').textContent = count;
 
-  $('srsCountAll').textContent = count;
-  $('srsCountDue').textContent = dueCount;
-  $('srsCountMastered').textContent = masteredCount;
+  if ($('srsCountAll')) $('srsCountAll').textContent = count;
+  if ($('srsCountDue')) $('srsCountDue').textContent = dueCount;
+  if ($('srsCountLearning')) $('srsCountLearning').textContent = learningCount;
+  if ($('srsCountDeveloping')) $('srsCountDeveloping').textContent = developingCount;
+  if ($('srsCountMastered')) $('srsCountMastered').textContent = masteredCount;
 
   if (dueCount > 0) {
     $('topSrsDueBadge').style.display = 'inline-block';
@@ -4489,8 +4540,15 @@ function renderVocabNotebook() {
   let list = currentVocabNotebook;
   if (srsFilterMode === 'due') {
     list = list.filter(v => (v.nextReview || 0) <= now);
+  } else if (srsFilterMode === 'learning') {
+    list = list.filter(v => (v.masteryScore ?? ((v.srsStage || 0) * 20)) < 60);
+  } else if (srsFilterMode === 'developing') {
+    list = list.filter(v => {
+      const sc = v.masteryScore ?? ((v.srsStage || 0) * 20);
+      return sc >= 60 && sc < 90;
+    });
   } else if (srsFilterMode === 'mastered') {
-    list = list.filter(v => (v.srsStage || 0) >= 5);
+    list = list.filter(v => (v.masteryScore ?? ((v.srsStage || 0) * 20)) >= 90 || (v.srsStage || 0) >= 5);
   }
 
   if (query) {
@@ -4502,7 +4560,7 @@ function renderVocabNotebook() {
       <div style="text-align:center; padding:40px 10px; color:var(--sp-subtext);">
         <div style="font-size:36px; margin-bottom:8px;">⭐</div>
         <strong style="color:#fff; font-size:15px;">Không có từ nào trong danh mục này</strong>
-        <p style="font-size:13px; margin-top:6px;">Bấm ⭐ Lưu từ khi tra từ điển để bắt đầu lộ trình lặp lại ngắt quãng!</p>
+        <p style="font-size:13px; margin-top:6px;">Bấm ⭐ Lưu từ khi tra từ điển để bắt đầu lộ trình đánh giá mức độ thuộc bằng AI!</p>
       </div>
     `;
     return;
@@ -4511,15 +4569,8 @@ function renderVocabNotebook() {
   container.innerHTML = list.map(item => {
     const stage = item.srsStage || 0;
     const isDue = (item.nextReview || 0) <= now;
-    let badgeClass = 'srs-ok';
-    let badgeText = `Giai đoạn ${stage}/5`;
-    if (stage >= 5) {
-      badgeClass = 'srs-mastered';
-      badgeText = '⭐ Thành thạo';
-    } else if (isDue) {
-      badgeClass = 'srs-due';
-      badgeText = '🔔 Cần ôn tập';
-    }
+    const score = typeof item.masteryScore === 'number' ? item.masteryScore : (stage * 20);
+    const tier = getMasteryTierInfo(score, stage);
 
     return `
       <div class="sp-vocab-item" data-word="${escapeHtml(item.word)}">
@@ -4528,7 +4579,10 @@ function renderVocabNotebook() {
             <span style="font-size:16px; font-weight:800; color:#fff;">${escapeHtml(item.word)}</span>
             ${item.ipa ? `<span style="font-size:12px; color:var(--sp-blue); font-family:monospace; margin-left:6px;">${escapeHtml(item.ipa)}</span>` : ''}
             <span style="font-size:10px; font-weight:800; padding:1px 5px; border-radius:4px; background:rgba(29, 185, 84, 0.15); color:var(--sp-green); text-transform:uppercase; margin-left:4px;">${escapeHtml(item.pos)}</span>
-            <span class="sp-srs-badge ${badgeClass}" style="margin-left:4px;">${badgeText}</span>
+            <span class="sp-srs-badge srs-tier-${tier.tier}" style="margin-left:4px;">
+              ${tier.icon} Cấp ${tier.tier}: ${tier.name}
+            </span>
+            ${isDue ? `<span class="sp-srs-badge srs-due-badge" style="margin-left:4px;">🔔 Cần ôn ngay</span>` : ''}
           </div>
           <div style="display:flex; gap:4px; align-items:center;">
             <button class="sp-close-btn vocab-audio-btn" title="Nghe phát âm" style="font-size:15px;">🔊</button>
@@ -4536,11 +4590,26 @@ function renderVocabNotebook() {
           </div>
         </div>
         <div style="font-size:13px; color:#dbe4f8; margin:4px 0;">${escapeHtml(item.meaning)}</div>
-        
+
+        <!-- AI Mastery Meter Bar -->
+        <div class="sp-mastery-bar-wrap" title="Độ thuộc AI đánh giá: ${score}%">
+          <div class="sp-mastery-bar-fill" style="width:${Math.max(4, score)}%; background:${tier.color};"></div>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center; font-size:11px; color:var(--sp-subtext); margin-top:-2px; margin-bottom:6px;">
+          <span>Độ thuộc AI: <strong style="color:${tier.color};">${score}%</strong> (${tier.name})</span>
+          <span>Lần ôn tiếp: <strong style="color:${isDue ? 'var(--sp-red)' : '#fff'};">${formatTimeRemaining(item.nextReview)}</strong></span>
+        </div>
+
+        ${item.lastFeedback ? `
+          <div style="font-size:11.5px; color:rgba(255,255,255,0.7); background:rgba(255,255,255,0.03); border-left:2px solid ${tier.color}; padding:4px 8px; border-radius:0 4px 4px 0; margin-bottom:6px;">
+            💡 <strong>AI nhận xét:</strong> ${escapeHtml(item.lastFeedback)}
+          </div>
+        ` : ''}
+
         <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; pt-2; border-top:1px solid rgba(255,255,255,0.06);">
           <span style="font-size:11px; color:var(--sp-muted);">Ôn lần cuối: ${item.lastReviewed ? new Date(item.lastReviewed).toLocaleDateString('vi-VN') : 'Mới'}</span>
-          <button class="sp-btn-sm green vocab-deep-btn" style="padding:4px 10px; font-size:11.5px;">
-            ✨ Luyện tập từ này (AI)
+          <button class="sp-btn-sm green vocab-deep-btn" style="padding:4px 12px; font-size:11.5px; display:inline-flex; align-items:center; gap:4px;">
+            <span>🤖</span> Luyện tập & Đánh giá AI
           </button>
         </div>
       </div>
@@ -4574,18 +4643,22 @@ function renderVocabNotebook() {
   });
 }
 
-$('srsFilterAll').onclick = () => { srsFilterMode = 'all'; updateSrsFilterPills(); renderVocabNotebook(); };
-$('srsFilterDue').onclick = () => { srsFilterMode = 'due'; updateSrsFilterPills(); renderVocabNotebook(); };
-$('srsFilterMastered').onclick = () => { srsFilterMode = 'mastered'; updateSrsFilterPills(); renderVocabNotebook(); };
-
 function updateSrsFilterPills() {
-  $('srsFilterAll').classList.toggle('active', srsFilterMode === 'all');
-  $('srsFilterDue').classList.toggle('active', srsFilterMode === 'due');
-  $('srsFilterMastered').classList.toggle('active', srsFilterMode === 'mastered');
+  if ($('srsFilterAll')) $('srsFilterAll').classList.toggle('active', srsFilterMode === 'all');
+  if ($('srsFilterDue')) $('srsFilterDue').classList.toggle('active', srsFilterMode === 'due');
+  if ($('srsFilterLearning')) $('srsFilterLearning').classList.toggle('active', srsFilterMode === 'learning');
+  if ($('srsFilterDeveloping')) $('srsFilterDeveloping').classList.toggle('active', srsFilterMode === 'developing');
+  if ($('srsFilterMastered')) $('srsFilterMastered').classList.toggle('active', srsFilterMode === 'mastered');
 }
 
+if ($('srsFilterAll')) $('srsFilterAll').onclick = () => { srsFilterMode = 'all'; updateSrsFilterPills(); renderVocabNotebook(); };
+if ($('srsFilterDue')) $('srsFilterDue').onclick = () => { srsFilterMode = 'due'; updateSrsFilterPills(); renderVocabNotebook(); };
+if ($('srsFilterLearning')) $('srsFilterLearning').onclick = () => { srsFilterMode = 'learning'; updateSrsFilterPills(); renderVocabNotebook(); };
+if ($('srsFilterDeveloping')) $('srsFilterDeveloping').onclick = () => { srsFilterMode = 'developing'; updateSrsFilterPills(); renderVocabNotebook(); };
+if ($('srsFilterMastered')) $('srsFilterMastered').onclick = () => { srsFilterMode = 'mastered'; updateSrsFilterPills(); renderVocabNotebook(); };
+
 // ----------------------------------------------------
-// AI DEEP VOCABULARY PRACTICE (Word Family, Collocations, SRS)
+// AI DEEP VOCABULARY PRACTICE & MASTERY EVALUATION
 // ----------------------------------------------------
 let activePracticingWord = null;
 
@@ -4597,7 +4670,7 @@ async function openVocabPracticeModal(vocabItem) {
     <div style="text-align:center; padding:40px; color:var(--sp-subtext);">
       <div class="sp-dot sp-dot-busy" style="width:16px; height:16px; margin-bottom:12px;"></div>
       <div style="font-size:15px; color:#fff; font-weight:700;">AI đang phân tích chuyên sâu từ "${vocabItem.word}"...</div>
-      <div style="font-size:12.5px; margin-top:6px;">Biên soạn Word Family, Collocations IELTS & Bài tập dịch 2 chiều.</div>
+      <div style="font-size:12.5px; margin-top:6px;">Biên soạn Word Family, Collocations IELTS & Bài tập phản xạ 3 phần.</div>
     </div>
   `;
   $('vocabPracticeModal').classList.add('open');
@@ -4657,6 +4730,9 @@ Trả về DUY NHẤT một chuỗi JSON hợp lệ (không kèm Markdown block)
 }
 
 function renderVocabPracticeContent(data, vocabItem) {
+  const currentScore = typeof vocabItem.masteryScore === 'number' ? vocabItem.masteryScore : (vocabItem.srsStage || 0) * 20;
+  const currentTier = getMasteryTierInfo(currentScore, vocabItem.srsStage || 0);
+
   let wfHtml = (data.word_family || []).map(f => `
     <tr>
       <td style="color:var(--sp-green); font-weight:700; width:90px;">${escapeHtml(f.type)}</td>
@@ -4686,68 +4762,338 @@ function renderVocabPracticeContent(data, vocabItem) {
 
     <!-- 3. Bài tập 1: Dịch Việt -> Anh -->
     <div class="sp-deep-card">
-      <div style="font-size:12px; font-weight:800; color:var(--sp-orange); text-transform:uppercase; margin-bottom:6px;">3. Bài tập Dịch Việt ➔ Anh</div>
-      <div style="font-size:14.5px; font-weight:600; color:#fff; margin-bottom:8px;">"${escapeHtml(data.ex1_vi_to_en?.vi || '')}"</div>
-      <div style="display:flex; gap:8px;">
-        <input type="text" id="practiceInput1" style="flex:1; padding:8px 12px; border-radius:6px; border:1px solid var(--sp-border); background:#121212; color:#fff; outline:none;" placeholder="Gõ câu dịch tiếng Anh của bạn...">
-        <button class="sp-btn-secondary" id="checkEx1Btn">Kiểm tra</button>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+        <span style="font-size:12px; font-weight:800; color:var(--sp-orange); text-transform:uppercase;">
+          3. Bài tập Dịch Việt ➔ Anh (Phản xạ dùng từ "${escapeHtml(vocabItem.word)}")
+        </span>
+        <button class="sp-btn-secondary" id="toggleHint1Btn" type="button" style="padding:2px 8px; font-size:11px;">💡 Gợi ý</button>
       </div>
-      <div id="ex1Result" style="margin-top:8px; font-size:13px; display:none;"></div>
+      <div style="font-size:14.5px; font-weight:600; color:#fff; margin-bottom:8px;">"${escapeHtml(data.ex1_vi_to_en?.vi || '')}"</div>
+      <input type="text" id="practiceInput1" style="width:100%; padding:9px 12px; border-radius:6px; border:1px solid var(--sp-border); background:#121212; color:#fff; font-size:13.5px; outline:none;" placeholder="Gõ câu dịch tiếng Anh của bạn (hãy dùng từ '${escapeHtml(vocabItem.word)}')...">
+      <div id="hint1Box" style="display:none; margin-top:8px; font-size:12.5px; background:rgba(255,255,255,0.04); padding:8px 10px; border-radius:6px; color:var(--sp-subtext);">
+        <strong style="color:var(--sp-green);">Đáp án mẫu:</strong> "${escapeHtml(data.ex1_vi_to_en?.sample_en || '')}"
+      </div>
     </div>
 
     <!-- 4. Bài tập 2: Dịch Anh -> Việt -->
     <div class="sp-deep-card">
-      <div style="font-size:12px; font-weight:800; color:var(--sp-green); text-transform:uppercase; margin-bottom:6px;">4. Bài tập Dịch Anh ➔ Việt</div>
-      <div style="font-size:14.5px; font-weight:600; color:#fff; margin-bottom:8px;">"${escapeHtml(data.ex2_en_to_vi?.en || '')}"</div>
-      <div style="display:flex; gap:8px;">
-        <input type="text" id="practiceInput2" style="flex:1; padding:8px 12px; border-radius:6px; border:1px solid var(--sp-border); background:#121212; color:#fff; outline:none;" placeholder="Gõ câu dịch tiếng Việt của bạn...">
-        <button class="sp-btn-secondary" id="checkEx2Btn">Kiểm tra</button>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+        <span style="font-size:12px; font-weight:800; color:var(--sp-green); text-transform:uppercase;">
+          4. Bài tập Dịch Anh ➔ Việt (Thấu hiểu ngữ cảnh)
+        </span>
+        <button class="sp-btn-secondary" id="toggleHint2Btn" type="button" style="padding:2px 8px; font-size:11px;">💡 Gợi ý</button>
       </div>
-      <div id="ex2Result" style="margin-top:8px; font-size:13px; display:none;"></div>
+      <div style="font-size:14.5px; font-weight:600; color:#fff; margin-bottom:8px;">"${escapeHtml(data.ex2_en_to_vi?.en || '')}"</div>
+      <input type="text" id="practiceInput2" style="width:100%; padding:9px 12px; border-radius:6px; border:1px solid var(--sp-border); background:#121212; color:#fff; font-size:13.5px; outline:none;" placeholder="Gõ bản dịch tiếng Việt của bạn...">
+      <div id="hint2Box" style="display:none; margin-top:8px; font-size:12.5px; background:rgba(255,255,255,0.04); padding:8px 10px; border-radius:6px; color:var(--sp-subtext);">
+        <strong style="color:var(--sp-green);">Bản dịch tham khảo:</strong> "${escapeHtml(data.ex2_en_to_vi?.sample_vi || '')}"
+      </div>
     </div>
 
-    <!-- Completion / SRS Level Up Button -->
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:16px;">
-      <span style="font-size:12px; color:var(--sp-subtext);">Cấp độ hiện tại: <strong>Giai đoạn ${vocabItem.srsStage || 0}/5</strong></span>
-      <button class="sp-pill green" id="completeSrsSessionBtn" style="padding:9px 20px; font-size:14px;">
-        🎉 Đã hoàn thành ôn tập (Lên cấp SRS)
+    <!-- 5. Bài tập 3: Biến đổi dạng từ (Word Form Cloze) -->
+    <div class="sp-deep-card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+        <span style="font-size:12px; font-weight:800; color:var(--sp-blue); text-transform:uppercase;">
+          5. Bài tập Chia dạng từ (Word Form in Context)
+        </span>
+        <button class="sp-btn-secondary" id="toggleHint3Btn" type="button" style="padding:2px 8px; font-size:11px;">💡 Gợi ý</button>
+      </div>
+      <div style="font-size:14.5px; font-weight:600; color:#fff; margin-bottom:8px;">${escapeHtml(data.ex3_word_form?.sentence || '')}</div>
+      <div style="display:flex; gap:8px;">
+        <input type="text" id="practiceInput3" style="max-width:240px; padding:9px 12px; border-radius:6px; border:1px solid var(--sp-border); background:#121212; color:#fff; font-size:13.5px; outline:none;" placeholder="Điền dạng từ đúng...">
+      </div>
+      <div id="hint3Box" style="display:none; margin-top:8px; font-size:12.5px; background:rgba(255,255,255,0.04); padding:8px 10px; border-radius:6px; color:var(--sp-subtext);">
+        <strong style="color:var(--sp-green);">Dạng đúng:</strong> "${escapeHtml(data.ex3_word_form?.correct_form || '')}" — ${escapeHtml(data.ex3_word_form?.why || '')}
+      </div>
+    </div>
+
+    <!-- AI Evaluation CTA -->
+    <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:16px; margin-top:16px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+        <div>
+          <div style="font-size:12px; color:var(--sp-subtext);">Mức độ thuộc hiện tại:</div>
+          <div style="font-size:14px; font-weight:700; color:#fff; display:flex; align-items:center; gap:6px;">
+            <span class="sp-srs-badge srs-tier-${currentTier.tier}">${currentTier.icon} Cấp ${currentTier.tier}: ${currentTier.name} (${currentScore}%)</span>
+          </div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:12px; color:var(--sp-subtext);">Khoảng cách ôn tiếp:</div>
+          <div style="font-size:13px; font-weight:700; color:var(--sp-green);">${currentTier.intervalLabel}</div>
+        </div>
+      </div>
+
+      <button class="sp-pill green" id="aiEvaluatePracticeBtn" type="button" style="width:100%; padding:12px; font-size:14.5px; font-weight:800; justify-content:center; display:flex; align-items:center; gap:8px; cursor:pointer;">
+        <span>🤖</span> Nộp bài để AI Chấm Điểm & Phân Cấp Mức Độ Thuộc
       </button>
+      <div style="font-size:11.5px; color:var(--sp-subtext); text-align:center; margin-top:8px; line-height:1.4;">
+        Gemini AI sẽ chấm điểm từng câu, đánh giá mức độ thuộc theo khoa học Spaced Repetition và tự động phân chia khoảng thời gian học tối ưu!
+      </div>
+
+      <!-- AI Evaluation Result Report Box -->
+      <div id="aiPracticeReportContainer" style="display:none;"></div>
     </div>
   `;
 
-  // Bind checks
-  $('checkEx1Btn').onclick = () => {
-    $('ex1Result').style.display = 'block';
-    $('ex1Result').innerHTML = `
-      <div style="background:rgba(255,255,255,0.05); padding:8px 12px; border-radius:6px;">
-        <span style="color:var(--sp-green); font-weight:700;">Đáp án mẫu:</span>
-        <div style="color:#fff; margin-top:2px;">"${escapeHtml(data.ex1_vi_to_en?.sample_en || '')}"</div>
-      </div>
-    `;
+  // Bind hints
+  $('toggleHint1Btn').onclick = () => {
+    const box = $('hint1Box');
+    box.style.display = box.style.display === 'none' ? 'block' : 'none';
+  };
+  $('toggleHint2Btn').onclick = () => {
+    const box = $('hint2Box');
+    box.style.display = box.style.display === 'none' ? 'block' : 'none';
+  };
+  $('toggleHint3Btn').onclick = () => {
+    const box = $('hint3Box');
+    box.style.display = box.style.display === 'none' ? 'block' : 'none';
   };
 
-  $('checkEx2Btn').onclick = () => {
-    $('ex2Result').style.display = 'block';
-    $('ex2Result').innerHTML = `
-      <div style="background:rgba(255,255,255,0.05); padding:8px 12px; border-radius:6px;">
-        <span style="color:var(--sp-green); font-weight:700;">Đáp án tham khảo:</span>
-        <div style="color:#fff; margin-top:2px;">"${escapeHtml(data.ex2_en_to_vi?.sample_vi || '')}"</div>
-      </div>
-    `;
-  };
+  // Bind AI Evaluation
+  $('aiEvaluatePracticeBtn').onclick = async () => {
+    const ans1 = ($('practiceInput1')?.value || '').trim();
+    const ans2 = ($('practiceInput2')?.value || '').trim();
+    const ans3 = ($('practiceInput3')?.value || '').trim();
 
-  // Complete SRS Practice
-  $('completeSrsSessionBtn').onclick = () => {
-    const nextStage = Math.min(5, (vocabItem.srsStage || 0) + 1);
-    vocabItem.srsStage = nextStage;
-    vocabItem.lastReviewed = Date.now();
-    vocabItem.nextReview = Date.now() + (SRS_INTERVALS[nextStage] || 30 * 86400000);
-    vocabItem.reviewCount = (vocabItem.reviewCount || 0) + 1;
-    saveState();
-    updateVocabCountUi();
-    renderVocabNotebook();
+    if (!ans1 && !ans2 && !ans3) {
+      return alert('Vui lòng hoàn thành ít nhất 1 bài tập phía trên để AI có cơ sở đánh giá mức độ thuộc của bạn!');
+    }
+
+    const btn = $('aiEvaluatePracticeBtn');
+    btn.disabled = true;
+    btn.innerHTML = `<span class="sp-dot sp-dot-busy" style="display:inline-block; margin-right:6px;"></span> ⏳ AI đang chấm điểm & phân tích mức độ thuộc...`;
+
+    try {
+      const evalResult = await evaluateVocabPracticeWithAi(vocabItem, data, ans1, ans2, ans3);
+      displayAiEvaluationResult(vocabItem, evalResult);
+    } catch (err) {
+      console.warn('AI evaluation error, using fallback:', err);
+      const fallbackResult = localEvaluateVocabPractice(vocabItem, data, ans1, ans2, ans3);
+      displayAiEvaluationResult(vocabItem, fallbackResult);
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = `<span>🔄</span> Chấm lại bài làm`;
+    }
+  };
+}
+
+async function evaluateVocabPracticeWithAi(vocabItem, data, ans1, ans2, ans3) {
+  const evalPrompt = `Bạn là chuyên gia sư phạm ngôn ngữ và khảo thí IELTS. Hãy ĐÁNH GIÁ MỨC ĐỘ THUỘC & NĂNG LỰC VẬN DỤNG của học viên đối với từ vựng mục tiêu: "${vocabItem.word}" (Nghĩa: ${vocabItem.meaning}).
+
+Dữ liệu bài làm của học viên:
+1. Bài tập Dịch Việt -> Anh (Đòi hỏi phản xạ vận dụng từ "${vocabItem.word}"):
+- Câu gốc tiếng Việt: "${data.ex1_vi_to_en?.vi || ''}"
+- Học viên trả lời: "${ans1 || '(Chưa làm)'}"
+- Câu mẫu tham khảo: "${data.ex1_vi_to_en?.sample_en || ''}"
+
+2. Bài tập Dịch Anh -> Việt (Đòi hỏi khả năng thấu hiểu ngữ cảnh):
+- Câu gốc tiếng Anh: "${data.ex2_en_to_vi?.en || ''}"
+- Học viên trả lời: "${ans2 || '(Chưa làm)'}"
+- Bản dịch tham khảo: "${data.ex2_en_to_vi?.sample_vi || ''}"
+
+3. Bài tập chia đúng dạng từ (Word Family in context):
+- Câu gốc: "${data.ex3_word_form?.sentence || ''}"
+- Học viên điền: "${ans3 || '(Chưa làm)'}"
+- Đáp án đúng: "${data.ex3_word_form?.correct_form || ''}"
+
+Hãy chấm điểm công tâm, chuyên nghiệp theo thang điểm 100:
+- Bài 1 (tối đa 50đ): Học viên có dùng đúng từ mục tiêu "${vocabItem.word}" và đúng ngữ pháp không?
+- Bài 2 (tối đa 30đ): Dịch đúng nghĩa và sắc thái không?
+- Bài 3 (tối đa 20đ): Chia đúng dạng từ không?
+(Nếu bài nào học viên không làm thì cho 0 điểm bài đó).
+
+Quy đổi điểm tổng sang Cấp độ thuộc (Tier 0-5):
+- 0 đến 39: Cấp 0 (Chưa thuộc / Cần học lại ngay) -> Khoảng cách ôn tiếp: 4 giờ
+- 40 đến 59: Cấp 1 (Nhận biết sơ khởi) -> Khoảng cách ôn tiếp: 1 ngày
+- 60 đến 74: Cấp 2 (Đang tiến bộ / Khá) -> Khoảng cách ôn tiếp: 3 ngày
+- 75 đến 89: Cấp 3 (Vận dụng tốt) -> Khoảng cách ôn tiếp: 7 ngày
+- 90 đến 97: Cấp 4 (Nhuần nhuyễn) -> Khoảng cách ôn tiếp: 14 ngày
+- 98 đến 100: Cấp 5 (Làm chủ IELTS) -> Khoảng cách ôn tiếp: 30 ngày
+
+Trả về DUY NHẤT một chuỗi JSON hợp lệ (không kèm Markdown):
+{
+  "score": 85,
+  "tier": 3,
+  "tier_name": "Vận dụng tốt",
+  "summary_feedback": "Nhận xét tổng quan súc tích về năng lực làm chủ từ này của học viên.",
+  "ex1_analysis": {
+    "score": 42,
+    "max_score": 50,
+    "used_target_word": true,
+    "critique": "Nhận xét câu dịch tiếng Anh.",
+    "improved_version": "Câu tiếng Anh gợi ý chuẩn IELTS hơn nếu có"
+  },
+  "ex2_analysis": {
+    "score": 26,
+    "max_score": 30,
+    "critique": "Nhận xét bản dịch tiếng Việt."
+  },
+  "ex3_analysis": {
+    "score": 17,
+    "max_score": 20,
+    "critique": "Giải thích dạng từ chia đúng/sai."
+  },
+  "advice": "Lời khuyên để từ này ăn sâu vào trí nhớ dài hạn."
+}`;
+
+  return await callGeminiApiWithFallback(evalPrompt, 'Chỉ trả về JSON hợp lệ.');
+}
+
+function localEvaluateVocabPractice(vocabItem, data, ans1, ans2, ans3) {
+  const target = (vocabItem.word || '').toLowerCase();
+  let score1 = 0, score2 = 0, score3 = 0;
+  let critique1 = '', critique2 = '', critique3 = '';
+
+  if (ans1) {
+    const a1 = ans1.toLowerCase();
+    if (a1.includes(target)) {
+      score1 = 38;
+      critique1 = `Đã vận dụng thành công từ mục tiêu "${vocabItem.word}" trong câu!`;
+    } else {
+      score1 = 18;
+      critique1 = `Câu dịch chưa chứa từ mục tiêu "${vocabItem.word}".`;
+    }
+    if (ans1.trim().split(/\s+/).length >= 5) score1 += 12;
+  } else {
+    critique1 = 'Bạn chưa làm bài tập này (0/50đ).';
+  }
+
+  if (ans2) {
+    score2 = 25;
+    critique2 = 'Đã hoàn thành bản dịch tiếng Việt.';
+  } else {
+    critique2 = 'Bạn chưa làm bài tập này (0/30đ).';
+  }
+
+  const correctForm = (data.ex3_word_form?.correct_form || '').trim().toLowerCase();
+  if (ans3) {
+    if (ans3.trim().toLowerCase() === correctForm) {
+      score3 = 20;
+      critique3 = `Chính xác! Dạng từ đúng là "${correctForm}".`;
+    } else {
+      score3 = 8;
+      critique3 = `Chưa chính xác. Dạng từ đúng là "${correctForm}".`;
+    }
+  } else {
+    critique3 = 'Bạn chưa làm bài tập này (0/20đ).';
+  }
+
+  const totalScore = Math.min(100, score1 + score2 + score3);
+  const tierInfo = getMasteryTierInfo(totalScore);
+
+  return {
+    score: totalScore,
+    tier: tierInfo.tier,
+    tier_name: tierInfo.name,
+    summary_feedback: `Đánh giá sơ bộ: Bạn đạt ${totalScore}/100 điểm (${tierInfo.name}). Tiếp tục rèn luyện để từ này ăn sâu vào tiềm thức!`,
+    ex1_analysis: { score: score1, max_score: 50, critique: critique1, improved_version: data.ex1_vi_to_en?.sample_en || '' },
+    ex2_analysis: { score: score2, max_score: 30, critique: critique2 },
+    ex3_analysis: { score: score3, max_score: 20, critique: critique3 },
+    advice: `Chu kỳ ôn tập tiếp theo: sau ${tierInfo.intervalLabel}.`
+  };
+}
+
+function displayAiEvaluationResult(vocabItem, evalResult) {
+  const score = Math.max(0, Math.min(100, Math.round(evalResult.score || 0)));
+  const tierInfo = getMasteryTierInfo(score);
+
+  // Update item in notebook
+  vocabItem.masteryScore = score;
+  vocabItem.srsStage = tierInfo.tier;
+  vocabItem.lastReviewed = Date.now();
+  vocabItem.nextReview = Date.now() + tierInfo.intervalMs;
+  vocabItem.reviewCount = (vocabItem.reviewCount || 0) + 1;
+  vocabItem.lastFeedback = evalResult.summary_feedback || '';
+  vocabItem.lastAdvice = evalResult.advice || '';
+
+  saveState();
+  updateVocabCountUi();
+  renderVocabNotebook();
+
+  const reportContainer = $('aiPracticeReportContainer');
+  if (!reportContainer) return;
+  reportContainer.style.display = 'block';
+
+  reportContainer.innerHTML = `
+    <div class="sp-ai-report-card">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px; flex-wrap:wrap; gap:10px;">
+        <div>
+          <div style="font-size:11px; text-transform:uppercase; font-weight:800; color:var(--sp-green); letter-spacing:0.5px;">
+            KẾT QUẢ ĐÁNH GIÁ MỨC ĐỘ THUỘC TỪ AI
+          </div>
+          <div style="font-size:22px; font-weight:900; color:#fff; margin-top:2px; display:flex; align-items:center; gap:8px;">
+            <span style="color:${tierInfo.color}; font-size:26px;">${score}</span>
+            <span style="font-size:14px; color:var(--sp-subtext);">/ 100 điểm</span>
+            <span class="sp-srs-badge srs-tier-${tierInfo.tier}" style="font-size:12px; margin-left:6px;">
+              ${tierInfo.icon} Cấp ${tierInfo.tier}: ${tierInfo.name}
+            </span>
+          </div>
+        </div>
+        <div style="background:rgba(255,255,255,0.06); padding:8px 14px; border-radius:8px; border:1px solid rgba(255,255,255,0.1); text-align:right;">
+          <div style="font-size:11px; color:var(--sp-subtext);">Lần ôn tập tiếp theo:</div>
+          <div style="font-size:14px; font-weight:800; color:var(--sp-green); margin-top:2px;">
+            ⏳ Sau ${tierInfo.intervalLabel}
+          </div>
+        </div>
+      </div>
+
+      <!-- Mastery Bar -->
+      <div class="sp-mastery-bar-wrap" style="height:8px; margin-bottom:10px;">
+        <div class="sp-mastery-bar-fill" style="width:${Math.max(4, score)}%; background:${tierInfo.color};"></div>
+      </div>
+
+      <div style="font-size:13.5px; color:#fff; line-height:1.5; margin-bottom:14px; background:rgba(0,0,0,0.3); padding:10px 12px; border-radius:6px;">
+        ${escapeHtml(evalResult.summary_feedback || '')}
+      </div>
+
+      <!-- Exercise Breakdowns -->
+      <div style="font-size:12.5px; margin-bottom:14px; display:grid; gap:8px;">
+        <div style="background:rgba(255,255,255,0.04); padding:8px 12px; border-radius:6px;">
+          <div style="display:flex; justify-content:space-between; font-weight:700; color:var(--sp-orange); margin-bottom:3px;">
+            <span>Bài 1: Dịch Việt ➔ Anh</span>
+            <span>${evalResult.ex1_analysis?.score || 0}/${evalResult.ex1_analysis?.max_score || 50}đ</span>
+          </div>
+          <div style="color:var(--sp-subtext);">${escapeHtml(evalResult.ex1_analysis?.critique || '')}</div>
+          ${evalResult.ex1_analysis?.improved_version ? `
+            <div style="color:var(--sp-green); margin-top:4px; font-size:12px;">
+              ✨ <strong>Bản dịch chuẩn IELTS:</strong> "${escapeHtml(evalResult.ex1_analysis.improved_version)}"
+            </div>
+          ` : ''}
+        </div>
+
+        <div style="background:rgba(255,255,255,0.04); padding:8px 12px; border-radius:6px;">
+          <div style="display:flex; justify-content:space-between; font-weight:700; color:var(--sp-green); margin-bottom:3px;">
+            <span>Bài 2: Dịch Anh ➔ Việt</span>
+            <span>${evalResult.ex2_analysis?.score || 0}/${evalResult.ex2_analysis?.max_score || 30}đ</span>
+          </div>
+          <div style="color:var(--sp-subtext);">${escapeHtml(evalResult.ex2_analysis?.critique || '')}</div>
+        </div>
+
+        <div style="background:rgba(255,255,255,0.04); padding:8px 12px; border-radius:6px;">
+          <div style="display:flex; justify-content:space-between; font-weight:700; color:var(--sp-blue); margin-bottom:3px;">
+            <span>Bài 3: Biến đổi dạng từ</span>
+            <span>${evalResult.ex3_analysis?.score || 0}/${evalResult.ex3_analysis?.max_score || 20}đ</span>
+          </div>
+          <div style="color:var(--sp-subtext);">${escapeHtml(evalResult.ex3_analysis?.critique || '')}</div>
+        </div>
+      </div>
+
+      ${evalResult.advice ? `
+        <div style="font-size:12.5px; color:#dbe4f8; margin-bottom:14px; font-style:italic;">
+          💡 <strong>Lời khuyên duy trì:</strong> ${escapeHtml(evalResult.advice)}
+        </div>
+      ` : ''}
+
+      <div style="display:flex; justify-content:flex-end;">
+        <button class="sp-pill green" id="closeAiPracticeSuccessBtn" type="button" style="padding:8px 20px; font-size:13.5px;">
+          ✓ Hoàn thành buổi ôn & Lưu kết quả
+        </button>
+      </div>
+    </div>
+  `;
+
+  $('closeAiPracticeSuccessBtn').onclick = () => {
     $('vocabPracticeModal').classList.remove('open');
-    alert(`🎉 Chúc mừng! Từ "${vocabItem.word}" đã nâng lên Cấp SRS ${nextStage}/5. Lần ôn tập tiếp theo: sau ${Math.round((SRS_INTERVALS[nextStage] || 0) / 86400000)} ngày.`);
+    showToast(`🎉 Đã lưu kết quả! Từ "${vocabItem.word}" đạt Cấp ${tierInfo.tier}: ${tierInfo.name}`);
   };
 }
 
@@ -4817,8 +5163,10 @@ async function sendDiscordSrsNotification(dueVocabs, forceTest = false) {
     const topItems = dueVocabs.slice(0, 6);
     const wordsText = topItems.map((v, i) => {
       const ipa = v.ipa ? ` \`${v.ipa}\`` : '';
-      const mean = v.meanings && v.meanings[0] ? ` — ${v.meanings[0].meaning}` : '';
-      return `**${i + 1}. ${v.word}**${ipa}${mean}`;
+      const sc = typeof v.masteryScore === 'number' ? v.masteryScore : (v.srsStage || 0) * 20;
+      const tier = getMasteryTierInfo(sc, v.srsStage || 0);
+      const mean = v.meaning ? ` — ${v.meaning}` : '';
+      return `**${i + 1}. ${v.word}**${ipa} • ${tier.icon} **${tier.name} (${sc}%)**${mean}`;
     }).join('\n');
 
     fields.push({
