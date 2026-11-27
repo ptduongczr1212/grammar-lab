@@ -5653,9 +5653,17 @@ async function sendDiscordSrsNotification(dueVocabs, forceTest = false) {
 
   const now = Date.now();
   if (!forceTest) {
+    if (!dueVocabs || dueVocabs.length === 0) return;
+
+    // Chữ ký đại diện cho danh sách các từ đang cần ôn
+    const currentDueSignature = dueVocabs.map(v => (v.word || '').toLowerCase()).sort().join(',');
+    const lastSignature = localStorage.getItem('gl_last_discord_due_signature') || '';
     const lastSent = parseInt(localStorage.getItem('gl_last_discord_srs_sent') || '0', 10);
-    // Don't spam Discord more than once every 3 hours for due words
-    if (now - lastSent < 3 * 3600 * 1000) return;
+
+    // Chỉ chặn nếu danh sách từ cần ôn giống hệt lần vừa gửi và cách nhau chưa tới 15 phút (tránh spam)
+    if (currentDueSignature === lastSignature && (now - lastSent < 15 * 60 * 1000)) {
+      return;
+    }
   }
 
   let fields = [];
@@ -5703,7 +5711,11 @@ async function sendDiscordSrsNotification(dueVocabs, forceTest = false) {
 
   try {
     await sendDiscordNotification(payload);
-    localStorage.setItem('gl_last_discord_srs_sent', String(now));
+    if (!forceTest) {
+      localStorage.setItem('gl_last_discord_srs_sent', String(now));
+      const currentDueSignature = dueVocabs.map(v => (v.word || '').toLowerCase()).sort().join(',');
+      localStorage.setItem('gl_last_discord_due_signature', currentDueSignature);
+    }
   } catch (err) {
     console.warn('Gửi thông báo Discord thất bại:', err);
     if (forceTest) throw err;
@@ -6701,6 +6713,15 @@ window.addEventListener('DOMContentLoaded', () => {
   if (key) {
     discoverAndCacheModels(key).catch(() => {});
   }
+  // Clear legacy throttle on update so due notifications fire immediately
+  try {
+    const legacySent = parseInt(localStorage.getItem('gl_last_discord_srs_sent') || '0', 10);
+    if (Date.now() - legacySent > 15 * 60 * 1000) {
+      localStorage.removeItem('gl_last_discord_srs_sent');
+      localStorage.removeItem('gl_last_discord_due_signature');
+    }
+  } catch {}
+
   // Check SRS notification on boot and periodically every 5 minutes
   setTimeout(() => checkAndSendSrsNotification(false), 2000);
   setInterval(() => checkAndSendSrsNotification(false), 5 * 60 * 1000);
