@@ -1073,28 +1073,28 @@
         <div class="sp-grid">
           <div class="sp-crit-item">
             <div class="sp-crit-head">
-              <span>🎯 Cấu trúc</span>
+              <span>🎯 Cấu trúc mục tiêu</span>
               <span id="critStructStatus" class="sp-crit-pass">Đạt</span>
             </div>
             <p class="sp-crit-desc" id="critStructComment"></p>
           </div>
           <div class="sp-crit-item">
             <div class="sp-crit-head">
-              <span>✍️ Ngữ pháp</span>
+              <span>✍️ Thì & Dạng động từ</span>
               <span id="critGrammarStatus" class="sp-crit-pass">Đạt</span>
             </div>
             <p class="sp-crit-desc" id="critGrammarComment"></p>
           </div>
           <div class="sp-crit-item">
             <div class="sp-crit-head">
-              <span>💡 Tự nhiên / Collocations</span>
+              <span>🔤 Vị trí & Trật tự từ loại</span>
               <span id="critExprStatus" class="sp-crit-pass">Đạt</span>
             </div>
             <p class="sp-crit-desc" id="critExprComment"></p>
           </div>
           <div class="sp-crit-item">
             <div class="sp-crit-head">
-              <span>📖 Sát nghĩa đề</span>
+              <span>🔗 Mệnh đề & Hòa hợp S-V</span>
               <span id="critMeaningStatus" class="sp-crit-pass">Đạt</span>
             </div>
             <p class="sp-crit-desc" id="critMeaningComment"></p>
@@ -3564,53 +3564,61 @@ async function submitExercise(forceRetryAi = false) {
     return;
   }
 
-  const prompt = `Chấm bài dịch IELTS:
-Cấu trúc: "${cur.name}" (${cur.formula})
-Đề: "${promptVi}"
-Bài làm: "${resp}"
-Lưu ý: Bỏ qua hoa/thường hoặc thiếu dấu câu. Bắt lỗi thực chất (thì, mạo từ a/an/the, giới từ, hòa hợp S-V, cấu trúc, phrasal verbs, collocations).
-Gán error_type trong fixes: "Mạo từ" | "Cách dùng thì" | "Giới từ" | "Hòa hợp chủ vị" | "Cấu trúc mục tiêu" | "Từ vựng & Diễn đạt".
+  const prompt = `Chấm bài dịch IELTS chuyên sâu về NGỮ PHÁP:
+Cấu trúc mục tiêu: "${cur.name}" (Công thức: ${cur.formula})
+Đề bài tiếng Việt: "${promptVi}"
+Bài làm tiếng Anh: "${resp}"
 
-YÊU CẦU GIẢI THÍCH LỖI SAI (CỰC KỲ QUAN TRỌNG CHO HỌC VIÊN):
-Người học muốn biết rõ cả 2 mặt của mỗi lỗi sai:
-1. "why_wrong": TẠI SAO NGƯỜI HỌC SAI — Phân tích lỗi tư duy hoặc quy tắc ngữ pháp mà học viên đã vi phạm (VD: "Bạn nhầm 'success' là danh từ nên thiếu vị ngữ sau chủ ngữ", hoặc "Bạn dịch word-by-word từ tiếng Việt 'khả năng của' thành 'ability of', sau giới từ 'of' lại đi kèm động từ nguyên mẫu là sai ngữ pháp").
-2. "why_correct": TẠI SAO DÙNG CÁCH CHUẨN — Quy tắc hoặc collocation bản xứ đúng (VD: "Cần dùng động từ 'succeeds' chia ở ngôi thứ 3 số ít", hoặc "Danh từ 'ability' luôn đi với động từ có to: 'ability to do sth'").
-3. "why": Tóm tắt ngắn gọn: "Sai vì ...; Cần dùng ... vì ...".
+NGUYÊN TẮC CHẤM BÀI ĐẶC BIỆT QUAN TRỌNG (TUÂN THỦ TUYỆT ĐỐI):
+1. CHỈ TẬP TRUNG 100% VÀO LỖI NGỮ PHÁP THỰC CHẤT:
+   - Cấu trúc câu mục tiêu (Đảo ngữ, câu chẻ, câu điều kiện, bị động, song hành, so sánh kép...).
+   - Thì và dạng của động từ (Verb tenses, to-V vs V-ing, quá khứ phân từ, hòa hợp Chủ ngữ - Động từ S-V).
+   - Vị trí và trật tự các loại từ (Word Order & Placement of Adjectives, Adverbs, Modifiers, trật tự đảo ngữ).
+   - Cấu trúc mệnh đề & liên từ (Relative clauses, adverbial clauses, run-on sentences, comma splices).
+   - Mạo từ & giới từ đi theo cấu trúc ngữ pháp.
+2. HOÀN TOÀN BỎ QUA / KHÔNG BẮT BẺ LỖI TỪ VỰNG:
+   - Nếu học viên dùng từ đồng nghĩa, từ vựng đơn giản hơn đáp án mẫu, hoặc diễn đạt theo cách riêng nhưng ĐÚNG NGỮ PHÁP thì COI LÀ ĐÚNG. KHÔNG bắt lỗi từ vựng, KHÔNG trừ điểm vì từ vựng!
+   - Chỉ bắt lỗi khi học viên dùng SAI TỪ LOẠI (vd: dùng danh từ ở vị trí động từ, dùng tính từ ở vị trí trạng từ) vì đó là lỗi cấu trúc ngữ pháp.
+3. Bỏ qua viết hoa/thường hoặc thiếu dấu câu cuối câu.
+4. Gán error_type trong fixes DUY NHẤT một trong các nhóm ngữ pháp sau:
+   "Cấu trúc câu" | "Thì & Dạng động từ" | "Vị trí & Trật tự từ loại" | "Hòa hợp chủ - vị" | "Mệnh đề & Liên từ"
 
-Với MỖI lỗi sai trong 'fixes':
-- Trích xuất 'target_pattern' (vd: "ability to do sth"), 'pattern_formula' (vd: "ability + to-V (không dùng 'ability of')").
-- Tạo 1 bài tập thực hành ngắn 'drill' LIÊN QUAN THẬT SÁT ĐẾN CHÍNH LỖI ĐÓ:
-   - "question": Câu bài tập có chỗ trống _______ hoặc câu ngắn cần điền/dịch để vận dụng chuẩn xác điểm sai
-   - "hint": Gợi ý ngắn gọn
-   - "answer": Đáp án chính xác cần điền
+5. NÂNG CAO ĐỘ KHÓ CỦA BÀI TẬP KHẮC PHỤC (DRILL) ĐỂ HỌC VIÊN HIỂU SÂU BẢN CHẤT NGỮ PHÁP (IELTS Band 7.5+):
+   Thay vì câu điền từ ngắn tầm thường, hãy tạo bài tập ngữ pháp chuyên sâu có độ thử thách trí tuệ:
+   - Dạng bài: "Phát hiện & Sửa lỗi ngữ pháp trong câu phức học thuật" HOẶC "Tái cấu trúc câu nâng cao (Sentence Transformation)".
+   - "instruction": Hướng dẫn cụ thể (vd: "Phát hiện lỗi sai trật tự từ trong câu sau và viết lại câu chuẩn xác:" hoặc "Viết lại câu sau dùng cấu trúc đảo ngữ...")
+   - "question": Câu thử thách ngữ pháp học thuật IELTS có chiều sâu
+   - "hint": Gợi ý bản chất ngữ pháp
+   - "answer": Đáp án chính xác cần đạt
+   - "deep_principle": Giải thích 1 câu ngắn gọn về nguyên lý bản chất ngữ pháp để người học hiểu tận gốc.
 
 Chỉ trả về JSON thuần:
 {
   "correct": true,
-  "score_title": "Nhận xét ngắn",
-  "structure": { "ok": true, "comment": "Ngắn" },
-  "grammar": { "ok": true, "comment": "Ngắn" },
-  "expression": { "ok": true, "comment": "Ngắn" },
-  "meaning": { "ok": true, "comment": "Ngắn" },
+  "score_title": "Nhận xét ngắn về ngữ pháp",
+  "structure": { "ok": true, "comment": "Nhận xét về cấu trúc mục tiêu" },
+  "grammar": { "ok": true, "comment": "Nhận xét về thì & dạng động từ" },
+  "expression": { "ok": true, "comment": "Nhận xét về vị trí & trật tự từ loại" },
+  "meaning": { "ok": true, "comment": "Nhận xét về liên kết mệnh đề & hòa hợp S-V" },
   "fixes": [
     {
-      "original": "chỗ viết sai (vd: ability of adapt)",
-      "replacement": "chỗ sửa đúng (vd: ability to adapt)",
-      "error_type": "Từ vựng & Diễn đạt",
-      "why_wrong": "Giải thích rõ tại sao viết như thế lại sai (phân tích lỗi tư duy/ngữ pháp)",
-      "why_correct": "Giải thích tại sao cách sửa đúng là quy tắc chuẩn",
+      "original": "chỗ viết sai ngữ pháp",
+      "replacement": "chỗ sửa đúng",
+      "error_type": "Cấu trúc câu", // hoặc "Thì & Dạng động từ", "Vị trí & Trật tự từ loại", "Hòa hợp chủ - vị", "Mệnh đề & Liên từ"
+      "why_wrong": "Giải thích rõ lỗi tư duy hoặc quy tắc ngữ pháp/trật tự từ bị vi phạm",
+      "why_correct": "Giải thích tại sao cách sửa đúng là quy tắc ngữ pháp chuẩn",
       "why": "Tóm tắt: Sai vì ...; Cần dùng ... vì ...",
-      "target_pattern": "tên cụm chuẩn nếu có",
-      "pattern_formula": "công thức ngắn",
       "drill": {
-        "question": "Câu bài tập ngắn thật sát lỗi đó",
-        "hint": "Gợi ý",
-        "answer": "Đáp án chuẩn"
+        "instruction": "Yêu cầu bài tập nâng cao",
+        "question": "Câu thử thách ngữ pháp chuyên sâu (IELTS Band 7.5+)",
+        "hint": "Gợi ý bản chất",
+        "answer": "Đáp án chuẩn",
+        "deep_principle": "Bản chất nguyên lý ngữ pháp"
       }
     }
   ],
-  "corrected": "Câu tiếng Anh chuẩn",
-  "better_alternatives": ["1 câu band cao"]
+  "corrected": "Câu tiếng Anh chuẩn ngữ pháp",
+  "better_alternatives": ["1 câu band cao với cấu trúc ngữ pháp học thuật nâng cao"]
 }`;
 
   let finalResult = null;
@@ -4017,12 +4025,19 @@ function logMistakes(fixes, structName, userSentence) {
   let added = false;
   fixes.forEach(fix => {
     if (fix.original && fix.replacement && fix.original.toLowerCase() === fix.replacement.toLowerCase()) return;
+    
+    // Ignore pure vocabulary mistakes - strictly focus on grammar, tenses, word order & structure
+    const rawType = (fix.error_type || '').toLowerCase();
+    if (rawType.includes('từ vựng') || rawType.includes('diễn đạt') || rawType.includes('vocabulary') || rawType.includes('lexical')) {
+      return;
+    }
+
     currentMistakesLog.unshift({
       id: 'err_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
       structure: structName,
       original: fix.original || '',
       replacement: fix.replacement || '',
-      errorType: fix.error_type || 'Ngữ pháp chung',
+      errorType: fix.error_type || 'Cấu trúc câu',
       why: fix.why || '',
       drill: fix.drill || null,
       targetPattern: fix.target_pattern || null,
@@ -4270,42 +4285,62 @@ async function runAiTopMistakeAnalysis(topErrorType, count) {
   const resultEl = $('aiTopMistakeResult');
   const btn = $('analyzeTopMistakeBtn');
   btn.disabled = true;
-  btn.textContent = '⏳ Đang phân tích...';
+  btn.textContent = '⏳ Đang phân tích chuyên sâu...';
   resultEl.style.display = 'block';
   resultEl.innerHTML = `
     <div style="text-align:center; padding:22px; color:var(--sp-subtext);">
       <div class="sp-dot sp-dot-busy" style="width:14px; height:14px; margin-bottom:8px;"></div>
-      <div style="font-size:13px; color:#fff; font-weight:600;">AI đang giải phẫu thói quen và lập phác đồ khắc phục lỗi "${escapeHtml(topErrorType)}"...</div>
+      <div style="font-size:13px; color:#fff; font-weight:600;">AI đang giải phẫu cấu trúc ngữ pháp và lập phác đồ luyện sâu cho lỗi "${escapeHtml(topErrorType)}"...</div>
+      <div style="font-size:11.5px; color:var(--sp-subtext); margin-top:4px;">Tập trung vào thì, trật tự từ, mệnh đề và cấu trúc học thuật.</div>
     </div>
   `;
 
   const samples = currentMistakesLog
-    .filter(m => (m.errorType || 'Ngữ pháp khác') === topErrorType)
-    .slice(0, 4);
+    .filter(m => (m.errorType || 'Cấu trúc câu') === topErrorType)
+    .slice(0, 5);
 
-  const prompt = `Phân tích chuyên sâu lỗi tiếng Anh người Việt hay mắc:
-Loại lỗi mắc nhiều nhất: "${topErrorType}" (${count} lần).
-Các câu học viên từng làm sai:
-${samples.map(s => `- Viết: "${s.sentence}" -> Sai: "${s.original}" nên là "${s.replacement}" (${s.why})`).join('\n')}
+  const prompt = `Bạn là Chuyên gia Khảo thí Ngữ pháp IELTS cao cấp (Band 8.5+).
+Hãy phân tích chuyên sâu nhóm lỗi ngữ pháp: "${topErrorType}" (${count} lần mắc).
+Các câu học viên từng làm sai trong quá trình luyện dịch:
+${samples.map(s => `- Viết: "${s.sentence}" -> Sai ngữ pháp: "${s.original}" cần sửa thành: "${s.replacement}" (${s.why})`).join('\n')}
 
-Hãy trả về JSON thuần:
+YÊU CẦU ĐẶC BIỆT (TUÂN THỦ TUYỆT ĐỐI):
+1. CHỈ TẬP TRUNG 100% VÀO BẢN CHẤT NGỮ PHÁP (Thì động từ, vị trí/trật tự từ loại, cấu trúc câu, hòa hợp S-V, mệnh đề phụ). Hoàn toàn không bận tâm đến từ vựng.
+2. NÂNG CAO ĐỘ KHÓ CỦA BÀI TẬP KHẮC PHỤC (IELTS BAND 7.5 - 8.0) ĐỂ HỌC VIÊN HIỂU TẬN GỐC RỄ:
+   - Bài tập 1: Phát hiện & Sửa lỗi sai ngữ pháp trong câu phức học thuật IELTS (Error Identification & Correction).
+   - Bài tập 2: Tái cấu trúc câu nâng cao (Sentence Transformation / Academic Restructuring) bắt đầu bằng cụm từ bắt buộc.
+
+Trả về DUY NHẤT một chuỗi JSON hợp lệ (không kèm Markdown block):
 {
-  "root_cause": "Giải thích ngắn gọn thói quen tư duy tiếng Việt nào dẫn đến lỗi này (1-2 câu sắc sảo)",
-  "golden_rule": "Quy tắc vàng ngắn gọn, dễ nhớ để không bao giờ sai lại",
-  "key_patterns": ["2 bẫy hoặc lưu ý quan trọng nhất"],
-  "drill": {
-    "vi": "Câu tiếng Việt ngắn để học viên dịch ngay kiểm tra phản xạ",
-    "hint": "Gợi ý ngữ pháp",
-    "answer": "Câu tiếng Anh chuẩn mực"
+  "root_cause": "Phân tích thói quen tư duy tiếng Việt dẫn đến lỗi ngữ pháp này (1-2 câu sắc sảo)",
+  "golden_rule": "Quy tắc vàng ngữ pháp ngắn gọn, dễ nhớ để không bao giờ tái phạm",
+  "deep_principle": "Bản chất nguyên lý ngữ pháp: Tại sao người bản xứ và cấu trúc chuẩn lại quy định trật tự/thì đó",
+  "key_traps": ["2 bẫy ngữ pháp dễ mất điểm nhất trong phòng thi IELTS"],
+  "drill_1": {
+    "title": "Phát hiện & Sửa bẫy ngữ pháp trong câu phức",
+    "instruction": "Phát hiện phần sai ngữ pháp trong câu học thuật sau và viết lại câu chuẩn xác:",
+    "question": "Câu tiếng Anh học thuật IELTS dài 18-28 từ có chứa lỗi ngữ pháp cố tình",
+    "hint": "Gợi ý bẫy ngữ pháp",
+    "answer": "Câu tiếng Anh đã sửa hoàn chỉnh",
+    "explanation": "Phân tích vì sao viết như câu ban đầu là sai và cách sửa"
+  },
+  "drill_2": {
+    "title": "Tái cấu trúc câu nâng cao (Sentence Transformation)",
+    "instruction": "Viết lại câu sau bắt đầu bằng cụm từ gợi ý, áp dụng đúng trật tự từ và thì động từ:",
+    "question": "Câu gốc học thuật ban đầu",
+    "lead_in": "Từ/cụm từ bắt đầu bắt buộc (vd: Had..., Not until..., Only when...)",
+    "hint": "Gợi ý công thức cấu trúc",
+    "answer": "Câu viết lại hoàn chỉnh chuẩn Band 8.0",
+    "explanation": "Phân tích cấu trúc chuyển đổi"
   }
 }`;
 
   try {
     const data = await callGeminiApiWithFallback(prompt, 'Chuyên gia ngữ pháp IELTS, phản hồi JSON thuần.');
-    const cacheKey = `gl_ai_diag_${encodeURIComponent(topErrorType)}_${count}`;
+    const cacheKey = `gl_ai_diag_v2_${encodeURIComponent(topErrorType)}_${count}`;
     localStorage.setItem(cacheKey, JSON.stringify(data));
     resultEl.innerHTML = renderAiDiagnosticContent(data, topErrorType);
-    bindQuickDrillEvents(data.drill);
+    bindQuickDrillEvents(data);
   } catch (err) {
     resultEl.innerHTML = `
       <div style="color:var(--sp-red); font-size:12.5px; padding:10px 0;">
@@ -4320,80 +4355,195 @@ Hãy trả về JSON thuần:
 }
 
 function renderAiDiagnosticContent(data, topErrorType) {
-  const patternsHtml = (data.key_patterns || []).map(p => `
+  const trapsHtml = (data.key_traps || []).map(p => `
     <li style="margin-bottom:4px; color:var(--sp-subtext);">${escapeHtml(p)}</li>
   `).join('');
 
-  const drill = data.drill || {};
+  const d1 = data.drill_1 || {};
+  const d2 = data.drill_2 || {};
 
   return `
     <div style="font-size:13px; line-height:1.5;">
+      <!-- Root Cause -->
       <div style="margin-bottom:10px;">
-        <span style="color:var(--sp-orange); font-weight:700;">🎯 Nguyên nhân cốt lõi:</span>
+        <span style="color:var(--sp-orange); font-weight:700;">🎯 Nguyên nhân tư duy cốt lõi:</span>
         <div style="color:#fff; margin-top:2px;">${escapeHtml(data.root_cause || '')}</div>
       </div>
 
+      <!-- Golden Rule -->
       <div style="background:rgba(29, 185, 84, 0.1); border-left:3px solid var(--sp-green); padding:8px 12px; border-radius:0 6px 6px 0; margin-bottom:10px;">
-        <span style="color:var(--sp-green); font-weight:800; font-size:11.5px; text-transform:uppercase;">⭐ Quy tắc vàng ghi nhớ:</span>
+        <span style="color:var(--sp-green); font-weight:800; font-size:11.5px; text-transform:uppercase;">⭐ Quy tắc vàng ngữ pháp:</span>
         <div style="color:#fff; font-weight:600; margin-top:2px;">${escapeHtml(data.golden_rule || '')}</div>
       </div>
 
-      ${patternsHtml ? `
-        <div style="margin-bottom:10px;">
-          <span style="color:#fff; font-weight:700;">⚠️ Điểm cần cảnh giác:</span>
-          <ul style="margin:4px 0 0 16px; padding:0; font-size:12.5px;">${patternsHtml}</ul>
+      <!-- Deep Principle -->
+      ${data.deep_principle ? `
+        <div style="background:rgba(61, 145, 244, 0.08); border-left:3px solid var(--sp-blue); padding:8px 12px; border-radius:0 6px 6px 0; margin-bottom:10px;">
+          <span style="color:var(--sp-blue); font-weight:800; font-size:11.5px; text-transform:uppercase;">💡 Bản chất nguyên lý ngữ pháp:</span>
+          <div style="color:#dbe4f8; margin-top:2px; font-size:12.5px;">${escapeHtml(data.deep_principle)}</div>
         </div>
       ` : ''}
 
-      ${drill.vi ? `
-        <div style="background:#202020; border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:12px; margin-top:12px;">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-            <span style="font-size:11.5px; font-weight:800; color:var(--sp-blue); text-transform:uppercase;">📝 Thử thách sửa sai tức thì:</span>
-            ${drill.hint ? `<span style="font-size:11px; color:var(--sp-muted);">💡 ${escapeHtml(drill.hint)}</span>` : ''}
+      <!-- Traps -->
+      ${trapsHtml ? `
+        <div style="margin-bottom:12px;">
+          <span style="color:#fff; font-weight:700;">⚠️ Bẫy ngữ pháp dễ mất điểm trong phòng thi:</span>
+          <ul style="margin:4px 0 0 16px; padding:0; font-size:12.5px;">${trapsHtml}</ul>
+        </div>
+      ` : ''}
+
+      <div style="font-size:12px; font-weight:800; color:var(--sp-green); text-transform:uppercase; letter-spacing:0.5px; margin:16px 0 8px; border-top:1px solid rgba(255,255,255,0.08); padding-top:12px;">
+        🏋️ BỘ THỬ THÁCH NGỮ PHÁP NÂNG CAO ĐỂ HIỂU TẬN GỐC RỄ:
+      </div>
+
+      <!-- Challenge 1: Error Identification -->
+      ${d1.question ? `
+        <div style="background:#181818; border:1px solid rgba(255, 164, 43, 0.3); border-radius:8px; padding:12px 14px; margin-bottom:12px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; flex-wrap:wrap; gap:6px;">
+            <span style="font-size:11.5px; font-weight:800; color:var(--sp-orange); text-transform:uppercase;">
+              Thử thách 1: ${escapeHtml(d1.title || 'Phát hiện & Sửa lỗi')}
+            </span>
+            ${d1.hint ? `<span style="font-size:11px; color:var(--sp-muted);">💡 ${escapeHtml(d1.hint)}</span>` : ''}
           </div>
-          <div style="font-size:13.5px; font-weight:700; color:#fff; margin-bottom:8px;">"${escapeHtml(drill.vi)}"</div>
-          <div style="display:flex; gap:6px;">
-            <input type="text" id="drillInput" placeholder="Dịch câu sang tiếng Anh áp dụng đúng quy tắc..." style="flex:1; padding:7px 10px; border-radius:6px; border:1px solid var(--sp-border); background:#121212; color:#fff; font-size:13px; outline:none;">
-            <button id="checkDrillBtn" class="sp-pill green" style="padding:6px 12px; font-size:12px; white-space:nowrap;">Kiểm tra</button>
+          <div style="font-size:12px; color:var(--sp-subtext); margin-bottom:6px;">${escapeHtml(d1.instruction || 'Viết lại câu chuẩn xác:')}</div>
+          <div style="font-size:13.5px; font-weight:600; color:#fff; line-height:1.45; margin-bottom:8px; background:rgba(0,0,0,0.3); padding:8px 10px; border-radius:6px; border-left:2px solid var(--sp-orange);">
+            "${escapeHtml(d1.question)}"
           </div>
-          <div id="drillFeedback" style="display:none; font-size:12.5px; margin-top:8px;"></div>
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            <input type="text" id="diagDrillInput1" placeholder="Nhập câu tiếng Anh đã sửa hoàn chỉnh..." style="flex:1; min-width:200px; padding:7px 10px; border-radius:6px; border:1px solid var(--sp-border); background:#121212; color:#fff; font-size:13px; outline:none;">
+            <button id="checkDiagDrillBtn1" class="sp-pill green" style="padding:6px 14px; font-size:12px; font-weight:700; white-space:nowrap; cursor:pointer;">Kiểm tra</button>
+            <button id="revealDiagDrillBtn1" class="sp-pill" style="padding:6px 10px; font-size:11.5px; background:rgba(255,255,255,0.08); color:var(--sp-subtext); border:none; white-space:nowrap; cursor:pointer;">Xem đáp án</button>
+          </div>
+          <div id="diagDrillFb1" style="display:none; font-size:12.5px; margin-top:8px;"></div>
+        </div>
+      ` : ''}
+
+      <!-- Challenge 2: Sentence Transformation -->
+      ${d2.question ? `
+        <div style="background:#181818; border:1px solid rgba(61, 145, 244, 0.3); border-radius:8px; padding:12px 14px; margin-bottom:8px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; flex-wrap:wrap; gap:6px;">
+            <span style="font-size:11.5px; font-weight:800; color:var(--sp-blue); text-transform:uppercase;">
+              Thử thách 2: ${escapeHtml(d2.title || 'Tái cấu trúc câu nâng cao')}
+            </span>
+            ${d2.hint ? `<span style="font-size:11px; color:var(--sp-muted);">💡 ${escapeHtml(d2.hint)}</span>` : ''}
+          </div>
+          <div style="font-size:12px; color:var(--sp-subtext); margin-bottom:6px;">${escapeHtml(d2.instruction || 'Viết lại câu sau:')}</div>
+          <div style="font-size:13.5px; font-weight:600; color:#fff; line-height:1.45; margin-bottom:6px; background:rgba(0,0,0,0.3); padding:8px 10px; border-radius:6px; border-left:2px solid var(--sp-blue);">
+            "${escapeHtml(d2.question)}"
+          </div>
+          ${d2.lead_in ? `
+            <div style="font-size:12px; color:var(--sp-green); font-weight:700; margin-bottom:6px;">
+              Bắt đầu bằng: <code style="background:rgba(29,185,84,0.15); padding:2px 6px; border-radius:4px;">${escapeHtml(d2.lead_in)}...</code>
+            </div>
+          ` : ''}
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            <input type="text" id="diagDrillInput2" placeholder="Nhập câu viết lại hoàn chỉnh..." style="flex:1; min-width:200px; padding:7px 10px; border-radius:6px; border:1px solid var(--sp-border); background:#121212; color:#fff; font-size:13px; outline:none;">
+            <button id="checkDiagDrillBtn2" class="sp-pill green" style="padding:6px 14px; font-size:12px; font-weight:700; white-space:nowrap; cursor:pointer;">Kiểm tra</button>
+            <button id="revealDiagDrillBtn2" class="sp-pill" style="padding:6px 10px; font-size:11.5px; background:rgba(255,255,255,0.08); color:var(--sp-subtext); border:none; white-space:nowrap; cursor:pointer;">Xem đáp án</button>
+          </div>
+          <div id="diagDrillFb2" style="display:none; font-size:12.5px; margin-top:8px;"></div>
         </div>
       ` : ''}
     </div>
   `;
 }
 
-function bindQuickDrillEvents(drill) {
-  if (!drill) return;
-  const input = $('drillInput');
-  const btn = $('checkDrillBtn');
-  const fb = $('drillFeedback');
-  if (!btn || !input || !fb) return;
+function bindQuickDrillEvents(data) {
+  if (!data) return;
+  const d1 = data.drill_1 || (data.drill ? { answer: data.drill.answer, explanation: data.drill.hint } : null);
+  const d2 = data.drill_2 || null;
 
-  const runCheck = () => {
-    const val = input.value.trim();
-    if (!val) return;
-    fb.style.display = 'block';
-    const normVal = val.toLowerCase().replace(/[.,!?'"]/g, '').trim();
-    const normAns = (drill.answer || '').toLowerCase().replace(/[.,!?'"]/g, '').trim();
+  // Bind Challenge 1
+  if (d1) {
+    const input1 = $('diagDrillInput1');
+    const btnCheck1 = $('checkDiagDrillBtn1');
+    const btnRev1 = $('revealDiagDrillBtn1');
+    const fb1 = $('diagDrillFb1');
 
-    if (normVal === normAns || (normVal.length >= normAns.length * 0.7 && normVal.includes(normAns.slice(0, 8)))) {
-      fb.innerHTML = `
-        <div style="color:var(--sp-green); font-weight:700;">✓ Rất tốt! Bạn đã áp dụng đúng quy tắc.</div>
-        <div style="color:var(--sp-subtext); margin-top:2px;">Đáp án chuẩn: <em>"${escapeHtml(drill.answer)}"</em></div>
-      `;
-    } else {
-      fb.innerHTML = `
-        <div style="color:var(--sp-orange); font-weight:700;">↳ Hãy đối chiếu với đáp án chuẩn:</div>
-        <div style="color:#fff; font-weight:600; margin-top:2px;">"${escapeHtml(drill.answer)}"</div>
-      `;
+    if (btnCheck1 && input1 && fb1) {
+      const runCheck1 = () => {
+        const val = input1.value.trim();
+        if (!val) return;
+        fb1.style.display = 'block';
+        const normVal = val.toLowerCase().replace(/[.,!?'"’]/g, '').trim();
+        const normAns = (d1.answer || '').toLowerCase().replace(/[.,!?'"’]/g, '').trim();
+
+        if (normVal === normAns || (normVal.length >= normAns.length * 0.75 && normVal.includes(normAns.slice(0, 10)))) {
+          fb1.innerHTML = `
+            <div style="color:var(--sp-green); font-weight:700;">✓ Xuất sắc! Bạn đã sửa chuẩn ngữ pháp.</div>
+            <div style="color:var(--sp-subtext); margin-top:3px;">Đáp án chuẩn: <em>"${escapeHtml(d1.answer)}"</em></div>
+            ${d1.explanation ? `<div style="color:#dbe4f8; margin-top:4px; font-size:12px;">💡 ${escapeHtml(d1.explanation)}</div>` : ''}
+          `;
+        } else {
+          fb1.innerHTML = `
+            <div style="color:var(--sp-orange); font-weight:700;">↳ Đối chiếu với đáp án chuẩn:</div>
+            <div style="color:#fff; font-weight:600; margin-top:3px;">"${escapeHtml(d1.answer)}"</div>
+            ${d1.explanation ? `<div style="color:var(--sp-subtext); margin-top:4px; font-size:12px;">💡 ${escapeHtml(d1.explanation)}</div>` : ''}
+          `;
+        }
+      };
+
+      btnCheck1.onclick = runCheck1;
+      input1.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); runCheck1(); } };
+
+      if (btnRev1) {
+        btnRev1.onclick = () => {
+          fb1.style.display = 'block';
+          fb1.innerHTML = `
+            <div style="color:var(--sp-green); font-weight:700;">Đáp án chuẩn Band 8.0:</div>
+            <div style="color:#fff; font-weight:600; margin-top:3px;">"${escapeHtml(d1.answer)}"</div>
+            ${d1.explanation ? `<div style="color:var(--sp-subtext); margin-top:4px; font-size:12px;">💡 ${escapeHtml(d1.explanation)}</div>` : ''}
+          `;
+        };
+      }
     }
-  };
+  }
 
-  btn.onclick = runCheck;
-  input.onkeydown = (e) => {
-    if (e.key === 'Enter') { e.preventDefault(); runCheck(); }
-  };
+  // Bind Challenge 2
+  if (d2) {
+    const input2 = $('diagDrillInput2');
+    const btnCheck2 = $('checkDiagDrillBtn2');
+    const btnRev2 = $('revealDiagDrillBtn2');
+    const fb2 = $('diagDrillFb2');
+
+    if (btnCheck2 && input2 && fb2) {
+      const runCheck2 = () => {
+        const val = input2.value.trim();
+        if (!val) return;
+        fb2.style.display = 'block';
+        const normVal = val.toLowerCase().replace(/[.,!?'"’]/g, '').trim();
+        const normAns = (d2.answer || '').toLowerCase().replace(/[.,!?'"’]/g, '').trim();
+
+        if (normVal === normAns || (normVal.length >= normAns.length * 0.75 && normVal.includes(normAns.slice(0, 10)))) {
+          fb2.innerHTML = `
+            <div style="color:var(--sp-green); font-weight:700;">✓ Rất tốt! Bạn đã tái cấu trúc câu chính xác.</div>
+            <div style="color:var(--sp-subtext); margin-top:3px;">Đáp án chuẩn: <em>"${escapeHtml(d2.answer)}"</em></div>
+            ${d2.explanation ? `<div style="color:#dbe4f8; margin-top:4px; font-size:12px;">💡 ${escapeHtml(d2.explanation)}</div>` : ''}
+          `;
+        } else {
+          fb2.innerHTML = `
+            <div style="color:var(--sp-blue); font-weight:700;">↳ Câu tái cấu trúc chuẩn Band 8.0:</div>
+            <div style="color:#fff; font-weight:600; margin-top:3px;">"${escapeHtml(d2.answer)}"</div>
+            ${d2.explanation ? `<div style="color:var(--sp-subtext); margin-top:4px; font-size:12px;">💡 ${escapeHtml(d2.explanation)}</div>` : ''}
+          `;
+        }
+      };
+
+      btnCheck2.onclick = runCheck2;
+      input2.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); runCheck2(); } };
+
+      if (btnRev2) {
+        btnRev2.onclick = () => {
+          fb2.style.display = 'block';
+          fb2.innerHTML = `
+            <div style="color:var(--sp-blue); font-weight:700;">Đáp án chuẩn Band 8.0:</div>
+            <div style="color:#fff; font-weight:600; margin-top:3px;">"${escapeHtml(d2.answer)}"</div>
+            ${d2.explanation ? `<div style="color:var(--sp-subtext); margin-top:4px; font-size:12px;">💡 ${escapeHtml(d2.explanation)}</div>` : ''}
+          `;
+        };
+      }
+    }
+  }
 }
 
 $('clearAllMistakesBtn').onclick = () => {
