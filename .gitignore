@@ -1,0 +1,6 @@
+.env.local
+*.bak
+*.zip
+sites/
+codex-openai-platform-*/
+node_modules/

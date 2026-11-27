@@ -824,6 +824,10 @@
     <button class="sp-pill" id="topDictBtn" title="Mở từ điển Anh - Việt">
       📖 Từ điển
     </button>
+    <button class="sp-pill" id="discordConfigBtn" title="Cài đặt thông báo qua Discord">
+      <span style="color:#5865F2; font-size:14px;">💬</span> Discord
+      <span class="sp-dot sp-dot-on" id="discordStatusDot"></span>
+    </button>
     <button class="sp-pill" id="apiConfigBtn" title="Cấu hình Google Gemini API">
       🔑 Gemini: <span id="apiKeyStatusText">Chưa kết nối</span>
       <span class="sp-dot sp-dot-off" id="apiKeyStatusDot"></span>
@@ -1401,6 +1405,44 @@
     <div style="display:flex; justify-content:space-between; margin-top:22px;">
       <button class="sp-btn-secondary" id="clearApiKeyBtn" type="button" style="color:var(--sp-red); border-color:var(--sp-red);">Xóa Key</button>
       <button class="sp-pill green" id="saveApiKeyBtn" type="button" style="padding:9px 20px; font-size:14px;">Lưu cài đặt</button>
+    </div>
+  </div>
+</div>
+
+<!-- Discord Notification Config Modal -->
+<div class="sp-modal-overlay" id="discordModal">
+  <div class="sp-modal-card">
+    <div class="sp-modal-header">
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span style="font-size:22px; color:#5865F2;">💬</span>
+        <h3 class="sp-modal-title">Cài đặt Thông báo qua Discord</h3>
+      </div>
+      <button class="sp-close-btn" id="closeDiscordModalBtn">&times;</button>
+    </div>
+    <div style="font-size:13px; color:var(--sp-subtext); margin-bottom:16px; line-height:1.5;">
+      Nhận thông báo nhắc nhở từ vựng đến hạn ôn tập (SRS) và cấu trúc cần cải thiện trực tiếp trên ứng dụng <strong>Discord (Điện thoại & Máy tính)</strong> kể cả khi bạn đóng app.
+    </div>
+    <div class="sp-field">
+      <label for="discordWebhookInput">Discord Webhook URL</label>
+      <input type="text" id="discordWebhookInput" placeholder="https://discord.com/api/webhooks/..." autocomplete="off">
+      <div style="font-size:12px; color:var(--sp-subtext); margin-top:6px;">
+        Đã liên kết kênh Discord của bạn. Bạn có thể thay đổi Webhook khác bất kỳ lúc nào.
+      </div>
+    </div>
+    <div class="sp-field" style="margin-top:14px; background:rgba(255,255,255,0.04); padding:12px; border-radius:8px; border:1px solid rgba(255,255,255,0.08);">
+      <label style="display:flex; align-items:center; gap:8px; cursor:pointer; margin:0; user-select:none;">
+        <input type="checkbox" id="discordAutoSendToggle" checked style="width:16px; height:16px; accent-color:var(--sp-green);">
+        <span style="font-size:13px; font-weight:700; color:#fff;">Tự động gửi thông báo khi có từ vựng đến hạn ôn (SRS)</span>
+      </label>
+    </div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:22px; flex-wrap:wrap; gap:10px;">
+      <button class="sp-btn-secondary" id="testDiscordWebhookBtn" type="button" style="border-color:#5865F2; color:#fff;">
+        🔔 Bắn thông báo thử
+      </button>
+      <div style="display:flex; gap:8px;">
+        <button class="sp-btn-secondary" id="clearDiscordBtn" type="button" style="color:var(--sp-red); border-color:var(--sp-red);">Xóa</button>
+        <button class="sp-pill green" id="saveDiscordBtn" type="button" style="padding:9px 20px; font-size:14px;">Lưu cài đặt</button>
+      </div>
     </div>
   </div>
 </div>
@@ -4712,6 +4754,176 @@ function renderVocabPracticeContent(data, vocabItem) {
 $('closeVocabPracticeBtn').onclick = () => $('vocabPracticeModal').classList.remove('open');
 
 // ----------------------------------------------------
+// DISCORD WEBHOOK INTEGRATION & SRS NOTIFICATIONS
+// ----------------------------------------------------
+const DEFAULT_DISCORD_WEBHOOK = 'https://discord.com/api/webhooks/1575815435230650511/jLYvfBmrJxJJQQL5qXlXsjzQZxxA92u7hwlbw89M6Ndr2rD-jJJNWen4gIysYuTM68em';
+
+function getDiscordWebhook() {
+  return localStorage.getItem('gl_discord_webhook') || DEFAULT_DISCORD_WEBHOOK;
+}
+
+function setDiscordWebhook(url) {
+  if (url) localStorage.setItem('gl_discord_webhook', url.trim());
+  else localStorage.removeItem('gl_discord_webhook');
+  updateDiscordStatusUi();
+}
+
+function isDiscordAutoSendEnabled() {
+  return localStorage.getItem('gl_discord_auto_send') !== 'false';
+}
+
+function setDiscordAutoSendEnabled(enabled) {
+  localStorage.setItem('gl_discord_auto_send', enabled ? 'true' : 'false');
+}
+
+function updateDiscordStatusUi() {
+  const webhook = getDiscordWebhook();
+  const dot = $('discordStatusDot');
+  if (dot) {
+    dot.className = webhook ? 'sp-dot sp-dot-on' : 'sp-dot sp-dot-off';
+  }
+}
+
+async function sendDiscordNotification(payload) {
+  const webhook = getDiscordWebhook();
+  if (!webhook) throw new Error('Chưa cấu hình Discord Webhook.');
+
+  const res = await fetch(webhook, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+
+  if (!res.ok) {
+    const errText = await res.text().catch(() => '');
+    throw new Error(`Discord trả về lỗi HTTP ${res.status}: ${errText}`);
+  }
+  return true;
+}
+
+async function sendDiscordSrsNotification(dueVocabs, forceTest = false) {
+  const webhook = getDiscordWebhook();
+  if (!webhook) return;
+
+  const now = Date.now();
+  if (!forceTest) {
+    const lastSent = parseInt(localStorage.getItem('gl_last_discord_srs_sent') || '0', 10);
+    // Don't spam Discord more than once every 3 hours for due words
+    if (now - lastSent < 3 * 3600 * 1000) return;
+  }
+
+  let fields = [];
+  if (dueVocabs && dueVocabs.length > 0) {
+    const topItems = dueVocabs.slice(0, 6);
+    const wordsText = topItems.map((v, i) => {
+      const ipa = v.ipa ? ` \`${v.ipa}\`` : '';
+      const mean = v.meanings && v.meanings[0] ? ` — ${v.meanings[0].meaning}` : '';
+      return `**${i + 1}. ${v.word}**${ipa}${mean}`;
+    }).join('\n');
+
+    fields.push({
+      name: `📚 Danh sách từ cần ôn (${dueVocabs.length} từ)`,
+      value: wordsText + (dueVocabs.length > 6 ? `\n*...và ${dueVocabs.length - 6} từ khác.*` : ''),
+      inline: false
+    });
+  }
+
+  fields.push({
+    name: '🔗 Mở Grammar Lab để làm bài',
+    value: '[Bấm vào đây để vào học ngay](https://ptduongczr1212.github.io/grammar-lab/#/practice)',
+    inline: false
+  });
+
+  const payload = {
+    username: 'Grammar Lab IELTS',
+    avatar_url: 'https://ptduongczr1212.github.io/grammar-lab/icon-192.png',
+    embeds: [
+      {
+        title: forceTest 
+          ? '🎧 Grammar Lab IELTS — Kiểm tra kết nối Discord thành công!'
+          : `🎧 Grammar Lab IELTS — Nhắc nhở ôn tập ${dueVocabs.length} từ vựng!`,
+        description: forceTest 
+          ? 'Chào bạn! Discord Webhook đã hoạt động hoàn hảo. Từ giờ bạn sẽ nhận thông báo ôn tập SRS và cấu trúc trực tiếp tại đây kể cả khi bạn đóng app!'
+          : `Hôm nay bạn có **${dueVocabs.length} từ vựng** đã đến hạn ôn tập ngắt quãng (Spaced Repetition). Hãy dành 3-5 phút làm bài để không bị quên nhé!`,
+        color: 1947988, // Spotify Green #1DB954
+        fields: fields,
+        footer: { text: 'Grammar Lab IELTS • Spaced Repetition System' },
+        timestamp: new Date().toISOString()
+      }
+    ]
+  };
+
+  try {
+    await sendDiscordNotification(payload);
+    localStorage.setItem('gl_last_discord_srs_sent', String(now));
+  } catch (err) {
+    console.warn('Gửi thông báo Discord thất bại:', err);
+    if (forceTest) throw err;
+  }
+}
+
+function initDiscordModalEvents() {
+  const configBtn = $('discordConfigBtn');
+  const modal = $('discordModal');
+  const closeBtn = $('closeDiscordModalBtn');
+  const input = $('discordWebhookInput');
+  const toggle = $('discordAutoSendToggle');
+  const saveBtn = $('saveDiscordBtn');
+  const clearBtn = $('clearDiscordBtn');
+  const testBtn = $('testDiscordWebhookBtn');
+
+  if (configBtn && modal) {
+    configBtn.onclick = () => {
+      if (input) input.value = getDiscordWebhook();
+      if (toggle) toggle.checked = isDiscordAutoSendEnabled();
+      modal.classList.add('open');
+    };
+  }
+
+  if (closeBtn && modal) {
+    closeBtn.onclick = () => modal.classList.remove('open');
+  }
+
+  if (saveBtn) {
+    saveBtn.onclick = () => {
+      const url = (input ? input.value : '').trim();
+      setDiscordWebhook(url);
+      if (toggle) setDiscordAutoSendEnabled(toggle.checked);
+      showToast('✓ Đã lưu cài đặt Discord Webhook!');
+      if (modal) modal.classList.remove('open');
+    };
+  }
+
+  if (clearBtn) {
+    clearBtn.onclick = () => {
+      setDiscordWebhook('');
+      if (input) input.value = '';
+      showToast('Đã xóa cấu hình Discord Webhook.');
+    };
+  }
+
+  if (testBtn) {
+    testBtn.onclick = async () => {
+      testBtn.disabled = true;
+      testBtn.textContent = '⏳ Đang gửi...';
+      try {
+        const url = (input ? input.value : '').trim() || getDiscordWebhook();
+        setDiscordWebhook(url);
+        await sendDiscordSrsNotification([], true);
+        showToast('🎉 Đã bắn thông báo thử đến Discord thành công!');
+      } catch (err) {
+        alert('Lỗi gửi Discord: ' + err.message);
+      } finally {
+        testBtn.disabled = false;
+        testBtn.textContent = '🔔 Bắn thông báo thử';
+      }
+    };
+  }
+
+  updateDiscordStatusUi();
+}
+
+// ----------------------------------------------------
 // WEB NOTIFICATIONS FOR SRS
 // ----------------------------------------------------
 function updateNotificationButton() {
@@ -4726,24 +4938,28 @@ function updateNotificationButton() {
 }
 
 $('notifToggleBtn').onclick = async () => {
-  if (!('Notification' in window)) return alert('Trình duyệt của bạn không hỗ trợ Web Notification.');
-  if (Notification.permission === 'granted') {
-    checkAndSendSrsNotification(true);
-  } else {
-    const perm = await Notification.requestPermission();
-    updateNotificationButton();
-    if (perm === 'granted') {
-      checkAndSendSrsNotification(true);
-    } else {
-      alert('Bạn đã từ chối cấp quyền thông báo. Hãy bật trong cài đặt trang web nếu muốn nhận nhắc nhở ôn từ vựng!');
-    }
+  // If clicked in drawer, open Discord Modal directly for easier notification config!
+  const modal = $('discordModal');
+  if (modal) {
+    const input = $('discordWebhookInput');
+    const toggle = $('discordAutoSendToggle');
+    if (input) input.value = getDiscordWebhook();
+    if (toggle) toggle.checked = isDiscordAutoSendEnabled();
+    modal.classList.add('open');
   }
 };
 
 function checkAndSendSrsNotification(forceTest = false) {
-  if (!('Notification' in window) || Notification.permission !== 'granted') return;
   const now = Date.now();
   const due = currentVocabNotebook.filter(v => (v.nextReview || 0) <= now);
+
+  // Send Discord notification if enabled
+  if (isDiscordAutoSendEnabled() && (due.length > 0 || forceTest)) {
+    sendDiscordSrsNotification(due, forceTest).catch(() => {});
+  }
+
+  // Also send browser notification if permission granted
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
   if (due.length === 0 && !forceTest) return;
 
   const title = due.length > 0 ? 'Grammar Lab IELTS — Lịch ôn tập từ vựng' : 'Grammar Lab IELTS';
@@ -5389,6 +5605,7 @@ window.addEventListener('DOMContentLoaded', () => {
   renderAll();
   initEvents();
   setupUniversalSelection();
+  initDiscordModalEvents();
   updateApiStatusUi();
   updateVocabCountUi();
   updateMistakesCountUi();
